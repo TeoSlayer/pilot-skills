@@ -120,4 +120,6 @@ if [ -n "$search_query" ]; then
 fi
 ```
 
-Dependencies: pilot-protocol, jq, tar/gzip for export.
+## Dependencies
+
+Requires pilot-protocol, jq, tar/gzip for export.

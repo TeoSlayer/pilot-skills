@@ -107,4 +107,6 @@ else
 fi
 ```
 
-Dependencies: pilot-protocol, pilotctl, jq. Receipt mechanism uses pub/sub and message metadata.
+## Dependencies
+
+Requires pilot-protocol, pilotctl, jq. Receipt mechanism uses pub/sub and message metadata.

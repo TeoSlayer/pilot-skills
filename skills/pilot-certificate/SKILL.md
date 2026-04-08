@@ -56,7 +56,7 @@ EOF
 
 ### Send Certificate
 ```bash
-pilotctl send-file "$RECIPIENT" ~/.pilot/certificates/issued/cert-$CERT_ID.json
+pilotctl --json send-file "$RECIPIENT" ~/.pilot/certificates/issued/cert-$CERT_ID.json
 ```
 
 ### Verify Certificate
@@ -93,7 +93,7 @@ cat > ~/.pilot/certificates/issued/cert-$CERT_ID.json <<EOF
 }
 EOF
 
-pilotctl send-file "$SUBJECT" ~/.pilot/certificates/issued/cert-$CERT_ID.json
+pilotctl --json send-file "$SUBJECT" ~/.pilot/certificates/issued/cert-$CERT_ID.json
 ```
 
 ## Dependencies

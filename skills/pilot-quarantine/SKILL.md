@@ -63,7 +63,7 @@ QFILE=~/.pilot/quarantine/active/$QUARANTINE_ID.json
 AGENT=$(jq -r '.agent' "$QFILE")
 
 mv "$QFILE" ~/.pilot/quarantine/resolved/
-pilotctl handshake "$AGENT" "Quarantine released"
+pilotctl --json handshake "$AGENT" "Quarantine released"
 ```
 
 ### Enforce Quarantine

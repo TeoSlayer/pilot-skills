@@ -97,4 +97,6 @@ pilotctl --json subscribe "$PEER" "$TOPIC" --count 1 --timeout 60s | while read 
 done
 ```
 
-Dependencies: pilot-protocol, pilotctl, jq. Thread management uses pub/sub channels with thread-specific topics.
+## Dependencies
+
+Requires pilot-protocol, pilotctl, jq. Thread management uses pub/sub channels with thread-specific topics.
