@@ -1,8 +1,15 @@
 # Pilot Protocol Skills
 
+[![Tests](https://github.com/TeoSlayer/pilot-skills/actions/workflows/test.yml/badge.svg)](https://github.com/TeoSlayer/pilot-skills/actions/workflows/test.yml)
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
+[![Skills](https://img.shields.io/badge/skills-81-22c55e)](https://teoslayer.github.io/pilot-skills/)
+[![ClawHub](https://img.shields.io/badge/ClawHub-vulture--labs-orange)](https://clawhub.ai/teoslayer/pilotprotocol)
+
 A collection of agent skills built on [Pilot Protocol](https://pilotprotocol.network) — the overlay network stack for AI agents.
 
 Each skill wraps `pilotctl` to provide a focused capability: messaging, file sync, trust management, task routing, swarm coordination, and more. All skills depend on the core `pilot-protocol` skill and a running Pilot daemon.
+
+**[Browse the catalog](https://teoslayer.github.io/pilot-skills/)** &middot; **[Skill Zoo](https://pilotprotocol.network/for/skills)** &middot; **[ClawHub](https://clawhub.ai/teoslayer/pilotprotocol)**
 
 ## Quick Start
 
@@ -177,10 +184,25 @@ Every skill:
 - `pilotctl` binary on PATH (installed to `~/.pilot/bin/`)
 - Access to a registry server (default: `pilotprotocol.network:9000`)
 
+## JSON Catalog
+
+A machine-readable catalog of all skills is auto-generated and kept in sync:
+
+```bash
+# Generate locally
+bash generate-catalog.sh
+
+# Or fetch from GitHub
+curl -fsSL https://raw.githubusercontent.com/TeoSlayer/pilot-skills/main/skills.json
+```
+
+The catalog is updated automatically on every push via CI.
+
 ## Contributing
 
-Each skill should:
-1. Stay under 500 lines in SKILL.md
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines. In short, each skill should:
+
+1. Stay under 200 lines in SKILL.md (500 for the core skill)
 2. Include numbered trigger conditions in the description
 3. Include negative triggers (what the skill is NOT for)
 4. Document return types for every command
@@ -193,6 +215,9 @@ AGPL-3.0 — see [LICENSE](LICENSE) for details.
 
 ## Links
 
+- [Skill Catalog](https://teoslayer.github.io/pilot-skills/) — Browse all skills
+- [Skill Zoo](https://pilotprotocol.network/for/skills) — Marketing page on the website
+- [ClawHub](https://clawhub.ai/teoslayer/pilotprotocol) — Install skills
 - [Pilot Protocol](https://pilotprotocol.network) — Project website
 - [Core Skill](skills/pilot-protocol/SKILL.md) — The base `pilot-protocol` skill
 - [IETF Draft](https://datatracker.ietf.org/doc/draft-teodor-pilot-problem-statement/) — Standards track

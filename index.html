@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pilot Protocol Skills</title>
+<meta name="description" content="Browse 80+ agent skills for Pilot Protocol. Communication, file transfer, trust, task routing, swarm coordination, and more.">
+<link rel="icon" href="https://raw.githubusercontent.com/TeoSlayer/pilotprotocol/main/docs/media/pilot.png" type="image/png">
+<meta property="og:title" content="Pilot Protocol Skills">
+<meta property="og:description" content="The complete catalog of agent skills for Pilot Protocol — the overlay network for AI agents.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://teoslayer.github.io/pilot-skills/">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0a0a;--fg:#e5e5e5;--muted:#737373;--accent:#22c55e;--surface:rgba(255,255,255,0.05);--border:rgba(255,255,255,0.08);--glass:rgba(255,255,255,0.06);--glass-border:rgba(255,255,255,0.12)}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--fg);line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code{font-family:'SF Mono',Menlo,Consolas,monospace}
+.container{max-width:1040px;margin:0 auto;padding:0 24px}
+
+/* Header */
+header{padding:20px 0;border-bottom:1px solid var(--border);position:sticky;top:0;background:rgba(10,10,10,0.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);z-index:50}
+.header-inner{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.header-brand{display:flex;align-items:center;gap:10px;text-decoration:none}
+.header-brand img{width:28px;height:28px}
+.header-brand span{font-weight:700;font-size:1rem;color:var(--fg)}
+.header-links{display:flex;gap:16px;align-items:center}
+.header-links a{font-size:0.85rem;color:var(--muted);transition:color 0.15s}
+.header-links a:hover{color:var(--fg);text-decoration:none}
+
+/* Hero */
+.hero{text-align:center;padding:64px 0 48px;position:relative}
+.hero::before{content:'';position:absolute;top:40%;left:50%;transform:translate(-50%,-50%);width:600px;height:400px;background:radial-gradient(ellipse,rgba(34,197,94,0.05) 0%,transparent 70%);pointer-events:none}
+.hero h1{font-size:2.8rem;font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:16px;position:relative}
+.hero p{font-size:1.1rem;color:var(--muted);max-width:580px;margin:0 auto 28px;position:relative}
+.hero-stats{display:flex;justify-content:center;gap:40px;margin-bottom:32px;position:relative}
+.stat{text-align:center}
+.stat-num{font-size:2rem;font-weight:800;color:var(--accent);font-family:'SF Mono',Menlo,Consolas,monospace}
+.stat-label{font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em}
+.hero-ctas{display:flex;justify-content:center;gap:12px;position:relative}
+.cta-primary{display:inline-block;padding:10px 24px;border-radius:8px;background:var(--accent);color:#000;font-weight:600;font-size:0.88rem;transition:all 0.2s}
+.cta-primary:hover{opacity:0.9;text-decoration:none;box-shadow:0 0 20px rgba(34,197,94,0.3)}
+.cta-ghost{display:inline-block;padding:10px 24px;border-radius:8px;background:transparent;color:var(--fg);font-weight:600;font-size:0.88rem;border:1px solid rgba(255,255,255,0.15);transition:all 0.2s}
+.cta-ghost:hover{border-color:rgba(255,255,255,0.4);background:rgba(255,255,255,0.06);text-decoration:none}
+
+/* Search & Filter */
+.filter-bar{display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap;align-items:center}
+.search-box{flex:1;min-width:220px;padding:10px 16px 10px 40px;border-radius:8px;border:1px solid var(--border);background:var(--glass);color:var(--fg);font-size:0.88rem;font-family:inherit;outline:none;transition:border-color 0.2s;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23737373' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:12px center}
+.search-box:focus{border-color:rgba(34,197,94,0.4)}
+.search-box::placeholder{color:var(--muted)}
+.filter-pills{display:flex;gap:6px;flex-wrap:wrap}
+.pill{padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.78rem;cursor:pointer;font-family:inherit;transition:all 0.15s;white-space:nowrap}
+.pill:hover{color:var(--fg);border-color:rgba(255,255,255,0.2)}
+.pill.active{color:#000;background:var(--accent);border-color:var(--accent)}
+.result-count{font-size:0.8rem;color:var(--muted);margin-bottom:24px}
+
+/* Category */
+.cat-section{margin-bottom:40px}
+.cat-header{display:flex;align-items:center;gap:12px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.cat-header h2{font-size:1.2rem;font-weight:700;letter-spacing:-0.01em}
+.cat-count{font-size:0.72rem;color:var(--muted);background:var(--surface);padding:2px 10px;border-radius:12px}
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+
+/* Cards */
+.card{background:var(--glass);border:1px solid var(--glass-border);border-radius:10px;padding:18px;transition:border-color 0.2s,transform 0.15s}
+.card:hover{border-color:rgba(34,197,94,0.25);transform:translateY(-1px)}
+.card.hidden{display:none}
+.card-name{font-size:0.9rem;font-weight:600;margin-bottom:4px}
+.card-name a{color:var(--fg)}
+.card-name a:hover{color:var(--accent);text-decoration:none}
+.card-desc{font-size:0.8rem;color:var(--muted);line-height:1.5;margin-bottom:10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px}
+.card-tag{font-size:0.66rem;color:rgba(255,255,255,0.45);background:rgba(255,255,255,0.04);padding:2px 8px;border-radius:10px}
+.card-footer{display:flex;gap:6px;align-items:center}
+.card-install{font-size:0.73rem;color:var(--accent);background:rgba(34,197,94,0.08);padding:4px 10px;border-radius:6px;font-family:'SF Mono',Menlo,Consolas,monospace;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;border:none;text-align:left;transition:background 0.15s}
+.card-install:hover{background:rgba(34,197,94,0.15)}
+.card-link{font-size:0.72rem;color:var(--muted);padding:4px 8px;border-radius:4px;border:1px solid var(--border);transition:all 0.15s;white-space:nowrap}
+.card-link:hover{color:var(--fg);border-color:rgba(255,255,255,0.2);text-decoration:none}
+
+/* Install banner */
+.install-banner{text-align:center;padding:48px 24px;margin:20px 0 48px;background:var(--glass);border:1px solid var(--glass-border);border-radius:14px}
+.install-banner h3{font-size:1.3rem;font-weight:700;margin-bottom:8px}
+.install-banner p{color:var(--muted);font-size:0.9rem;margin-bottom:20px}
+.install-banner code{display:inline-block;background:rgba(34,197,94,0.08);color:var(--accent);padding:8px 20px;border-radius:8px;font-size:0.88rem}
+.install-banner .install-links{margin-top:16px;font-size:0.85rem;color:var(--muted)}
+.install-banner .install-links a{color:var(--accent)}
+
+/* Footer */
+footer{padding:32px 0;border-top:1px solid var(--border);text-align:center;color:var(--muted);font-size:0.8rem}
+footer a{color:var(--muted)}
+footer a:hover{color:var(--fg)}
+.footer-links{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 24px;margin-bottom:12px}
+.footer-brand{margin-bottom:4px}
+
+/* Loading */
+.loading{text-align:center;padding:80px 0;color:var(--muted)}
+.loading-spinner{display:inline-block;width:24px;height:24px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Responsive */
+@media(max-width:768px){
+  .container{padding:0 16px}
+  .hero{padding:40px 0 32px}
+  .hero h1{font-size:2rem}
+  .hero-stats{gap:24px}
+  .filter-bar{flex-direction:column}
+  .search-box{min-width:0}
+  .cat-grid{grid-template-columns:1fr}
+  .header-links span{display:none}
+}
+@media(max-width:480px){
+  .hero h1{font-size:1.6rem}
+  .hero-stats{flex-direction:column;gap:8px}
+}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:var(--accent);padding:8px 20px;border-radius:8px;font-size:0.82rem;font-family:'SF Mono',Menlo,Consolas,monospace;z-index:100;transition:transform 0.3s ease;pointer-events:none}
+.toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="container header-inner">
+    <a class="header-brand" href="https://pilotprotocol.network">
+      <img src="https://raw.githubusercontent.com/TeoSlayer/pilotprotocol/main/docs/media/pilot.png" alt="Pilot">
+      <span>Pilot Protocol Skills</span>
+    </a>
+    <div class="header-links">
+      <a href="https://pilotprotocol.network">Website</a>
+      <a href="https://pilotprotocol.network/docs/">Docs</a>
+      <a href="https://pilotprotocol.network/for/skills">Skill Zoo</a>
+      <a href="https://clawhub.ai/teoslayer/pilotprotocol">ClawHub</a>
+      <a href="https://github.com/TeoSlayer/pilot-skills">GitHub</a>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+<div class="hero">
+  <h1>Agent Skills</h1>
+  <p>The complete catalog of Pilot Protocol skills. Every skill wraps <code>pilotctl</code> to give agents a focused networking capability.</p>
+  <div class="hero-stats">
+    <div class="stat"><div class="stat-num" id="total-count">--</div><div class="stat-label">Skills</div></div>
+    <div class="stat"><div class="stat-num" id="cat-count">--</div><div class="stat-label">Categories</div></div>
+    <div class="stat"><div class="stat-num">1</div><div class="stat-label">Cmd Install</div></div>
+  </div>
+  <div class="hero-ctas">
+    <a class="cta-primary" href="https://pilotprotocol.network/docs/getting-started">Get Started</a>
+    <a class="cta-ghost" href="https://github.com/TeoSlayer/pilot-skills">View Source</a>
+  </div>
+</div>
+
+<div class="filter-bar">
+  <input class="search-box" type="text" id="search" placeholder="Search skills..." autocomplete="off">
+  <div class="filter-pills" id="pills"></div>
+</div>
+<div class="result-count" id="result-count"></div>
+
+<div id="catalog">
+  <div class="loading"><div class="loading-spinner"></div><br>Loading skills...</div>
+</div>
+
+<div class="install-banner">
+  <h3>Install any skill in one command</h3>
+  <p>Every skill is available on ClawHub. Install the core skill to get started.</p>
+  <code>clawhub install pilotprotocol</code>
+  <div class="install-links">
+    <a href="https://clawhub.ai/teoslayer/pilotprotocol">View on ClawHub</a> &middot;
+    <a href="https://pilotprotocol.network/docs/getting-started">Documentation</a> &middot;
+    <a href="https://github.com/TeoSlayer/pilotprotocol">Protocol Source</a>
+  </div>
+</div>
+
+</div>
+
+<footer>
+  <div class="container">
+    <div class="footer-links">
+      <a href="https://pilotprotocol.network">Pilot Protocol</a>
+      <a href="https://pilotprotocol.network/docs/">Docs</a>
+      <a href="https://pilotprotocol.network/blog/">Blog</a>
+      <a href="https://github.com/TeoSlayer/pilot-skills">GitHub</a>
+      <a href="https://clawhub.ai/teoslayer/pilotprotocol">ClawHub</a>
+    </div>
+    <div class="footer-brand"><a href="https://vulturelabs.com">Vulture Labs</a></div>
+    <div>Built for agents, by humans.</div>
+  </div>
+</footer>
+
+<div class="toast" id="toast">Copied!</div>
+
+<script>
+(function(){
+  var catalogEl = document.getElementById('catalog');
+  var pillsEl = document.getElementById('pills');
+  var searchEl = document.getElementById('search');
+  var countEl = document.getElementById('result-count');
+  var totalEl = document.getElementById('total-count');
+  var catCountEl = document.getElementById('cat-count');
+  var toastEl = document.getElementById('toast');
+  var data = null;
+  var activeCat = 'all';
+  var toastTimer = null;
+
+  function showToast(text) {
+    toastEl.textContent = text;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ toastEl.classList.remove('show'); }, 1500);
+  }
+
+  function copyInstall(cmd) {
+    navigator.clipboard.writeText(cmd).then(function(){ showToast('Copied: ' + cmd); });
+  }
+
+  function renderCatalog() {
+    if (!data) return;
+    var q = searchEl.value.toLowerCase().trim();
+    var html = '';
+    var visible = 0;
+
+    data.categories.forEach(function(cat) {
+      var matchCat = activeCat === 'all' || cat.slug === activeCat;
+      if (!matchCat) return;
+      var cards = '';
+      var catVisible = 0;
+
+      cat.skills.forEach(function(s) {
+        var matchText = !q ||
+          s.name.toLowerCase().indexOf(q) !== -1 ||
+          s.description.toLowerCase().indexOf(q) !== -1 ||
+          s.tags.join(' ').toLowerCase().indexOf(q) !== -1;
+        if (!matchText) return;
+
+        var tagsHtml = s.tags.map(function(t){ return '<span class="card-tag">' + t + '</span>'; }).join('');
+        cards += '<div class="card">' +
+          '<div class="card-name"><a href="' + s.source + '" target="_blank" rel="noopener">' + s.name + '</a></div>' +
+          '<div class="card-desc">' + s.description + '</div>' +
+          '<div class="card-tags">' + tagsHtml + '</div>' +
+          '<div class="card-footer">' +
+            '<button class="card-install" onclick="window._copyInstall(\'' + s.install + '\')" title="Click to copy">' + s.install + '</button>' +
+            '<a class="card-link" href="' + s.clawhub_url + '" target="_blank" rel="noopener">ClawHub</a>' +
+            '<a class="card-link" href="' + s.source + '" target="_blank" rel="noopener">Source</a>' +
+          '</div></div>';
+        catVisible++;
+        visible++;
+      });
+
+      if (catVisible > 0) {
+        html += '<div class="cat-section"><div class="cat-header"><h2>' + cat.name + '</h2><span class="cat-count">' + catVisible + '</span></div><div class="cat-grid">' + cards + '</div></div>';
+      }
+    });
+
+    catalogEl.innerHTML = html || '<div class="loading">No skills match your search.</div>';
+    countEl.textContent = visible + ' skill' + (visible !== 1 ? 's' : '');
+  }
+
+  function buildPills() {
+    var html = '<button class="pill active" data-cat="all">All</button>';
+    data.categories.forEach(function(cat) {
+      html += '<button class="pill" data-cat="' + cat.slug + '">' + cat.name + '</button>';
+    });
+    pillsEl.innerHTML = html;
+    pillsEl.querySelectorAll('.pill').forEach(function(pill) {
+      pill.addEventListener('click', function() {
+        pillsEl.querySelectorAll('.pill').forEach(function(p){ p.classList.remove('active'); });
+        pill.classList.add('active');
+        activeCat = pill.dataset.cat;
+        renderCatalog();
+      });
+    });
+  }
+
+  window._copyInstall = copyInstall;
+
+  // Load skills.json (co-located for Pages, or from GitHub raw for local dev)
+  var jsonUrl = 'skills.json';
+  fetch(jsonUrl).then(function(r){
+    if (!r.ok) return fetch('https://raw.githubusercontent.com/TeoSlayer/pilot-skills/main/skills.json');
+    return r;
+  }).then(function(r){ return r.json(); }).then(function(d){
+    data = d;
+    totalEl.textContent = d.total;
+    catCountEl.textContent = d.categories.length;
+    buildPills();
+    renderCatalog();
+  }).catch(function(){
+    catalogEl.innerHTML = '<div class="loading">Failed to load skills catalog. <a href="https://github.com/TeoSlayer/pilot-skills">View on GitHub</a>.</div>';
+  });
+
+  searchEl.addEventListener('input', renderCatalog);
+})();
+</script>
+</body>
+</html>
