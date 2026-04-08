@@ -1,0 +1,72 @@
+name: Publish to ClawHub
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to publish (e.g. 1.0.0)"
+        required: true
+      dry_run:
+        description: "Dry run (no actual publish)"
+        type: boolean
+        default: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run skill tests
+        run: bash test-skills.sh
+
+  publish:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ClawHub CLI
+        run: |
+          curl -fsSL https://clawhub.com/install.sh | sh
+          echo "$HOME/.clawhub/bin" >> "$GITHUB_PATH"
+
+      - name: Authenticate
+        env:
+          CLAWHUB_TOKEN: ${{ secrets.CLAWHUB_TOKEN }}
+        run: clawhub login --token "$CLAWHUB_TOKEN"
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            VERSION="${{ github.event.release.tag_name }}"
+            VERSION="${VERSION#v}"
+          else
+            VERSION="${{ inputs.version }}"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Publish skills
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          DRY_RUN="${{ inputs.dry_run || 'false' }}"
+          FLAGS=""
+          [ "$DRY_RUN" = "true" ] && FLAGS="--dry-run"
+
+          FAILED=0
+          for skill_dir in skills/*/; do
+            SKILL_NAME=$(basename "$skill_dir")
+            echo "Publishing $SKILL_NAME@$VERSION..."
+            if ! skill publish "$skill_dir" --version "$VERSION" $FLAGS; then
+              echo "FAILED: $SKILL_NAME"
+              FAILED=$((FAILED + 1))
+            fi
+          done
+
+          if [ "$FAILED" -gt 0 ]; then
+            echo "$FAILED skill(s) failed to publish"
+            exit 1
+          fi
+          echo "All skills published successfully"
