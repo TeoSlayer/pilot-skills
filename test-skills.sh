@@ -73,7 +73,7 @@ for skill_file in "$SKILLS_DIR"/*/SKILL.md; do
     ERRORS+=("$skill_name: name='$yaml_name' doesn't match directory")
   fi
 
-  ((T1_PASS++))
+  T1_PASS=$((T1_PASS + 1))
 done
 echo "  Frontmatter: $T1_PASS/$SKILL_COUNT passed"
 
@@ -92,12 +92,12 @@ for skill_file in "$SKILLS_DIR"/*/SKILL.md; do
     sed 's/pilotctl[[:space:]]*\(--json[[:space:]]*\)\{0,1\}//' | sort -u)
 
   for cmd in $commands; do
-    ((CMD_TOTAL++))
+    CMD_TOTAL=$((CMD_TOTAL + 1))
     if is_valid_command "$cmd"; then
-      ((CMD_PASS++))
+      CMD_PASS=$((CMD_PASS + 1))
     else
       ERRORS+=("$skill_name: Unknown command 'pilotctl $cmd'")
-      ((CMD_FAIL++))
+      CMD_FAIL=$((CMD_FAIL + 1))
     fi
   done
 done
@@ -122,7 +122,7 @@ for skill_file in "$SKILLS_DIR"/*/SKILL.md; do
     while IFS= read -r line; do
       linenum=$(echo "$line" | cut -d: -f1)
       ERRORS+=("$skill_name:$linenum: Missing --json flag")
-      ((JSON_ISSUES++))
+      JSON_ISSUES=$((JSON_ISSUES + 1))
     done <<< "$bad_calls"
   fi
 done
@@ -142,7 +142,7 @@ for skill_file in "$SKILLS_DIR"/*/SKILL.md; do
 
   if [ "$lines" -gt "$max" ]; then
     ERRORS+=("$skill_name: $lines lines (max $max)")
-    ((SIZE_WARN++))
+    SIZE_WARN=$((SIZE_WARN + 1))
   fi
 done
 echo "  Oversized: $SIZE_WARN"
@@ -159,7 +159,7 @@ for skill_file in "$SKILLS_DIR"/*/SKILL.md; do
 
   if ! grep -qi '## *depend' "$skill_file" 2>/dev/null; then
     ERRORS+=("$skill_name: Missing ## Dependencies section")
-    ((DEP_FAIL++))
+    DEP_FAIL=$((DEP_FAIL + 1))
   fi
 done
 echo "  Missing: $DEP_FAIL"
@@ -175,7 +175,7 @@ for skill_file in "$SKILLS_DIR"/*/SKILL.md; do
 
   if ! grep -qi '## *workflow' "$skill_file" 2>/dev/null; then
     ERRORS+=("$skill_name: Missing ## Workflow section")
-    ((WF_FAIL++))
+    WF_FAIL=$((WF_FAIL + 1))
   fi
 done
 echo "  Missing: $WF_FAIL"
