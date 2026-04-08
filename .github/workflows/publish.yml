@@ -27,10 +27,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
       - name: Install ClawHub CLI
-        run: |
-          curl -fsSL https://clawhub.com/install.sh | sh
-          echo "$HOME/.clawhub/bin" >> "$GITHUB_PATH"
+        run: npm install -g clawhub
 
       - name: Authenticate
         env:
@@ -59,7 +61,7 @@ jobs:
           for skill_dir in skills/*/; do
             SKILL_NAME=$(basename "$skill_dir")
             echo "Publishing $SKILL_NAME@$VERSION..."
-            if ! skill publish "$skill_dir" --version "$VERSION" $FLAGS; then
+            if ! clawhub publish "$skill_dir" --version "$VERSION" $FLAGS; then
               echo "FAILED: $SKILL_NAME"
               FAILED=$((FAILED + 1))
             fi
