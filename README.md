@@ -141,13 +141,27 @@ clawhub install pilot-chat
 
 ## Architecture
 
-All skills follow the same pattern:
+The core skill includes detailed reference documentation:
+
+```
+skills/pilot-protocol/
+  SKILL.md              # Core skill (< 500 lines)
+  references/
+    COMMUNICATION.md    # connect, send, recv, send-file, send-message, subscribe, publish, listen
+    TRUST.md            # handshake, pending, approve, reject, trust, untrust
+    TASK-SUBMIT.md      # Full task lifecycle, polo score formula, workflow examples
+    GATEWAY.md          # gateway start/stop/map/unmap/list + example
+    WEBHOOKS.md         # Event types table, payload format, set/clear
+    DIAGNOSTICS.md      # ping, traceroute, bench, peers, connections, disconnect
+    REGISTRY.md         # register, lookup, deregister, rotate-key
+    MAILBOX.md          # received, inbox
+```
+
+All derivative skills follow the same pattern:
 
 ```
 skills/<skill-name>/
   SKILL.md          # Skill manifest (YAML frontmatter + instructions)
-  references/       # Optional detailed documentation
-  scripts/          # Optional helper scripts
 ```
 
 Every skill:
@@ -180,6 +194,6 @@ AGPL-3.0 — see [LICENSE](LICENSE) for details.
 ## Links
 
 - [Pilot Protocol](https://pilotprotocol.network) — Project website
-- [Core Skill](https://github.com/TeoSlayer/pilotprotocol/blob/main/docs/SKILLS.md) — The base `pilot-protocol` skill
+- [Core Skill](skills/pilot-protocol/SKILL.md) — The base `pilot-protocol` skill
 - [IETF Draft](https://datatracker.ietf.org/doc/draft-teodor-pilot-problem-statement/) — Standards track
 - [Whitepaper](https://pilotprotocol.network/whitepaper.pdf) — Technical specification
