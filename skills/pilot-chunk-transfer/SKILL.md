@@ -77,7 +77,8 @@ pilotctl --json send-message "$DEST" \
 RECV_DIR="$HOME/.pilot/chunk-recv"
 mkdir -p "$RECV_DIR"
 
-pilotctl --json inbox | while read -r msg; do
+INBOX=$(pilotctl --json inbox)
+echo "$INBOX" | jq -c '.messages[]' | while read -r msg; do
   TYPE=$(echo "$msg" | jq -r '.type')
 
   case "$TYPE" in

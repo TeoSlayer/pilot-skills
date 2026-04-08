@@ -42,11 +42,11 @@ Temporary isolation system for suspicious agents with investigation workflows an
 ```bash
 AGENT="suspicious.pilot"
 QUARANTINE_ID=$(openssl rand -hex 6)
-NODE_ID=$(pilotctl --json lookup "$AGENT" | jq -r '.node_id')
+NODE_ID=$(pilotctl --json find "$AGENT" | jq -r '.node_id')
 
-pilotctl untrust "$NODE_ID"
-pilotctl --json connections | jq -r --arg h "$AGENT" '.[] | select(.remote_hostname == $h) | .conn_id' | \
-  xargs -I {} pilotctl disconnect {}
+pilotctl --json untrust "$NODE_ID"
+pilotctl --json connections | jq -r '.connections[] | select(.remote_hostname == "'"$AGENT"'") | .id' | \
+  xargs -I {} pilotctl --json disconnect {}
 ```
 
 ### List Quarantined Agents
@@ -72,8 +72,8 @@ for QFILE in ~/.pilot/quarantine/active/*.json; do
   AGENT=$(jq -r '.agent' "$QFILE")
   NODE_ID=$(jq -r '.node_id' "$QFILE")
 
-  pilotctl --json connections | jq -r --arg h "$AGENT" '.[] | select(.remote_hostname == $h) | .conn_id' | \
-    xargs -I {} pilotctl disconnect {}
+  pilotctl --json connections | jq -r '.connections[] | select(.remote_hostname == "'"$AGENT"'") | .id' | \
+    xargs -I {} pilotctl --json disconnect {}
 done
 ```
 
@@ -87,9 +87,9 @@ mkdir -p ~/.pilot/quarantine/{active,resolved}
 
 AGENT="malicious.pilot"
 QUARANTINE_ID=$(openssl rand -hex 6)
-NODE_ID=$(pilotctl --json lookup "$AGENT" | jq -r '.node_id')
+NODE_ID=$(pilotctl --json find "$AGENT" | jq -r '.node_id')
 
-pilotctl untrust "$NODE_ID"
+pilotctl --json untrust "$NODE_ID"
 
 cat > ~/.pilot/quarantine/active/$QUARANTINE_ID.json <<EOF
 {

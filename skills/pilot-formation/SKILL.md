@@ -40,11 +40,12 @@ Deploy structured network topologies with automatic peer handshaking and trust e
 
 **Deploy star (hub connects to all spokes):**
 ```bash
-WORKERS=$(pilotctl --json peers --search "role:worker" | jq -r '.[].address')
+WORKERS=$(pilotctl --json peers --search "role:worker" | jq -r '.[].hostname')
 for worker in $WORKERS; do
   pilotctl --json handshake "$worker" "Forming star topology"
   sleep 1
-  pilotctl --json approve "$worker"
+  NODE_ID=$(pilotctl --json pending | jq -r '.pending[] | select(.hostname == "'"$worker"'") | .node_id')
+  [ -n "$NODE_ID" ] && pilotctl --json approve "$NODE_ID"
 done
 ```
 
@@ -91,7 +92,8 @@ for worker in $SWARM_MEMBERS; do
     echo "Connecting to spoke: $worker"
     pilotctl --json handshake "$worker" "Forming star topology"
     sleep 1
-    pilotctl --json approve "$worker"
+    NODE_ID=$(pilotctl --json pending | jq -r '.pending[] | select(.hostname == "'"$worker"'") | .node_id')
+    [ -n "$NODE_ID" ] && pilotctl --json approve "$NODE_ID"
   fi
 done
 

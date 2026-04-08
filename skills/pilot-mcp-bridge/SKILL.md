@@ -60,7 +60,7 @@ Pub/Sub:
 
 Gateway:
 - `pilot_gateway_start`: Run `pilotctl --json gateway start`
-- `pilot_gateway_map`: Run `pilotctl --json gateway map <pilot-addr>`
+- `pilot_gateway_map`: Run `pilotctl --json gateway map <hostname> <local-ip>`
 
 ## Workflow Example
 

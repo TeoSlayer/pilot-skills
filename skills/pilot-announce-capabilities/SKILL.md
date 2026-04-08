@@ -113,7 +113,7 @@ Advertise AI inference capability:
 
 ```bash
 # Set basic capability tags
-pilotctl --json set-tags ai inference llm gpu
+pilotctl --json set-tags ai inference llm
 
 # Create detailed manifest
 cat > capability_manifest.json <<EOF

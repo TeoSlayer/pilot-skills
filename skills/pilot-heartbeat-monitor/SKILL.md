@@ -62,7 +62,7 @@ FAILED_AGENTS=$(pilotctl --json inbox \
 for agent in $FAILED_AGENTS; do
   AGENT_ADDR=$(pilotctl --json peers | jq -r '.[] | select(.node_id == "'$agent'") | .address')
 
-  PING_RESULT=$(pilotctl --json ping "$AGENT_ADDR" --count 3 --timeout 2000)
+  PING_RESULT=$(pilotctl --json ping "$AGENT_ADDR" --count 3 --timeout 2s)
   LOSS=$(echo "$PING_RESULT" | jq -r '.packet_loss_pct')
 
   if [ "$LOSS" = "100" ]; then
