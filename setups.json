@@ -31,7 +31,9 @@
           "setup_commands": [
             "clawhub install pilot-health pilot-alert pilot-metrics",
             "pilotctl set-hostname <your-prefix>-web-monitor",
-            "pilotctl set-visibility public"
+            "",
+            "# Establish trust with peers (both sides must handshake)",
+            "pilotctl handshake <your-prefix>-alert-hub \"setup: fleet-health-monitor\""
           ]
         },
         {
@@ -47,7 +49,9 @@
           "setup_commands": [
             "clawhub install pilot-health pilot-alert pilot-metrics",
             "pilotctl set-hostname <your-prefix>-db-monitor",
-            "pilotctl set-visibility public"
+            "",
+            "# Establish trust with peers (both sides must handshake)",
+            "pilotctl handshake <your-prefix>-alert-hub \"setup: fleet-health-monitor\""
           ]
         },
         {
@@ -64,7 +68,10 @@
           "setup_commands": [
             "clawhub install pilot-webhook-bridge pilot-alert pilot-event-filter pilot-slack-bridge",
             "pilotctl set-hostname <your-prefix>-alert-hub",
-            "pilotctl set-visibility public"
+            "",
+            "# Establish trust with peers (both sides must handshake)",
+            "pilotctl handshake <your-prefix>-db-monitor \"setup: fleet-health-monitor\"",
+            "pilotctl handshake <your-prefix>-web-monitor \"setup: fleet-health-monitor\""
           ]
         }
       ],
@@ -100,7 +107,23 @@
         "",
         "# On server 3 (alert aggregator)",
         "clawhub install pilot-webhook-bridge pilot-alert pilot-event-filter pilot-slack-bridge",
-        "pilotctl set-hostname <your-prefix>-alert-hub"
+        "pilotctl set-hostname <your-prefix>-alert-hub",
+        "",
+        "# Establish trust between agents",
+        "# Agents are private by default. Each pair that communicates",
+        "# must exchange handshakes. When both sides send a handshake,",
+        "# trust is auto-approved \u2014 no manual step needed.",
+        "# On alert-hub:",
+        "pilotctl handshake <your-prefix>-db-monitor \"setup: fleet-health-monitor\"",
+        "# On db-monitor:",
+        "pilotctl handshake <your-prefix>-alert-hub \"setup: fleet-health-monitor\"",
+        "# On alert-hub:",
+        "pilotctl handshake <your-prefix>-web-monitor \"setup: fleet-health-monitor\"",
+        "# On web-monitor:",
+        "pilotctl handshake <your-prefix>-alert-hub \"setup: fleet-health-monitor\"",
+        "",
+        "# Verify trust is established",
+        "pilotctl trust"
       ]
     },
     {
@@ -132,7 +155,10 @@
           "setup_commands": [
             "clawhub install pilot-task-router pilot-share pilot-github-bridge",
             "pilotctl set-hostname <your-prefix>-ci-builder",
-            "pilotctl set-visibility public"
+            "",
+            "# Establish trust with peers (both sides must handshake)",
+            "pilotctl handshake <your-prefix>-ci-deployer \"setup: ci-cd-pipeline\"",
+            "pilotctl handshake <your-prefix>-ci-tester \"setup: ci-cd-pipeline\""
           ]
         },
         {
@@ -148,7 +174,10 @@
           "setup_commands": [
             "clawhub install pilot-task-router pilot-share pilot-audit-log",
             "pilotctl set-hostname <your-prefix>-ci-tester",
-            "pilotctl set-visibility public"
+            "",
+            "# Establish trust with peers (both sides must handshake)",
+            "pilotctl handshake <your-prefix>-ci-builder \"setup: ci-cd-pipeline\"",
+            "pilotctl handshake <your-prefix>-ci-deployer \"setup: ci-cd-pipeline\""
           ]
         },
         {
@@ -165,7 +194,10 @@
           "setup_commands": [
             "clawhub install pilot-task-router pilot-share pilot-webhook-bridge pilot-receipt",
             "pilotctl set-hostname <your-prefix>-ci-deployer",
-            "pilotctl set-visibility public"
+            "",
+            "# Establish trust with peers (both sides must handshake)",
+            "pilotctl handshake <your-prefix>-ci-builder \"setup: ci-cd-pipeline\"",
+            "pilotctl handshake <your-prefix>-ci-tester \"setup: ci-cd-pipeline\""
           ]
         }
       ],
@@ -201,7 +233,27 @@
         "",
         "# On deploy server",
         "clawhub install pilot-task-router pilot-share pilot-webhook-bridge pilot-receipt",
-        "pilotctl set-hostname <your-prefix>-ci-deployer"
+        "pilotctl set-hostname <your-prefix>-ci-deployer",
+        "",
+        "# Establish trust between agents",
+        "# Agents are private by default. Each pair that communicates",
+        "# must exchange handshakes. When both sides send a handshake,",
+        "# trust is auto-approved \u2014 no manual step needed.",
+        "# On ci-builder:",
+        "pilotctl handshake <your-prefix>-ci-deployer \"setup: ci-cd-pipeline\"",
+        "# On ci-deployer:",
+        "pilotctl handshake <your-prefix>-ci-builder \"setup: ci-cd-pipeline\"",
+        "# On ci-builder:",
+        "pilotctl handshake <your-prefix>-ci-tester \"setup: ci-cd-pipeline\"",
+        "# On ci-tester:",
+        "pilotctl handshake <your-prefix>-ci-builder \"setup: ci-cd-pipeline\"",
+        "# On ci-deployer:",
+        "pilotctl handshake <your-prefix>-ci-tester \"setup: ci-cd-pipeline\"",
+        "# On ci-tester:",
+        "pilotctl handshake <your-prefix>-ci-deployer \"setup: ci-cd-pipeline\"",
+        "",
+        "# Verify trust is established",
+        "pilotctl trust"
       ]
     },
     {
@@ -236,7 +288,9 @@
           "setup_commands": [
             "clawhub install pilot-dataset pilot-share pilot-task-chain",
             "pilotctl set-hostname <your-prefix>-data-prep",
-            "pilotctl set-visibility public"
+            "",
+            "# Establish trust with peers (both sides must handshake)",
+            "pilotctl handshake <your-prefix>-trainer \"setup: ml-training-pipeline\""
           ]
         },
         {
@@ -253,7 +307,10 @@
           "setup_commands": [
             "clawhub install pilot-dataset pilot-model-share pilot-metrics pilot-task-chain",
             "pilotctl set-hostname <your-prefix>-trainer",
-            "pilotctl set-visibility public"
+            "",
+            "# Establish trust with peers (both sides must handshake)",
+            "pilotctl handshake <your-prefix>-data-prep \"setup: ml-training-pipeline\"",
+            "pilotctl handshake <your-prefix>-evaluator \"setup: ml-training-pipeline\""
           ]
         },
         {
@@ -270,7 +327,10 @@
           "setup_commands": [
             "clawhub install pilot-model-share pilot-metrics pilot-review pilot-task-chain",
             "pilotctl set-hostname <your-prefix>-evaluator",
-            "pilotctl set-visibility public"
+            "",
+            "# Establish trust with peers (both sides must handshake)",
+            "pilotctl handshake <your-prefix>-serving \"setup: ml-training-pipeline\"",
+            "pilotctl handshake <your-prefix>-trainer \"setup: ml-training-pipeline\""
           ]
         },
         {
@@ -287,7 +347,9 @@
           "setup_commands": [
             "clawhub install pilot-model-share pilot-health pilot-webhook-bridge pilot-load-balancer",
             "pilotctl set-hostname <your-prefix>-serving",
-            "pilotctl set-visibility public"
+            "",
+            "# Establish trust with peers (both sides must handshake)",
+            "pilotctl handshake <your-prefix>-evaluator \"setup: ml-training-pipeline\""
           ]
         }
       ],
@@ -333,7 +395,27 @@
         "",
         "# On serving node",
         "clawhub install pilot-model-share pilot-health pilot-webhook-bridge pilot-load-balancer",
-        "pilotctl set-hostname <your-prefix>-serving"
+        "pilotctl set-hostname <your-prefix>-serving",
+        "",
+        "# Establish trust between agents",
+        "# Agents are private by default. Each pair that communicates",
+        "# must exchange handshakes. When both sides send a handshake,",
+        "# trust is auto-approved \u2014 no manual step needed.",
+        "# On data-prep:",
+        "pilotctl handshake <your-prefix>-trainer \"setup: ml-training-pipeline\"",
+        "# On trainer:",
+        "pilotctl handshake <your-prefix>-data-prep \"setup: ml-training-pipeline\"",
+        "# On evaluator:",
+        "pilotctl handshake <your-prefix>-serving \"setup: ml-training-pipeline\"",
+        "# On serving:",
+        "pilotctl handshake <your-prefix>-evaluator \"setup: ml-training-pipeline\"",
+        "# On evaluator:",
+        "pilotctl handshake <your-prefix>-trainer \"setup: ml-training-pipeline\"",
+        "# On trainer:",
+        "pilotctl handshake <your-prefix>-evaluator \"setup: ml-training-pipeline\"",
+        "",
+        "# Verify trust is established",
+        "pilotctl trust"
       ]
     },
     {
@@ -364,7 +446,11 @@
           "setup_commands": [
             "clawhub install pilot-sync pilot-share pilot-broadcast",
             "pilotctl set-hostname <your-prefix>-origin",
-            "pilotctl set-visibility public"
+            "",
+            "# Establish trust with peers (both sides must handshake)",
+            "pilotctl handshake <your-prefix>-edge-asia \"setup: multi-region-content-sync\"",
+            "pilotctl handshake <your-prefix>-edge-eu \"setup: multi-region-content-sync\"",
+            "pilotctl handshake <your-prefix>-edge-us \"setup: multi-region-content-sync\""
           ]
         },
         {
@@ -381,7 +467,9 @@
           "setup_commands": [
             "clawhub install pilot-sync pilot-share pilot-health pilot-heartbeat-monitor",
             "pilotctl set-hostname <your-prefix>-edge-us",
-            "pilotctl set-visibility public"
+            "",
+            "# Establish trust with peers (both sides must handshake)",
+            "pilotctl handshake <your-prefix>-origin \"setup: multi-region-content-sync\""
           ]
         },
         {
@@ -398,7 +486,9 @@
           "setup_commands": [
             "clawhub install pilot-sync pilot-share pilot-health pilot-heartbeat-monitor",
             "pilotctl set-hostname <your-prefix>-edge-eu",
-            "pilotctl set-visibility public"
+            "",
+            "# Establish trust with peers (both sides must handshake)",
+            "pilotctl handshake <your-prefix>-origin \"setup: multi-region-content-sync\""
           ]
         },
         {
@@ -415,7 +505,9 @@
           "setup_commands": [
             "clawhub install pilot-sync pilot-share pilot-health pilot-heartbeat-monitor",
             "pilotctl set-hostname <your-prefix>-edge-asia",
-            "pilotctl set-visibility public"
+            "",
+            "# Establish trust with peers (both sides must handshake)",
+            "pilotctl handshake <your-prefix>-origin \"setup: multi-region-content-sync\""
           ]
         }
       ],
@@ -473,7 +565,27 @@
         "",
         "# On Asia edge server",
         "clawhub install pilot-sync pilot-share pilot-health pilot-heartbeat-monitor",
-        "pilotctl set-hostname <your-prefix>-edge-asia"
+        "pilotctl set-hostname <your-prefix>-edge-asia",
+        "",
+        "# Establish trust between agents",
+        "# Agents are private by default. Each pair that communicates",
+        "# must exchange handshakes. When both sides send a handshake,",
+        "# trust is auto-approved \u2014 no manual step needed.",
+        "# On edge-asia:",
+        "pilotctl handshake <your-prefix>-origin \"setup: multi-region-content-sync\"",
+        "# On origin:",
+        "pilotctl handshake <your-prefix>-edge-asia \"setup: multi-region-content-sync\"",
+        "# On edge-eu:",
+        "pilotctl handshake <your-prefix>-origin \"setup: multi-region-content-sync\"",
+        "# On origin:",
+        "pilotctl handshake <your-prefix>-edge-eu \"setup: multi-region-content-sync\"",
+        "# On edge-us:",
+        "pilotctl handshake <your-prefix>-origin \"setup: multi-region-content-sync\"",
+        "# On origin:",
+        "pilotctl handshake <your-prefix>-edge-us \"setup: multi-region-content-sync\"",
+        "",
+        "# Verify trust is established",
+        "pilotctl trust"
       ]
     },
     {
@@ -513,7 +625,9 @@
           "setup_commands": [
             "clawhub install pilot-watchdog pilot-alert pilot-audit-log pilot-metrics",
             "pilotctl set-hostname <your-prefix>-detector",
-            "pilotctl set-visibility public"
+            "",
+            "# Establish trust with peers (both sides must handshake)",
+            "pilotctl handshake <your-prefix>-triage \"setup: incident-response\""
           ]
         },
         {
@@ -530,7 +644,11 @@
           "setup_commands": [
             "clawhub install pilot-alert pilot-event-filter pilot-priority-queue pilot-sla",
             "pilotctl set-hostname <your-prefix>-triage",
-            "pilotctl set-visibility public"
+            "",
+            "# Establish trust with peers (both sides must handshake)",
+            "pilotctl handshake <your-prefix>-detector \"setup: incident-response\"",
+            "pilotctl handshake <your-prefix>-notifier \"setup: incident-response\"",
+            "pilotctl handshake <your-prefix>-remediator \"setup: incident-response\""
           ]
         },
         {
@@ -547,7 +665,10 @@
           "setup_commands": [
             "clawhub install pilot-task-router pilot-cron pilot-audit-log pilot-quarantine",
             "pilotctl set-hostname <your-prefix>-remediator",
-            "pilotctl set-visibility public"
+            "",
+            "# Establish trust with peers (both sides must handshake)",
+            "pilotctl handshake <your-prefix>-notifier \"setup: incident-response\"",
+            "pilotctl handshake <your-prefix>-triage \"setup: incident-response\""
           ]
         },
         {
@@ -564,7 +685,10 @@
           "setup_commands": [
             "clawhub install pilot-slack-bridge pilot-email-bridge pilot-webhook-bridge pilot-audit-log",
             "pilotctl set-hostname <your-prefix>-notifier",
-            "pilotctl set-visibility public"
+            "",
+            "# Establish trust with peers (both sides must handshake)",
+            "pilotctl handshake <your-prefix>-remediator \"setup: incident-response\"",
+            "pilotctl handshake <your-prefix>-triage \"setup: incident-response\""
           ]
         }
       ],
@@ -610,7 +734,31 @@
         "",
         "# On notification server",
         "clawhub install pilot-slack-bridge pilot-email-bridge pilot-webhook-bridge pilot-audit-log",
-        "pilotctl set-hostname <your-prefix>-notifier"
+        "pilotctl set-hostname <your-prefix>-notifier",
+        "",
+        "# Establish trust between agents",
+        "# Agents are private by default. Each pair that communicates",
+        "# must exchange handshakes. When both sides send a handshake,",
+        "# trust is auto-approved \u2014 no manual step needed.",
+        "# On detector:",
+        "pilotctl handshake <your-prefix>-triage \"setup: incident-response\"",
+        "# On triage:",
+        "pilotctl handshake <your-prefix>-detector \"setup: incident-response\"",
+        "# On notifier:",
+        "pilotctl handshake <your-prefix>-remediator \"setup: incident-response\"",
+        "# On remediator:",
+        "pilotctl handshake <your-prefix>-notifier \"setup: incident-response\"",
+        "# On notifier:",
+        "pilotctl handshake <your-prefix>-triage \"setup: incident-response\"",
+        "# On triage:",
+        "pilotctl handshake <your-prefix>-notifier \"setup: incident-response\"",
+        "# On remediator:",
+        "pilotctl handshake <your-prefix>-triage \"setup: incident-response\"",
+        "# On triage:",
+        "pilotctl handshake <your-prefix>-remediator \"setup: incident-response\"",
+        "",
+        "# Verify trust is established",
+        "pilotctl trust"
       ]
     },
     {
@@ -645,7 +793,9 @@
           "setup_commands": [
             "clawhub install pilot-github-bridge pilot-review pilot-chat",
             "pilotctl set-hostname <your-prefix>-reviewer",
-            "pilotctl set-visibility public"
+            "",
+            "# Establish trust with peers (both sides must handshake)",
+            "pilotctl handshake <your-prefix>-coordinator \"setup: dev-team-assistants\""
           ]
         },
         {
@@ -661,7 +811,9 @@
           "setup_commands": [
             "clawhub install pilot-github-bridge pilot-share pilot-task-router",
             "pilotctl set-hostname <your-prefix>-doc-writer",
-            "pilotctl set-visibility public"
+            "",
+            "# Establish trust with peers (both sides must handshake)",
+            "pilotctl handshake <your-prefix>-coordinator \"setup: dev-team-assistants\""
           ]
         },
         {
@@ -677,7 +829,9 @@
           "setup_commands": [
             "clawhub install pilot-github-bridge pilot-task-router pilot-audit-log",
             "pilotctl set-hostname <your-prefix>-test-runner",
-            "pilotctl set-visibility public"
+            "",
+            "# Establish trust with peers (both sides must handshake)",
+            "pilotctl handshake <your-prefix>-coordinator \"setup: dev-team-assistants\""
           ]
         },
         {
@@ -694,7 +848,11 @@
           "setup_commands": [
             "clawhub install pilot-github-bridge pilot-task-chain pilot-slack-bridge pilot-broadcast",
             "pilotctl set-hostname <your-prefix>-coordinator",
-            "pilotctl set-visibility public"
+            "",
+            "# Establish trust with peers (both sides must handshake)",
+            "pilotctl handshake <your-prefix>-doc-writer \"setup: dev-team-assistants\"",
+            "pilotctl handshake <your-prefix>-reviewer \"setup: dev-team-assistants\"",
+            "pilotctl handshake <your-prefix>-test-runner \"setup: dev-team-assistants\""
           ]
         }
       ],
@@ -752,7 +910,27 @@
         "",
         "# On coordinator server",
         "clawhub install pilot-github-bridge pilot-task-chain pilot-slack-bridge pilot-broadcast",
-        "pilotctl set-hostname <your-prefix>-coordinator"
+        "pilotctl set-hostname <your-prefix>-coordinator",
+        "",
+        "# Establish trust between agents",
+        "# Agents are private by default. Each pair that communicates",
+        "# must exchange handshakes. When both sides send a handshake,",
+        "# trust is auto-approved \u2014 no manual step needed.",
+        "# On coordinator:",
+        "pilotctl handshake <your-prefix>-doc-writer \"setup: dev-team-assistants\"",
+        "# On doc-writer:",
+        "pilotctl handshake <your-prefix>-coordinator \"setup: dev-team-assistants\"",
+        "# On coordinator:",
+        "pilotctl handshake <your-prefix>-reviewer \"setup: dev-team-assistants\"",
+        "# On reviewer:",
+        "pilotctl handshake <your-prefix>-coordinator \"setup: dev-team-assistants\"",
+        "# On coordinator:",
+        "pilotctl handshake <your-prefix>-test-runner \"setup: dev-team-assistants\"",
+        "# On test-runner:",
+        "pilotctl handshake <your-prefix>-coordinator \"setup: dev-team-assistants\"",
+        "",
+        "# Verify trust is established",
+        "pilotctl trust"
       ]
     },
     {
@@ -793,7 +971,9 @@
           "setup_commands": [
             "clawhub install pilot-s3-bridge pilot-database-bridge pilot-task-chain pilot-cron",
             "pilotctl set-hostname <your-prefix>-ingest",
-            "pilotctl set-visibility public"
+            "",
+            "# Establish trust with peers (both sides must handshake)",
+            "pilotctl handshake <your-prefix>-transform \"setup: etl-data-pipeline\""
           ]
         },
         {
@@ -809,7 +989,10 @@
           "setup_commands": [
             "clawhub install pilot-task-router pilot-stream-data pilot-task-parallel",
             "pilotctl set-hostname <your-prefix>-transform",
-            "pilotctl set-visibility public"
+            "",
+            "# Establish trust with peers (both sides must handshake)",
+            "pilotctl handshake <your-prefix>-ingest \"setup: etl-data-pipeline\"",
+            "pilotctl handshake <your-prefix>-validate \"setup: etl-data-pipeline\""
           ]
         },
         {
@@ -826,7 +1009,11 @@
           "setup_commands": [
             "clawhub install pilot-task-router pilot-audit-log pilot-alert pilot-quarantine",
             "pilotctl set-hostname <your-prefix>-validate",
-            "pilotctl set-visibility public"
+            "",
+            "# Establish trust with peers (both sides must handshake)",
+            "pilotctl handshake <your-prefix>-loader \"setup: etl-data-pipeline\"",
+            "pilotctl handshake <your-prefix>-reporter \"setup: etl-data-pipeline\"",
+            "pilotctl handshake <your-prefix>-transform \"setup: etl-data-pipeline\""
           ]
         },
         {
@@ -842,7 +1029,10 @@
           "setup_commands": [
             "clawhub install pilot-database-bridge pilot-task-chain pilot-receipt",
             "pilotctl set-hostname <your-prefix>-loader",
-            "pilotctl set-visibility public"
+            "",
+            "# Establish trust with peers (both sides must handshake)",
+            "pilotctl handshake <your-prefix>-reporter \"setup: etl-data-pipeline\"",
+            "pilotctl handshake <your-prefix>-validate \"setup: etl-data-pipeline\""
           ]
         },
         {
@@ -859,7 +1049,10 @@
           "setup_commands": [
             "clawhub install pilot-webhook-bridge pilot-metrics pilot-slack-bridge pilot-cron",
             "pilotctl set-hostname <your-prefix>-reporter",
-            "pilotctl set-visibility public"
+            "",
+            "# Establish trust with peers (both sides must handshake)",
+            "pilotctl handshake <your-prefix>-loader \"setup: etl-data-pipeline\"",
+            "pilotctl handshake <your-prefix>-validate \"setup: etl-data-pipeline\""
           ]
         }
       ],
@@ -915,8 +1108,37 @@
         "",
         "# On reporting server",
         "clawhub install pilot-webhook-bridge pilot-metrics pilot-slack-bridge pilot-cron",
-        "pilotctl set-hostname <your-prefix>-reporter"
+        "pilotctl set-hostname <your-prefix>-reporter",
+        "",
+        "# Establish trust between agents",
+        "# Agents are private by default. Each pair that communicates",
+        "# must exchange handshakes. When both sides send a handshake,",
+        "# trust is auto-approved \u2014 no manual step needed.",
+        "# On ingest:",
+        "pilotctl handshake <your-prefix>-transform \"setup: etl-data-pipeline\"",
+        "# On transform:",
+        "pilotctl handshake <your-prefix>-ingest \"setup: etl-data-pipeline\"",
+        "# On loader:",
+        "pilotctl handshake <your-prefix>-reporter \"setup: etl-data-pipeline\"",
+        "# On reporter:",
+        "pilotctl handshake <your-prefix>-loader \"setup: etl-data-pipeline\"",
+        "# On loader:",
+        "pilotctl handshake <your-prefix>-validate \"setup: etl-data-pipeline\"",
+        "# On validate:",
+        "pilotctl handshake <your-prefix>-loader \"setup: etl-data-pipeline\"",
+        "# On reporter:",
+        "pilotctl handshake <your-prefix>-validate \"setup: etl-data-pipeline\"",
+        "# On validate:",
+        "pilotctl handshake <your-prefix>-reporter \"setup: etl-data-pipeline\"",
+        "# On transform:",
+        "pilotctl handshake <your-prefix>-validate \"setup: etl-data-pipeline\"",
+        "# On validate:",
+        "pilotctl handshake <your-prefix>-transform \"setup: etl-data-pipeline\"",
+        "",
+        "# Verify trust is established",
+        "pilotctl trust"
       ]
     }
-  ]
+  ],
+  "trust_note": "Agents are private by default \u2014 no one can discover or connect to your agent unless you explicitly establish mutual trust via handshakes. Each pair of agents that needs to communicate must exchange handshakes (pilotctl handshake). When both sides handshake each other, trust is auto-approved."
 }
