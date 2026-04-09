@@ -1,0 +1,722 @@
+{
+  "version": "1.0.0",
+  "total": 7,
+  "setups": [
+    {
+      "slug": "fleet-health-monitor",
+      "name": "Fleet Health Monitor",
+      "tagline": "Monitor servers, detect anomalies, alert humans",
+      "description": "Deploy monitoring agents across your fleet that continuously check service health, aggregate metrics, and route alerts to Slack or PagerDuty. Each server runs its own monitor agent while a central hub filters noise and dispatches notifications.",
+      "difficulty": "beginner",
+      "agent_count": 3,
+      "skills_used": ["pilot-health", "pilot-alert", "pilot-metrics", "pilot-webhook-bridge", "pilot-event-filter", "pilot-slack-bridge"],
+      "agents": [
+        {
+          "id": "web-monitor",
+          "hostname": "web-monitor",
+          "role": "Web Server Monitor",
+          "description": "Watches nginx/app health, CPU, memory, and response times. Emits alert events when thresholds are breached.",
+          "skills": ["pilot-health", "pilot-alert", "pilot-metrics"],
+          "setup_commands": [
+            "clawhub install pilot-health pilot-alert pilot-metrics",
+            "pilotctl set-hostname web-monitor",
+            "pilotctl set-visibility public"
+          ]
+        },
+        {
+          "id": "db-monitor",
+          "hostname": "db-monitor",
+          "role": "Database Monitor",
+          "description": "Monitors database connections, query latency, replication lag, and disk usage. Emits alerts on anomalies.",
+          "skills": ["pilot-health", "pilot-alert", "pilot-metrics"],
+          "setup_commands": [
+            "clawhub install pilot-health pilot-alert pilot-metrics",
+            "pilotctl set-hostname db-monitor",
+            "pilotctl set-visibility public"
+          ]
+        },
+        {
+          "id": "alert-hub",
+          "hostname": "alert-hub",
+          "role": "Alert Aggregator",
+          "description": "Receives alerts from all monitors, filters duplicates and noise, then forwards critical alerts to Slack and PagerDuty via webhooks.",
+          "skills": ["pilot-webhook-bridge", "pilot-alert", "pilot-event-filter", "pilot-slack-bridge"],
+          "setup_commands": [
+            "clawhub install pilot-webhook-bridge pilot-alert pilot-event-filter pilot-slack-bridge",
+            "pilotctl set-hostname alert-hub",
+            "pilotctl set-visibility public"
+          ]
+        }
+      ],
+      "data_flows": [
+        {
+          "from": "web-monitor",
+          "to": "alert-hub",
+          "description": "Sends health check failures and metric anomalies",
+          "port": "1002"
+        },
+        {
+          "from": "db-monitor",
+          "to": "alert-hub",
+          "description": "Sends database alerts and replication warnings",
+          "port": "1002"
+        },
+        {
+          "from": "alert-hub",
+          "to": "external",
+          "description": "Forwards filtered alerts to Slack and PagerDuty",
+          "port": "443"
+        }
+      ],
+      "quick_start": [
+        "# On server 1 (web server)",
+        "clawhub install pilot-health pilot-alert pilot-metrics",
+        "pilotctl set-hostname web-monitor",
+        "",
+        "# On server 2 (database)",
+        "clawhub install pilot-health pilot-alert pilot-metrics",
+        "pilotctl set-hostname db-monitor",
+        "",
+        "# On server 3 (alert aggregator)",
+        "clawhub install pilot-webhook-bridge pilot-alert pilot-event-filter pilot-slack-bridge",
+        "pilotctl set-hostname alert-hub"
+      ]
+    },
+    {
+      "slug": "ci-cd-pipeline",
+      "name": "CI/CD Pipeline",
+      "tagline": "Build, test, and deploy with zero central server",
+      "description": "A fully decentralized CI/CD pipeline where each stage runs on a separate agent. GitHub webhooks trigger builds, artifacts flow between stages over Pilot tunnels, and deployment receipts provide an audit trail.",
+      "difficulty": "intermediate",
+      "agent_count": 3,
+      "skills_used": ["pilot-task-router", "pilot-share", "pilot-github-bridge", "pilot-audit-log", "pilot-webhook-bridge", "pilot-receipt"],
+      "agents": [
+        {
+          "id": "ci-builder",
+          "hostname": "ci-builder",
+          "role": "Build Agent",
+          "description": "Listens for GitHub push/PR webhooks, clones the repo, runs builds, and shares artifacts with the test agent.",
+          "skills": ["pilot-task-router", "pilot-share", "pilot-github-bridge"],
+          "setup_commands": [
+            "clawhub install pilot-task-router pilot-share pilot-github-bridge",
+            "pilotctl set-hostname ci-builder",
+            "pilotctl set-visibility public"
+          ]
+        },
+        {
+          "id": "ci-tester",
+          "hostname": "ci-tester",
+          "role": "Test Agent",
+          "description": "Receives build artifacts, runs test suites, and logs results. Passes successful builds to the deployer.",
+          "skills": ["pilot-task-router", "pilot-share", "pilot-audit-log"],
+          "setup_commands": [
+            "clawhub install pilot-task-router pilot-share pilot-audit-log",
+            "pilotctl set-hostname ci-tester",
+            "pilotctl set-visibility public"
+          ]
+        },
+        {
+          "id": "ci-deployer",
+          "hostname": "ci-deployer",
+          "role": "Deploy Agent",
+          "description": "Receives tested artifacts, deploys to production, sends deployment receipts, and triggers post-deploy webhooks.",
+          "skills": ["pilot-task-router", "pilot-share", "pilot-webhook-bridge", "pilot-receipt"],
+          "setup_commands": [
+            "clawhub install pilot-task-router pilot-share pilot-webhook-bridge pilot-receipt",
+            "pilotctl set-hostname ci-deployer",
+            "pilotctl set-visibility public"
+          ]
+        }
+      ],
+      "data_flows": [
+        {
+          "from": "ci-builder",
+          "to": "ci-tester",
+          "description": "Shares build artifacts and test instructions",
+          "port": "1001"
+        },
+        {
+          "from": "ci-tester",
+          "to": "ci-deployer",
+          "description": "Forwards tested artifacts with test report",
+          "port": "1001"
+        },
+        {
+          "from": "ci-deployer",
+          "to": "ci-builder",
+          "description": "Sends deployment receipt back to origin",
+          "port": "1002"
+        }
+      ],
+      "quick_start": [
+        "# On build server",
+        "clawhub install pilot-task-router pilot-share pilot-github-bridge",
+        "pilotctl set-hostname ci-builder",
+        "",
+        "# On test server",
+        "clawhub install pilot-task-router pilot-share pilot-audit-log",
+        "pilotctl set-hostname ci-tester",
+        "",
+        "# On deploy server",
+        "clawhub install pilot-task-router pilot-share pilot-webhook-bridge pilot-receipt",
+        "pilotctl set-hostname ci-deployer"
+      ]
+    },
+    {
+      "slug": "ml-training-pipeline",
+      "name": "ML Training Pipeline",
+      "tagline": "Prep data, train models, evaluate, and serve",
+      "description": "An end-to-end machine learning pipeline spanning four agents. Data preparation, model training, evaluation, and serving each run on dedicated hardware. Models and datasets flow over encrypted Pilot tunnels with automatic approval gating before production serving.",
+      "difficulty": "advanced",
+      "agent_count": 4,
+      "skills_used": ["pilot-dataset", "pilot-share", "pilot-task-chain", "pilot-model-share", "pilot-metrics", "pilot-review", "pilot-health", "pilot-webhook-bridge", "pilot-load-balancer"],
+      "agents": [
+        {
+          "id": "data-prep",
+          "hostname": "data-prep",
+          "role": "Data Preparation",
+          "description": "Cleans, validates, and transforms raw datasets. Shares processed data with the trainer via dataset transfer.",
+          "skills": ["pilot-dataset", "pilot-share", "pilot-task-chain"],
+          "setup_commands": [
+            "clawhub install pilot-dataset pilot-share pilot-task-chain",
+            "pilotctl set-hostname data-prep",
+            "pilotctl set-visibility public"
+          ]
+        },
+        {
+          "id": "trainer",
+          "hostname": "trainer",
+          "role": "Model Trainer",
+          "description": "Receives prepared datasets, runs training jobs, tracks metrics, and shares trained model artifacts with the evaluator.",
+          "skills": ["pilot-dataset", "pilot-model-share", "pilot-metrics", "pilot-task-chain"],
+          "setup_commands": [
+            "clawhub install pilot-dataset pilot-model-share pilot-metrics pilot-task-chain",
+            "pilotctl set-hostname trainer",
+            "pilotctl set-visibility public"
+          ]
+        },
+        {
+          "id": "evaluator",
+          "hostname": "evaluator",
+          "role": "Model Evaluator",
+          "description": "Scores trained models against benchmarks, compares with baselines, and gates promotion to serving via review approval.",
+          "skills": ["pilot-model-share", "pilot-metrics", "pilot-review", "pilot-task-chain"],
+          "setup_commands": [
+            "clawhub install pilot-model-share pilot-metrics pilot-review pilot-task-chain",
+            "pilotctl set-hostname evaluator",
+            "pilotctl set-visibility public"
+          ]
+        },
+        {
+          "id": "serving",
+          "hostname": "serving",
+          "role": "Model Server",
+          "description": "Loads approved models, serves inference requests, monitors health, and load-balances across replicas.",
+          "skills": ["pilot-model-share", "pilot-health", "pilot-webhook-bridge", "pilot-load-balancer"],
+          "setup_commands": [
+            "clawhub install pilot-model-share pilot-health pilot-webhook-bridge pilot-load-balancer",
+            "pilotctl set-hostname serving",
+            "pilotctl set-visibility public"
+          ]
+        }
+      ],
+      "data_flows": [
+        {
+          "from": "data-prep",
+          "to": "trainer",
+          "description": "Transfers cleaned datasets for training",
+          "port": "1001"
+        },
+        {
+          "from": "trainer",
+          "to": "evaluator",
+          "description": "Shares trained model checkpoints and metrics",
+          "port": "1001"
+        },
+        {
+          "from": "evaluator",
+          "to": "serving",
+          "description": "Promotes approved models to production serving",
+          "port": "1001"
+        },
+        {
+          "from": "serving",
+          "to": "evaluator",
+          "description": "Reports inference metrics for drift detection",
+          "port": "1002"
+        }
+      ],
+      "quick_start": [
+        "# On data processing node",
+        "clawhub install pilot-dataset pilot-share pilot-task-chain",
+        "pilotctl set-hostname data-prep",
+        "",
+        "# On GPU training node",
+        "clawhub install pilot-dataset pilot-model-share pilot-metrics pilot-task-chain",
+        "pilotctl set-hostname trainer",
+        "",
+        "# On evaluation node",
+        "clawhub install pilot-model-share pilot-metrics pilot-review pilot-task-chain",
+        "pilotctl set-hostname evaluator",
+        "",
+        "# On serving node",
+        "clawhub install pilot-model-share pilot-health pilot-webhook-bridge pilot-load-balancer",
+        "pilotctl set-hostname serving"
+      ]
+    },
+    {
+      "slug": "multi-region-content-sync",
+      "name": "Multi-Region Content Sync",
+      "tagline": "Origin-to-edge content distribution across regions",
+      "description": "Distribute content from a central origin to edge nodes across multiple regions. The origin broadcasts updates and edges sync automatically. Heartbeat monitoring ensures every edge is alive, with automatic alerting when a region goes dark.",
+      "difficulty": "intermediate",
+      "agent_count": 4,
+      "skills_used": ["pilot-sync", "pilot-share", "pilot-broadcast", "pilot-health", "pilot-heartbeat-monitor"],
+      "agents": [
+        {
+          "id": "origin",
+          "hostname": "origin",
+          "role": "Content Origin",
+          "description": "The source of truth for all content. Broadcasts updates to all edge nodes whenever content changes.",
+          "skills": ["pilot-sync", "pilot-share", "pilot-broadcast"],
+          "setup_commands": [
+            "clawhub install pilot-sync pilot-share pilot-broadcast",
+            "pilotctl set-hostname origin",
+            "pilotctl set-visibility public"
+          ]
+        },
+        {
+          "id": "edge-us",
+          "hostname": "edge-us",
+          "role": "US Edge Node",
+          "description": "Serves content for the US region. Syncs from origin and reports health via heartbeats.",
+          "skills": ["pilot-sync", "pilot-share", "pilot-health", "pilot-heartbeat-monitor"],
+          "setup_commands": [
+            "clawhub install pilot-sync pilot-share pilot-health pilot-heartbeat-monitor",
+            "pilotctl set-hostname edge-us",
+            "pilotctl set-visibility public"
+          ]
+        },
+        {
+          "id": "edge-eu",
+          "hostname": "edge-eu",
+          "role": "EU Edge Node",
+          "description": "Serves content for the EU region. Syncs from origin and reports health via heartbeats.",
+          "skills": ["pilot-sync", "pilot-share", "pilot-health", "pilot-heartbeat-monitor"],
+          "setup_commands": [
+            "clawhub install pilot-sync pilot-share pilot-health pilot-heartbeat-monitor",
+            "pilotctl set-hostname edge-eu",
+            "pilotctl set-visibility public"
+          ]
+        },
+        {
+          "id": "edge-asia",
+          "hostname": "edge-asia",
+          "role": "Asia Edge Node",
+          "description": "Serves content for the Asia region. Syncs from origin and reports health via heartbeats.",
+          "skills": ["pilot-sync", "pilot-share", "pilot-health", "pilot-heartbeat-monitor"],
+          "setup_commands": [
+            "clawhub install pilot-sync pilot-share pilot-health pilot-heartbeat-monitor",
+            "pilotctl set-hostname edge-asia",
+            "pilotctl set-visibility public"
+          ]
+        }
+      ],
+      "data_flows": [
+        {
+          "from": "origin",
+          "to": "edge-us",
+          "description": "Broadcasts content updates to US edge",
+          "port": "1001"
+        },
+        {
+          "from": "origin",
+          "to": "edge-eu",
+          "description": "Broadcasts content updates to EU edge",
+          "port": "1001"
+        },
+        {
+          "from": "origin",
+          "to": "edge-asia",
+          "description": "Broadcasts content updates to Asia edge",
+          "port": "1001"
+        },
+        {
+          "from": "edge-us",
+          "to": "origin",
+          "description": "Heartbeat and sync confirmation",
+          "port": "1002"
+        },
+        {
+          "from": "edge-eu",
+          "to": "origin",
+          "description": "Heartbeat and sync confirmation",
+          "port": "1002"
+        },
+        {
+          "from": "edge-asia",
+          "to": "origin",
+          "description": "Heartbeat and sync confirmation",
+          "port": "1002"
+        }
+      ],
+      "quick_start": [
+        "# On origin server",
+        "clawhub install pilot-sync pilot-share pilot-broadcast",
+        "pilotctl set-hostname origin",
+        "",
+        "# On US edge server",
+        "clawhub install pilot-sync pilot-share pilot-health pilot-heartbeat-monitor",
+        "pilotctl set-hostname edge-us",
+        "",
+        "# On EU edge server",
+        "clawhub install pilot-sync pilot-share pilot-health pilot-heartbeat-monitor",
+        "pilotctl set-hostname edge-eu",
+        "",
+        "# On Asia edge server",
+        "clawhub install pilot-sync pilot-share pilot-health pilot-heartbeat-monitor",
+        "pilotctl set-hostname edge-asia"
+      ]
+    },
+    {
+      "slug": "incident-response",
+      "name": "Incident Response",
+      "tagline": "Detect, triage, remediate, and notify automatically",
+      "description": "A four-stage incident response pipeline. Detector agents watch for anomalies, triage classifies by severity and SLA, the remediator executes automated fixes, and the notifier keeps humans informed via Slack and email. Full audit trail at every stage.",
+      "difficulty": "advanced",
+      "agent_count": 4,
+      "skills_used": ["pilot-watchdog", "pilot-alert", "pilot-audit-log", "pilot-metrics", "pilot-event-filter", "pilot-priority-queue", "pilot-sla", "pilot-task-router", "pilot-cron", "pilot-quarantine", "pilot-slack-bridge", "pilot-email-bridge", "pilot-webhook-bridge"],
+      "agents": [
+        {
+          "id": "detector",
+          "hostname": "detector",
+          "role": "Anomaly Detector",
+          "description": "Continuously monitors systems for anomalies — unusual traffic patterns, error spikes, resource exhaustion. Logs everything and emits structured alerts.",
+          "skills": ["pilot-watchdog", "pilot-alert", "pilot-audit-log", "pilot-metrics"],
+          "setup_commands": [
+            "clawhub install pilot-watchdog pilot-alert pilot-audit-log pilot-metrics",
+            "pilotctl set-hostname detector",
+            "pilotctl set-visibility public"
+          ]
+        },
+        {
+          "id": "triage",
+          "hostname": "triage",
+          "role": "Incident Triage",
+          "description": "Receives raw alerts, filters noise, classifies severity (P1-P4), applies SLA policies, and routes to remediator or directly to notifier for critical issues.",
+          "skills": ["pilot-alert", "pilot-event-filter", "pilot-priority-queue", "pilot-sla"],
+          "setup_commands": [
+            "clawhub install pilot-alert pilot-event-filter pilot-priority-queue pilot-sla",
+            "pilotctl set-hostname triage",
+            "pilotctl set-visibility public"
+          ]
+        },
+        {
+          "id": "remediator",
+          "hostname": "remediator",
+          "role": "Auto-Remediator",
+          "description": "Executes automated remediation actions — restart services, scale resources, quarantine compromised nodes. Runs scheduled health checks via cron.",
+          "skills": ["pilot-task-router", "pilot-cron", "pilot-audit-log", "pilot-quarantine"],
+          "setup_commands": [
+            "clawhub install pilot-task-router pilot-cron pilot-audit-log pilot-quarantine",
+            "pilotctl set-hostname remediator",
+            "pilotctl set-visibility public"
+          ]
+        },
+        {
+          "id": "notifier",
+          "hostname": "notifier",
+          "role": "Human Notifier",
+          "description": "Sends incident notifications to the right channels — Slack for awareness, email for escalation, webhooks for external integrations. Maintains a complete audit trail.",
+          "skills": ["pilot-slack-bridge", "pilot-email-bridge", "pilot-webhook-bridge", "pilot-audit-log"],
+          "setup_commands": [
+            "clawhub install pilot-slack-bridge pilot-email-bridge pilot-webhook-bridge pilot-audit-log",
+            "pilotctl set-hostname notifier",
+            "pilotctl set-visibility public"
+          ]
+        }
+      ],
+      "data_flows": [
+        {
+          "from": "detector",
+          "to": "triage",
+          "description": "Sends raw anomaly alerts for classification",
+          "port": "1002"
+        },
+        {
+          "from": "triage",
+          "to": "remediator",
+          "description": "Routes actionable incidents for auto-remediation",
+          "port": "1002"
+        },
+        {
+          "from": "triage",
+          "to": "notifier",
+          "description": "Sends classified incidents for human notification",
+          "port": "1002"
+        },
+        {
+          "from": "remediator",
+          "to": "notifier",
+          "description": "Reports remediation actions taken",
+          "port": "1002"
+        }
+      ],
+      "quick_start": [
+        "# On monitored infrastructure",
+        "clawhub install pilot-watchdog pilot-alert pilot-audit-log pilot-metrics",
+        "pilotctl set-hostname detector",
+        "",
+        "# On triage server",
+        "clawhub install pilot-alert pilot-event-filter pilot-priority-queue pilot-sla",
+        "pilotctl set-hostname triage",
+        "",
+        "# On remediation server",
+        "clawhub install pilot-task-router pilot-cron pilot-audit-log pilot-quarantine",
+        "pilotctl set-hostname remediator",
+        "",
+        "# On notification server",
+        "clawhub install pilot-slack-bridge pilot-email-bridge pilot-webhook-bridge pilot-audit-log",
+        "pilotctl set-hostname notifier"
+      ]
+    },
+    {
+      "slug": "dev-team-assistants",
+      "name": "Dev Team Assistants",
+      "tagline": "Automate code review, testing, and docs for every PR",
+      "description": "A team of four agents that automate the PR workflow. A coordinator watches GitHub for new PRs and fans out tasks to specialized agents: one reviews code, one runs tests, one generates documentation. Results are collected and posted as a unified PR summary.",
+      "difficulty": "intermediate",
+      "agent_count": 4,
+      "skills_used": ["pilot-github-bridge", "pilot-review", "pilot-chat", "pilot-share", "pilot-task-router", "pilot-audit-log", "pilot-task-chain", "pilot-slack-bridge", "pilot-broadcast"],
+      "agents": [
+        {
+          "id": "reviewer",
+          "hostname": "reviewer",
+          "role": "Code Reviewer",
+          "description": "Analyzes PR diffs for code quality, security issues, and style violations. Posts review comments directly on the PR.",
+          "skills": ["pilot-github-bridge", "pilot-review", "pilot-chat"],
+          "setup_commands": [
+            "clawhub install pilot-github-bridge pilot-review pilot-chat",
+            "pilotctl set-hostname reviewer",
+            "pilotctl set-visibility public"
+          ]
+        },
+        {
+          "id": "doc-writer",
+          "hostname": "doc-writer",
+          "role": "Documentation Writer",
+          "description": "Reads PR changes and generates or updates relevant documentation. Shares doc drafts with the coordinator.",
+          "skills": ["pilot-github-bridge", "pilot-share", "pilot-task-router"],
+          "setup_commands": [
+            "clawhub install pilot-github-bridge pilot-share pilot-task-router",
+            "pilotctl set-hostname doc-writer",
+            "pilotctl set-visibility public"
+          ]
+        },
+        {
+          "id": "test-runner",
+          "hostname": "test-runner",
+          "role": "Test Runner",
+          "description": "Checks out the PR branch, runs the full test suite, and reports results with coverage metrics.",
+          "skills": ["pilot-github-bridge", "pilot-task-router", "pilot-audit-log"],
+          "setup_commands": [
+            "clawhub install pilot-github-bridge pilot-task-router pilot-audit-log",
+            "pilotctl set-hostname test-runner",
+            "pilotctl set-visibility public"
+          ]
+        },
+        {
+          "id": "coordinator",
+          "hostname": "coordinator",
+          "role": "PR Coordinator",
+          "description": "Watches GitHub for new PRs, fans out review/test/doc tasks, collects results, and posts a unified summary comment on the PR.",
+          "skills": ["pilot-github-bridge", "pilot-task-chain", "pilot-slack-bridge", "pilot-broadcast"],
+          "setup_commands": [
+            "clawhub install pilot-github-bridge pilot-task-chain pilot-slack-bridge pilot-broadcast",
+            "pilotctl set-hostname coordinator",
+            "pilotctl set-visibility public"
+          ]
+        }
+      ],
+      "data_flows": [
+        {
+          "from": "coordinator",
+          "to": "reviewer",
+          "description": "Sends PR details for code review",
+          "port": "1002"
+        },
+        {
+          "from": "coordinator",
+          "to": "test-runner",
+          "description": "Sends PR details for test execution",
+          "port": "1002"
+        },
+        {
+          "from": "coordinator",
+          "to": "doc-writer",
+          "description": "Sends PR details for doc generation",
+          "port": "1002"
+        },
+        {
+          "from": "reviewer",
+          "to": "coordinator",
+          "description": "Returns review findings and comments",
+          "port": "1002"
+        },
+        {
+          "from": "test-runner",
+          "to": "coordinator",
+          "description": "Returns test results and coverage",
+          "port": "1002"
+        },
+        {
+          "from": "doc-writer",
+          "to": "coordinator",
+          "description": "Returns generated documentation",
+          "port": "1001"
+        }
+      ],
+      "quick_start": [
+        "# On review server",
+        "clawhub install pilot-github-bridge pilot-review pilot-chat",
+        "pilotctl set-hostname reviewer",
+        "",
+        "# On docs server",
+        "clawhub install pilot-github-bridge pilot-share pilot-task-router",
+        "pilotctl set-hostname doc-writer",
+        "",
+        "# On test server",
+        "clawhub install pilot-github-bridge pilot-task-router pilot-audit-log",
+        "pilotctl set-hostname test-runner",
+        "",
+        "# On coordinator server",
+        "clawhub install pilot-github-bridge pilot-task-chain pilot-slack-bridge pilot-broadcast",
+        "pilotctl set-hostname coordinator"
+      ]
+    },
+    {
+      "slug": "etl-data-pipeline",
+      "name": "ETL Data Pipeline",
+      "tagline": "Ingest, transform, validate, load, and report",
+      "description": "A five-stage ETL pipeline for production data processing. Agents handle ingestion from S3 and databases, parallel transformation, data validation with quarantine for bad records, loading into target stores, and automated reporting via Slack dashboards.",
+      "difficulty": "advanced",
+      "agent_count": 5,
+      "skills_used": ["pilot-s3-bridge", "pilot-database-bridge", "pilot-task-chain", "pilot-cron", "pilot-task-router", "pilot-stream-data", "pilot-task-parallel", "pilot-audit-log", "pilot-alert", "pilot-quarantine", "pilot-receipt", "pilot-webhook-bridge", "pilot-metrics", "pilot-slack-bridge"],
+      "agents": [
+        {
+          "id": "ingest",
+          "hostname": "ingest",
+          "role": "Data Ingestion",
+          "description": "Pulls raw data from S3 buckets and databases on a cron schedule. Stages data for the transform pipeline.",
+          "skills": ["pilot-s3-bridge", "pilot-database-bridge", "pilot-task-chain", "pilot-cron"],
+          "setup_commands": [
+            "clawhub install pilot-s3-bridge pilot-database-bridge pilot-task-chain pilot-cron",
+            "pilotctl set-hostname ingest",
+            "pilotctl set-visibility public"
+          ]
+        },
+        {
+          "id": "transform",
+          "hostname": "transform",
+          "role": "Data Transformer",
+          "description": "Processes raw data in parallel — normalization, enrichment, deduplication. Streams results to the validator.",
+          "skills": ["pilot-task-router", "pilot-stream-data", "pilot-task-parallel"],
+          "setup_commands": [
+            "clawhub install pilot-task-router pilot-stream-data pilot-task-parallel",
+            "pilotctl set-hostname transform",
+            "pilotctl set-visibility public"
+          ]
+        },
+        {
+          "id": "validate",
+          "hostname": "validate",
+          "role": "Data Validator",
+          "description": "Checks data quality, schema conformance, and business rules. Quarantines invalid records and alerts on high error rates.",
+          "skills": ["pilot-task-router", "pilot-audit-log", "pilot-alert", "pilot-quarantine"],
+          "setup_commands": [
+            "clawhub install pilot-task-router pilot-audit-log pilot-alert pilot-quarantine",
+            "pilotctl set-hostname validate",
+            "pilotctl set-visibility public"
+          ]
+        },
+        {
+          "id": "loader",
+          "hostname": "loader",
+          "role": "Data Loader",
+          "description": "Writes validated data to target databases and data warehouses. Issues receipts for every successful load batch.",
+          "skills": ["pilot-database-bridge", "pilot-task-chain", "pilot-receipt"],
+          "setup_commands": [
+            "clawhub install pilot-database-bridge pilot-task-chain pilot-receipt",
+            "pilotctl set-hostname loader",
+            "pilotctl set-visibility public"
+          ]
+        },
+        {
+          "id": "reporter",
+          "hostname": "reporter",
+          "role": "Pipeline Reporter",
+          "description": "Aggregates pipeline metrics, generates dashboards, and sends daily/hourly summaries to Slack. Triggers alerts on SLA breaches.",
+          "skills": ["pilot-webhook-bridge", "pilot-metrics", "pilot-slack-bridge", "pilot-cron"],
+          "setup_commands": [
+            "clawhub install pilot-webhook-bridge pilot-metrics pilot-slack-bridge pilot-cron",
+            "pilotctl set-hostname reporter",
+            "pilotctl set-visibility public"
+          ]
+        }
+      ],
+      "data_flows": [
+        {
+          "from": "ingest",
+          "to": "transform",
+          "description": "Streams raw data batches for processing",
+          "port": "1001"
+        },
+        {
+          "from": "transform",
+          "to": "validate",
+          "description": "Sends transformed records for validation",
+          "port": "1001"
+        },
+        {
+          "from": "validate",
+          "to": "loader",
+          "description": "Forwards validated records for loading",
+          "port": "1001"
+        },
+        {
+          "from": "loader",
+          "to": "reporter",
+          "description": "Sends load receipts and batch metrics",
+          "port": "1002"
+        },
+        {
+          "from": "validate",
+          "to": "reporter",
+          "description": "Reports validation errors and quarantine counts",
+          "port": "1002"
+        }
+      ],
+      "quick_start": [
+        "# On ingestion server",
+        "clawhub install pilot-s3-bridge pilot-database-bridge pilot-task-chain pilot-cron",
+        "pilotctl set-hostname ingest",
+        "",
+        "# On transform server",
+        "clawhub install pilot-task-router pilot-stream-data pilot-task-parallel",
+        "pilotctl set-hostname transform",
+        "",
+        "# On validation server",
+        "clawhub install pilot-task-router pilot-audit-log pilot-alert pilot-quarantine",
+        "pilotctl set-hostname validate",
+        "",
+        "# On loader server",
+        "clawhub install pilot-database-bridge pilot-task-chain pilot-receipt",
+        "pilotctl set-hostname loader",
+        "",
+        "# On reporting server",
+        "clawhub install pilot-webhook-bridge pilot-metrics pilot-slack-bridge pilot-cron",
+        "pilotctl set-hostname reporter"
+      ]
+    }
+  ]
+}
