@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "total": 7,
+  "total": 15,
   "setups": [
     {
       "slug": "fleet-health-monitor",
@@ -1134,6 +1134,1291 @@
         "pilotctl handshake <your-prefix>-validate \"setup: etl-data-pipeline\"",
         "# On validate:",
         "pilotctl handshake <your-prefix>-transform \"setup: etl-data-pipeline\"",
+        "",
+        "# Verify trust is established",
+        "pilotctl trust"
+      ]
+    },
+    {
+      "slug": "swarm-task-farm",
+      "name": "Swarm Task Farm",
+      "tagline": "Elect a leader, distribute work, collect results",
+      "description": "A self-organizing compute swarm. Workers join automatically, a leader is elected via consensus, and tasks are distributed using map-reduce. Failed tasks retry automatically. A monitor agent tracks swarm health and reports to Slack.",
+      "difficulty": "advanced",
+      "agent_count": 5,
+      "skills_used": [
+        "pilot-leader-election",
+        "pilot-formation",
+        "pilot-task-router",
+        "pilot-broadcast",
+        "pilot-swarm-join",
+        "pilot-map-reduce",
+        "pilot-task-retry",
+        "pilot-metrics",
+        "pilot-task-monitor",
+        "pilot-mesh-status",
+        "pilot-slack-bridge"
+      ],
+      "agents": [
+        {
+          "id": "leader",
+          "hostname": "<your-prefix>-leader",
+          "role": "Swarm Leader",
+          "description": "Elected via consensus. Accepts incoming tasks, partitions them using map-reduce, and broadcasts work units to workers. Re-election happens automatically if the leader goes down.",
+          "skills": [
+            "pilot-leader-election",
+            "pilot-formation",
+            "pilot-task-router",
+            "pilot-broadcast"
+          ],
+          "setup_commands": [
+            "clawhub install pilot-leader-election pilot-formation pilot-task-router pilot-broadcast",
+            "pilotctl set-hostname <your-prefix>-leader",
+            "",
+            "# Establish trust with all swarm members",
+            "pilotctl handshake <your-prefix>-worker-1 \"swarm task farm\"",
+            "pilotctl handshake <your-prefix>-worker-2 \"swarm task farm\"",
+            "pilotctl handshake <your-prefix>-worker-3 \"swarm task farm\"",
+            "pilotctl handshake <your-prefix>-monitor \"swarm task farm\""
+          ]
+        },
+        {
+          "id": "worker-1",
+          "hostname": "<your-prefix>-worker-1",
+          "role": "Compute Worker",
+          "description": "Joins the swarm, receives work units, executes tasks, and returns results. Retries failed tasks automatically.",
+          "skills": [
+            "pilot-swarm-join",
+            "pilot-map-reduce",
+            "pilot-task-retry",
+            "pilot-metrics"
+          ],
+          "setup_commands": [
+            "clawhub install pilot-swarm-join pilot-map-reduce pilot-task-retry pilot-metrics",
+            "pilotctl set-hostname <your-prefix>-worker-1",
+            "",
+            "# Trust the leader and monitor",
+            "pilotctl handshake <your-prefix>-leader \"swarm task farm\"",
+            "pilotctl handshake <your-prefix>-monitor \"swarm task farm\""
+          ]
+        },
+        {
+          "id": "worker-2",
+          "hostname": "<your-prefix>-worker-2",
+          "role": "Compute Worker",
+          "description": "Joins the swarm, receives work units, executes tasks, and returns results. Retries failed tasks automatically.",
+          "skills": [
+            "pilot-swarm-join",
+            "pilot-map-reduce",
+            "pilot-task-retry",
+            "pilot-metrics"
+          ],
+          "setup_commands": [
+            "clawhub install pilot-swarm-join pilot-map-reduce pilot-task-retry pilot-metrics",
+            "pilotctl set-hostname <your-prefix>-worker-2",
+            "",
+            "# Trust the leader and monitor",
+            "pilotctl handshake <your-prefix>-leader \"swarm task farm\"",
+            "pilotctl handshake <your-prefix>-monitor \"swarm task farm\""
+          ]
+        },
+        {
+          "id": "worker-3",
+          "hostname": "<your-prefix>-worker-3",
+          "role": "Compute Worker",
+          "description": "Joins the swarm, receives work units, executes tasks, and returns results. Retries failed tasks automatically.",
+          "skills": [
+            "pilot-swarm-join",
+            "pilot-map-reduce",
+            "pilot-task-retry",
+            "pilot-metrics"
+          ],
+          "setup_commands": [
+            "clawhub install pilot-swarm-join pilot-map-reduce pilot-task-retry pilot-metrics",
+            "pilotctl set-hostname <your-prefix>-worker-3",
+            "",
+            "# Trust the leader and monitor",
+            "pilotctl handshake <your-prefix>-leader \"swarm task farm\"",
+            "pilotctl handshake <your-prefix>-monitor \"swarm task farm\""
+          ]
+        },
+        {
+          "id": "monitor",
+          "hostname": "<your-prefix>-monitor",
+          "role": "Swarm Monitor",
+          "description": "Tracks which workers are alive, task completion rates, and queue depth. Alerts on worker failures or stalled tasks.",
+          "skills": [
+            "pilot-task-monitor",
+            "pilot-mesh-status",
+            "pilot-slack-bridge",
+            "pilot-metrics"
+          ],
+          "setup_commands": [
+            "clawhub install pilot-task-monitor pilot-mesh-status pilot-slack-bridge pilot-metrics",
+            "pilotctl set-hostname <your-prefix>-monitor",
+            "",
+            "# Trust leader and all workers",
+            "pilotctl handshake <your-prefix>-leader \"swarm task farm\"",
+            "pilotctl handshake <your-prefix>-worker-1 \"swarm task farm\"",
+            "pilotctl handshake <your-prefix>-worker-2 \"swarm task farm\"",
+            "pilotctl handshake <your-prefix>-worker-3 \"swarm task farm\""
+          ]
+        }
+      ],
+      "data_flows": [
+        {
+          "from": "<your-prefix>-leader",
+          "to": "<your-prefix>-worker-1",
+          "description": "Distributes work units via map-reduce",
+          "port": "1002"
+        },
+        {
+          "from": "<your-prefix>-leader",
+          "to": "<your-prefix>-worker-2",
+          "description": "Distributes work units via map-reduce",
+          "port": "1002"
+        },
+        {
+          "from": "<your-prefix>-leader",
+          "to": "<your-prefix>-worker-3",
+          "description": "Distributes work units via map-reduce",
+          "port": "1002"
+        },
+        {
+          "from": "<your-prefix>-worker-1",
+          "to": "<your-prefix>-leader",
+          "description": "Returns completed results",
+          "port": "1002"
+        },
+        {
+          "from": "<your-prefix>-worker-2",
+          "to": "<your-prefix>-leader",
+          "description": "Returns completed results",
+          "port": "1002"
+        },
+        {
+          "from": "<your-prefix>-worker-3",
+          "to": "<your-prefix>-leader",
+          "description": "Returns completed results",
+          "port": "1002"
+        },
+        {
+          "from": "<your-prefix>-worker-1",
+          "to": "<your-prefix>-monitor",
+          "description": "Reports task metrics and heartbeats",
+          "port": "1002"
+        },
+        {
+          "from": "<your-prefix>-worker-2",
+          "to": "<your-prefix>-monitor",
+          "description": "Reports task metrics and heartbeats",
+          "port": "1002"
+        },
+        {
+          "from": "<your-prefix>-worker-3",
+          "to": "<your-prefix>-monitor",
+          "description": "Reports task metrics and heartbeats",
+          "port": "1002"
+        }
+      ],
+      "quick_start": [
+        "# Replace <your-prefix> with a unique name (e.g. acme)",
+        "",
+        "# On leader node",
+        "clawhub install pilot-leader-election pilot-formation pilot-task-router pilot-broadcast",
+        "pilotctl set-hostname <your-prefix>-leader",
+        "",
+        "# On each worker node (repeat for worker-1, worker-2, worker-3)",
+        "clawhub install pilot-swarm-join pilot-map-reduce pilot-task-retry pilot-metrics",
+        "pilotctl set-hostname <your-prefix>-worker-1",
+        "",
+        "# On monitor node",
+        "clawhub install pilot-task-monitor pilot-mesh-status pilot-slack-bridge pilot-metrics",
+        "pilotctl set-hostname <your-prefix>-monitor",
+        "",
+        "# Establish trust between agents",
+        "# Each worker must handshake the leader and monitor.",
+        "# The leader must handshake all workers and the monitor.",
+        "# When both sides handshake, trust is auto-approved.",
+        "",
+        "# Verify trust is established",
+        "pilotctl trust"
+      ]
+    },
+    {
+      "slug": "security-operations-center",
+      "name": "Security Operations Center",
+      "tagline": "Collect logs, detect threats, block attackers",
+      "description": "A SOC pipeline that collects security events, analyzes patterns, replays incidents for forensics, and enforces blocks automatically. The enforcer maintains a live blocklist and can quarantine compromised nodes. A dashboard agent provides real-time network visibility.",
+      "difficulty": "advanced",
+      "agent_count": 4,
+      "skills_used": [
+        "pilot-event-log",
+        "pilot-audit-log",
+        "pilot-stream-data",
+        "pilot-cron",
+        "pilot-event-filter",
+        "pilot-event-replay",
+        "pilot-alert",
+        "pilot-priority-queue",
+        "pilot-blocklist",
+        "pilot-quarantine",
+        "pilot-webhook-bridge",
+        "pilot-metrics",
+        "pilot-slack-bridge",
+        "pilot-network-map",
+        "pilot-mesh-status"
+      ],
+      "agents": [
+        {
+          "id": "collector",
+          "hostname": "<your-prefix>-collector",
+          "role": "Log Collector",
+          "description": "Aggregates security events from all nodes \u2014 auth failures, connection attempts, anomalous traffic. Streams events to the analyzer in real time.",
+          "skills": [
+            "pilot-event-log",
+            "pilot-audit-log",
+            "pilot-stream-data",
+            "pilot-cron"
+          ],
+          "setup_commands": [
+            "clawhub install pilot-event-log pilot-audit-log pilot-stream-data pilot-cron",
+            "pilotctl set-hostname <your-prefix>-collector",
+            "",
+            "# Trust the analyzer to receive event stream",
+            "pilotctl handshake <your-prefix>-analyzer \"soc pipeline\""
+          ]
+        },
+        {
+          "id": "analyzer",
+          "hostname": "<your-prefix>-analyzer",
+          "role": "Threat Analyzer",
+          "description": "Filters and correlates events, detects attack patterns, classifies threats by severity. Can replay past events for forensic investigation.",
+          "skills": [
+            "pilot-event-filter",
+            "pilot-event-replay",
+            "pilot-alert",
+            "pilot-priority-queue"
+          ],
+          "setup_commands": [
+            "clawhub install pilot-event-filter pilot-event-replay pilot-alert pilot-priority-queue",
+            "pilotctl set-hostname <your-prefix>-analyzer",
+            "",
+            "# Trust collector, enforcer, and dashboard",
+            "pilotctl handshake <your-prefix>-collector \"soc pipeline\"",
+            "pilotctl handshake <your-prefix>-enforcer \"soc pipeline\"",
+            "pilotctl handshake <your-prefix>-dashboard \"soc pipeline\""
+          ]
+        },
+        {
+          "id": "enforcer",
+          "hostname": "<your-prefix>-enforcer",
+          "role": "Threat Enforcer",
+          "description": "Receives threat verdicts and acts \u2014 adds IPs to blocklist, quarantines compromised agents, triggers incident webhooks. Maintains a live deny-list.",
+          "skills": [
+            "pilot-blocklist",
+            "pilot-quarantine",
+            "pilot-webhook-bridge",
+            "pilot-audit-log"
+          ],
+          "setup_commands": [
+            "clawhub install pilot-blocklist pilot-quarantine pilot-webhook-bridge pilot-audit-log",
+            "pilotctl set-hostname <your-prefix>-enforcer",
+            "",
+            "# Trust the analyzer and dashboard",
+            "pilotctl handshake <your-prefix>-analyzer \"soc pipeline\"",
+            "pilotctl handshake <your-prefix>-dashboard \"soc pipeline\""
+          ]
+        },
+        {
+          "id": "dashboard",
+          "hostname": "<your-prefix>-dashboard",
+          "role": "SOC Dashboard",
+          "description": "Visualizes network topology, active threats, blocked actors, and overall security posture. Sends summary reports to Slack.",
+          "skills": [
+            "pilot-metrics",
+            "pilot-slack-bridge",
+            "pilot-network-map",
+            "pilot-mesh-status"
+          ],
+          "setup_commands": [
+            "clawhub install pilot-metrics pilot-slack-bridge pilot-network-map pilot-mesh-status",
+            "pilotctl set-hostname <your-prefix>-dashboard",
+            "",
+            "# Trust analyzer and enforcer for status feeds",
+            "pilotctl handshake <your-prefix>-analyzer \"soc pipeline\"",
+            "pilotctl handshake <your-prefix>-enforcer \"soc pipeline\""
+          ]
+        }
+      ],
+      "data_flows": [
+        {
+          "from": "<your-prefix>-collector",
+          "to": "<your-prefix>-analyzer",
+          "description": "Streams raw security events",
+          "port": "1002"
+        },
+        {
+          "from": "<your-prefix>-analyzer",
+          "to": "<your-prefix>-enforcer",
+          "description": "Sends threat verdicts for enforcement",
+          "port": "1002"
+        },
+        {
+          "from": "<your-prefix>-analyzer",
+          "to": "<your-prefix>-dashboard",
+          "description": "Sends classified threats for display",
+          "port": "1002"
+        },
+        {
+          "from": "<your-prefix>-enforcer",
+          "to": "<your-prefix>-dashboard",
+          "description": "Reports enforcement actions taken",
+          "port": "1002"
+        }
+      ],
+      "quick_start": [
+        "# Replace <your-prefix> with a unique name (e.g. acme)",
+        "",
+        "# On log collection node",
+        "clawhub install pilot-event-log pilot-audit-log pilot-stream-data pilot-cron",
+        "pilotctl set-hostname <your-prefix>-collector",
+        "",
+        "# On analysis node",
+        "clawhub install pilot-event-filter pilot-event-replay pilot-alert pilot-priority-queue",
+        "pilotctl set-hostname <your-prefix>-analyzer",
+        "",
+        "# On enforcement node",
+        "clawhub install pilot-blocklist pilot-quarantine pilot-webhook-bridge pilot-audit-log",
+        "pilotctl set-hostname <your-prefix>-enforcer",
+        "",
+        "# On dashboard node",
+        "clawhub install pilot-metrics pilot-slack-bridge pilot-network-map pilot-mesh-status",
+        "pilotctl set-hostname <your-prefix>-dashboard",
+        "",
+        "# Establish trust between agents",
+        "# collector <-> analyzer, analyzer <-> enforcer,",
+        "# analyzer <-> dashboard, enforcer <-> dashboard",
+        "# Both sides must handshake for auto-approval.",
+        "",
+        "# Verify trust is established",
+        "pilotctl trust"
+      ]
+    },
+    {
+      "slug": "knowledge-base-rag",
+      "name": "Knowledge Base (RAG)",
+      "tagline": "Ingest documents, embed, index, and serve queries",
+      "description": "A retrieval-augmented generation pipeline. Documents are ingested from S3 or file shares, chunked and embedded in parallel, indexed into a vector store, and served to query agents. Health checks and load balancing keep the query layer responsive under load.",
+      "difficulty": "intermediate",
+      "agent_count": 4,
+      "skills_used": [
+        "pilot-s3-bridge",
+        "pilot-share",
+        "pilot-task-chain",
+        "pilot-cron",
+        "pilot-chunk-transfer",
+        "pilot-task-parallel",
+        "pilot-metrics",
+        "pilot-database-bridge",
+        "pilot-health",
+        "pilot-api-gateway",
+        "pilot-load-balancer"
+      ],
+      "agents": [
+        {
+          "id": "ingest",
+          "hostname": "<your-prefix>-rag-ingest",
+          "role": "Document Ingestion",
+          "description": "Pulls documents from S3 buckets or shared directories on a schedule. Chunks large documents and forwards them to the embedder.",
+          "skills": [
+            "pilot-s3-bridge",
+            "pilot-share",
+            "pilot-chunk-transfer",
+            "pilot-cron"
+          ],
+          "setup_commands": [
+            "clawhub install pilot-s3-bridge pilot-share pilot-chunk-transfer pilot-cron",
+            "pilotctl set-hostname <your-prefix>-rag-ingest",
+            "",
+            "# Trust the embedder to receive document chunks",
+            "pilotctl handshake <your-prefix>-rag-embedder \"rag pipeline\""
+          ]
+        },
+        {
+          "id": "embedder",
+          "hostname": "<your-prefix>-rag-embedder",
+          "role": "Embedding Generator",
+          "description": "Receives document chunks and generates vector embeddings in parallel. Forwards embeddings with metadata to the indexer.",
+          "skills": [
+            "pilot-task-parallel",
+            "pilot-share",
+            "pilot-metrics",
+            "pilot-task-chain"
+          ],
+          "setup_commands": [
+            "clawhub install pilot-task-parallel pilot-share pilot-metrics pilot-task-chain",
+            "pilotctl set-hostname <your-prefix>-rag-embedder",
+            "",
+            "# Trust ingest and indexer",
+            "pilotctl handshake <your-prefix>-rag-ingest \"rag pipeline\"",
+            "pilotctl handshake <your-prefix>-rag-indexer \"rag pipeline\""
+          ]
+        },
+        {
+          "id": "indexer",
+          "hostname": "<your-prefix>-rag-indexer",
+          "role": "Vector Indexer",
+          "description": "Writes embeddings to the vector database. Maintains indexes and reports ingestion metrics. Serves as the data backend for query agents.",
+          "skills": [
+            "pilot-database-bridge",
+            "pilot-share",
+            "pilot-task-chain",
+            "pilot-health"
+          ],
+          "setup_commands": [
+            "clawhub install pilot-database-bridge pilot-share pilot-task-chain pilot-health",
+            "pilotctl set-hostname <your-prefix>-rag-indexer",
+            "",
+            "# Trust embedder and query server",
+            "pilotctl handshake <your-prefix>-rag-embedder \"rag pipeline\"",
+            "pilotctl handshake <your-prefix>-rag-query \"rag pipeline\""
+          ]
+        },
+        {
+          "id": "query",
+          "hostname": "<your-prefix>-rag-query",
+          "role": "Query Server",
+          "description": "Accepts search queries, retrieves relevant documents from the indexer, and returns ranked results. Load-balanced for high throughput.",
+          "skills": [
+            "pilot-api-gateway",
+            "pilot-health",
+            "pilot-load-balancer",
+            "pilot-metrics"
+          ],
+          "setup_commands": [
+            "clawhub install pilot-api-gateway pilot-health pilot-load-balancer pilot-metrics",
+            "pilotctl set-hostname <your-prefix>-rag-query",
+            "",
+            "# Trust the indexer for retrieval",
+            "pilotctl handshake <your-prefix>-rag-indexer \"rag pipeline\""
+          ]
+        }
+      ],
+      "data_flows": [
+        {
+          "from": "<your-prefix>-rag-ingest",
+          "to": "<your-prefix>-rag-embedder",
+          "description": "Sends document chunks for embedding",
+          "port": "1001"
+        },
+        {
+          "from": "<your-prefix>-rag-embedder",
+          "to": "<your-prefix>-rag-indexer",
+          "description": "Sends embeddings for indexing",
+          "port": "1001"
+        },
+        {
+          "from": "<your-prefix>-rag-query",
+          "to": "<your-prefix>-rag-indexer",
+          "description": "Retrieves relevant documents by similarity",
+          "port": "1001"
+        },
+        {
+          "from": "<your-prefix>-rag-indexer",
+          "to": "<your-prefix>-rag-query",
+          "description": "Returns ranked document results",
+          "port": "1001"
+        }
+      ],
+      "quick_start": [
+        "# Replace <your-prefix> with a unique name (e.g. acme)",
+        "",
+        "# On ingestion node",
+        "clawhub install pilot-s3-bridge pilot-share pilot-chunk-transfer pilot-cron",
+        "pilotctl set-hostname <your-prefix>-rag-ingest",
+        "",
+        "# On embedding node (GPU recommended)",
+        "clawhub install pilot-task-parallel pilot-share pilot-metrics pilot-task-chain",
+        "pilotctl set-hostname <your-prefix>-rag-embedder",
+        "",
+        "# On indexer node",
+        "clawhub install pilot-database-bridge pilot-share pilot-task-chain pilot-health",
+        "pilotctl set-hostname <your-prefix>-rag-indexer",
+        "",
+        "# On query server",
+        "clawhub install pilot-api-gateway pilot-health pilot-load-balancer pilot-metrics",
+        "pilotctl set-hostname <your-prefix>-rag-query",
+        "",
+        "# Establish trust: ingest <-> embedder <-> indexer <-> query",
+        "# Both sides must handshake for auto-approval.",
+        "",
+        "# Verify trust is established",
+        "pilotctl trust"
+      ]
+    },
+    {
+      "slug": "agent-marketplace",
+      "name": "Agent Marketplace",
+      "tagline": "Advertise capabilities, match requests, settle with escrow",
+      "description": "A decentralized marketplace where agents advertise their capabilities, a matchmaker pairs requesters with providers, and transactions are settled through escrow. Reputation scores ensure quality. No central platform takes a cut.",
+      "difficulty": "advanced",
+      "agent_count": 4,
+      "skills_used": [
+        "pilot-directory",
+        "pilot-announce-capabilities",
+        "pilot-discover",
+        "pilot-reputation",
+        "pilot-matchmaker",
+        "pilot-auction",
+        "pilot-priority-queue",
+        "pilot-escrow",
+        "pilot-receipt",
+        "pilot-audit-log",
+        "pilot-webhook-bridge",
+        "pilot-api-gateway",
+        "pilot-health",
+        "pilot-metrics"
+      ],
+      "agents": [
+        {
+          "id": "directory",
+          "hostname": "<your-prefix>-directory",
+          "role": "Capability Directory",
+          "description": "Maintains a registry of agent capabilities. Agents announce what they can do, and the directory makes them discoverable. Tracks reputation scores based on completed transactions.",
+          "skills": [
+            "pilot-directory",
+            "pilot-announce-capabilities",
+            "pilot-discover",
+            "pilot-reputation"
+          ],
+          "setup_commands": [
+            "clawhub install pilot-directory pilot-announce-capabilities pilot-discover pilot-reputation",
+            "pilotctl set-hostname <your-prefix>-directory",
+            "",
+            "# Trust matchmaker and gateway",
+            "pilotctl handshake <your-prefix>-matchmaker \"marketplace\"",
+            "pilotctl handshake <your-prefix>-gateway \"marketplace\""
+          ]
+        },
+        {
+          "id": "matchmaker",
+          "hostname": "<your-prefix>-matchmaker",
+          "role": "Request Matchmaker",
+          "description": "Receives task requests, queries the directory for capable agents, runs auctions when multiple providers compete, and routes the winning match to escrow.",
+          "skills": [
+            "pilot-matchmaker",
+            "pilot-auction",
+            "pilot-priority-queue",
+            "pilot-audit-log"
+          ],
+          "setup_commands": [
+            "clawhub install pilot-matchmaker pilot-auction pilot-priority-queue pilot-audit-log",
+            "pilotctl set-hostname <your-prefix>-matchmaker",
+            "",
+            "# Trust directory, escrow, and gateway",
+            "pilotctl handshake <your-prefix>-directory \"marketplace\"",
+            "pilotctl handshake <your-prefix>-escrow \"marketplace\"",
+            "pilotctl handshake <your-prefix>-gateway \"marketplace\""
+          ]
+        },
+        {
+          "id": "escrow",
+          "hostname": "<your-prefix>-escrow",
+          "role": "Transaction Escrow",
+          "description": "Holds task payment in escrow until the provider delivers and the requester confirms. Issues receipts and updates reputation scores on completion.",
+          "skills": [
+            "pilot-escrow",
+            "pilot-receipt",
+            "pilot-audit-log",
+            "pilot-webhook-bridge"
+          ],
+          "setup_commands": [
+            "clawhub install pilot-escrow pilot-receipt pilot-audit-log pilot-webhook-bridge",
+            "pilotctl set-hostname <your-prefix>-escrow",
+            "",
+            "# Trust matchmaker and directory (for reputation updates)",
+            "pilotctl handshake <your-prefix>-matchmaker \"marketplace\"",
+            "pilotctl handshake <your-prefix>-directory \"marketplace\""
+          ]
+        },
+        {
+          "id": "gateway",
+          "hostname": "<your-prefix>-gateway",
+          "role": "Marketplace Gateway",
+          "description": "Public-facing API gateway. Accepts external requests, load-balances across matchmakers, and serves marketplace health metrics.",
+          "skills": [
+            "pilot-api-gateway",
+            "pilot-health",
+            "pilot-load-balancer",
+            "pilot-metrics"
+          ],
+          "setup_commands": [
+            "clawhub install pilot-api-gateway pilot-health pilot-load-balancer pilot-metrics",
+            "pilotctl set-hostname <your-prefix>-gateway",
+            "",
+            "# Trust directory and matchmaker",
+            "pilotctl handshake <your-prefix>-directory \"marketplace\"",
+            "pilotctl handshake <your-prefix>-matchmaker \"marketplace\""
+          ]
+        }
+      ],
+      "data_flows": [
+        {
+          "from": "<your-prefix>-gateway",
+          "to": "<your-prefix>-matchmaker",
+          "description": "Forwards incoming task requests",
+          "port": "1002"
+        },
+        {
+          "from": "<your-prefix>-matchmaker",
+          "to": "<your-prefix>-directory",
+          "description": "Queries for capable providers",
+          "port": "1002"
+        },
+        {
+          "from": "<your-prefix>-matchmaker",
+          "to": "<your-prefix>-escrow",
+          "description": "Initiates escrow for matched transactions",
+          "port": "1002"
+        },
+        {
+          "from": "<your-prefix>-escrow",
+          "to": "<your-prefix>-directory",
+          "description": "Updates reputation after settlement",
+          "port": "1002"
+        }
+      ],
+      "quick_start": [
+        "# Replace <your-prefix> with a unique name (e.g. acme)",
+        "",
+        "# On directory node",
+        "clawhub install pilot-directory pilot-announce-capabilities pilot-discover pilot-reputation",
+        "pilotctl set-hostname <your-prefix>-directory",
+        "",
+        "# On matchmaker node",
+        "clawhub install pilot-matchmaker pilot-auction pilot-priority-queue pilot-audit-log",
+        "pilotctl set-hostname <your-prefix>-matchmaker",
+        "",
+        "# On escrow node",
+        "clawhub install pilot-escrow pilot-receipt pilot-audit-log pilot-webhook-bridge",
+        "pilotctl set-hostname <your-prefix>-escrow",
+        "",
+        "# On gateway node",
+        "clawhub install pilot-api-gateway pilot-health pilot-load-balancer pilot-metrics",
+        "pilotctl set-hostname <your-prefix>-gateway",
+        "",
+        "# Establish trust between marketplace agents",
+        "# gateway <-> matchmaker <-> directory",
+        "# matchmaker <-> escrow <-> directory",
+        "# Both sides must handshake for auto-approval.",
+        "",
+        "# Verify trust is established",
+        "pilotctl trust"
+      ]
+    },
+    {
+      "slug": "backup-disaster-recovery",
+      "name": "Backup & Disaster Recovery",
+      "tagline": "Scheduled backups, offsite sync, automated restore tests",
+      "description": "Automated backup infrastructure across multiple sites. A scheduler triggers periodic backups, the primary backup agent compresses and archives data, a secondary site syncs copies for disaster recovery, and a tester periodically restores and verifies backup integrity.",
+      "difficulty": "intermediate",
+      "agent_count": 4,
+      "skills_used": [
+        "pilot-cron",
+        "pilot-task-chain",
+        "pilot-audit-log",
+        "pilot-slack-bridge",
+        "pilot-backup",
+        "pilot-archive",
+        "pilot-compress",
+        "pilot-share",
+        "pilot-sync",
+        "pilot-verify",
+        "pilot-health",
+        "pilot-alert"
+      ],
+      "agents": [
+        {
+          "id": "scheduler",
+          "hostname": "<your-prefix>-backup-sched",
+          "role": "Backup Scheduler",
+          "description": "Orchestrates the backup lifecycle on a cron schedule. Triggers backups, monitors completion, and sends reports to Slack.",
+          "skills": [
+            "pilot-cron",
+            "pilot-task-chain",
+            "pilot-audit-log",
+            "pilot-slack-bridge"
+          ],
+          "setup_commands": [
+            "clawhub install pilot-cron pilot-task-chain pilot-audit-log pilot-slack-bridge",
+            "pilotctl set-hostname <your-prefix>-backup-sched",
+            "",
+            "# Trust primary and secondary backup agents",
+            "pilotctl handshake <your-prefix>-backup-primary \"backup dr\"",
+            "pilotctl handshake <your-prefix>-backup-secondary \"backup dr\"",
+            "pilotctl handshake <your-prefix>-restore-tester \"backup dr\""
+          ]
+        },
+        {
+          "id": "primary",
+          "hostname": "<your-prefix>-backup-primary",
+          "role": "Primary Backup",
+          "description": "Creates backups of databases and file systems. Compresses and archives them locally, then shares with the offsite secondary.",
+          "skills": [
+            "pilot-backup",
+            "pilot-archive",
+            "pilot-compress",
+            "pilot-share"
+          ],
+          "setup_commands": [
+            "clawhub install pilot-backup pilot-archive pilot-compress pilot-share",
+            "pilotctl set-hostname <your-prefix>-backup-primary",
+            "",
+            "# Trust scheduler and secondary",
+            "pilotctl handshake <your-prefix>-backup-sched \"backup dr\"",
+            "pilotctl handshake <your-prefix>-backup-secondary \"backup dr\""
+          ]
+        },
+        {
+          "id": "secondary",
+          "hostname": "<your-prefix>-backup-secondary",
+          "role": "Offsite Replica",
+          "description": "Receives backup archives from the primary site and syncs them to offsite storage. Verifies integrity checksums and reports health.",
+          "skills": [
+            "pilot-sync",
+            "pilot-verify",
+            "pilot-health",
+            "pilot-share"
+          ],
+          "setup_commands": [
+            "clawhub install pilot-sync pilot-verify pilot-health pilot-share",
+            "pilotctl set-hostname <your-prefix>-backup-secondary",
+            "",
+            "# Trust primary and scheduler",
+            "pilotctl handshake <your-prefix>-backup-primary \"backup dr\"",
+            "pilotctl handshake <your-prefix>-backup-sched \"backup dr\"",
+            "pilotctl handshake <your-prefix>-restore-tester \"backup dr\""
+          ]
+        },
+        {
+          "id": "tester",
+          "hostname": "<your-prefix>-restore-tester",
+          "role": "Restore Tester",
+          "description": "Periodically pulls backups from the secondary, attempts a full restore in an isolated environment, and verifies data integrity. Alerts on failures.",
+          "skills": [
+            "pilot-backup",
+            "pilot-verify",
+            "pilot-health",
+            "pilot-alert"
+          ],
+          "setup_commands": [
+            "clawhub install pilot-backup pilot-verify pilot-health pilot-alert",
+            "pilotctl set-hostname <your-prefix>-restore-tester",
+            "",
+            "# Trust secondary and scheduler",
+            "pilotctl handshake <your-prefix>-backup-secondary \"backup dr\"",
+            "pilotctl handshake <your-prefix>-backup-sched \"backup dr\""
+          ]
+        }
+      ],
+      "data_flows": [
+        {
+          "from": "<your-prefix>-backup-sched",
+          "to": "<your-prefix>-backup-primary",
+          "description": "Triggers scheduled backup jobs",
+          "port": "1002"
+        },
+        {
+          "from": "<your-prefix>-backup-primary",
+          "to": "<your-prefix>-backup-secondary",
+          "description": "Transfers compressed backup archives",
+          "port": "1001"
+        },
+        {
+          "from": "<your-prefix>-backup-secondary",
+          "to": "<your-prefix>-restore-tester",
+          "description": "Provides backups for restore testing",
+          "port": "1001"
+        },
+        {
+          "from": "<your-prefix>-restore-tester",
+          "to": "<your-prefix>-backup-sched",
+          "description": "Reports restore test results",
+          "port": "1002"
+        }
+      ],
+      "quick_start": [
+        "# Replace <your-prefix> with a unique name (e.g. acme)",
+        "",
+        "# On scheduler node",
+        "clawhub install pilot-cron pilot-task-chain pilot-audit-log pilot-slack-bridge",
+        "pilotctl set-hostname <your-prefix>-backup-sched",
+        "",
+        "# On primary backup server",
+        "clawhub install pilot-backup pilot-archive pilot-compress pilot-share",
+        "pilotctl set-hostname <your-prefix>-backup-primary",
+        "",
+        "# On offsite secondary (different region/datacenter)",
+        "clawhub install pilot-sync pilot-verify pilot-health pilot-share",
+        "pilotctl set-hostname <your-prefix>-backup-secondary",
+        "",
+        "# On restore test server",
+        "clawhub install pilot-backup pilot-verify pilot-health pilot-alert",
+        "pilotctl set-hostname <your-prefix>-restore-tester",
+        "",
+        "# Establish trust along the backup chain",
+        "# scheduler <-> primary <-> secondary <-> tester <-> scheduler",
+        "# Both sides must handshake for auto-approval.",
+        "",
+        "# Verify trust is established",
+        "pilotctl trust"
+      ]
+    },
+    {
+      "slug": "chat-collaboration-hub",
+      "name": "Chat & Collaboration Hub",
+      "tagline": "Group chat, threads, translation, and moderation",
+      "description": "A self-hosted collaboration platform for agent teams. Supports group chat rooms with threaded conversations, real-time presence indicators, automatic message translation, and a moderation bot that filters content and maintains archives.",
+      "difficulty": "intermediate",
+      "agent_count": 4,
+      "skills_used": [
+        "pilot-group-chat",
+        "pilot-thread",
+        "pilot-presence",
+        "pilot-broadcast",
+        "pilot-event-filter",
+        "pilot-blocklist",
+        "pilot-audit-log",
+        "pilot-alert",
+        "pilot-translate",
+        "pilot-stream-data",
+        "pilot-task-router",
+        "pilot-archive",
+        "pilot-event-log",
+        "pilot-cron"
+      ],
+      "agents": [
+        {
+          "id": "chat-server",
+          "hostname": "<your-prefix>-chat",
+          "role": "Chat Server",
+          "description": "Hosts group chat rooms and threaded conversations. Tracks presence (online/away/offline) and broadcasts messages to room participants.",
+          "skills": [
+            "pilot-group-chat",
+            "pilot-thread",
+            "pilot-presence",
+            "pilot-broadcast"
+          ],
+          "setup_commands": [
+            "clawhub install pilot-group-chat pilot-thread pilot-presence pilot-broadcast",
+            "pilotctl set-hostname <your-prefix>-chat",
+            "",
+            "# Trust moderator, translator, and archive bot",
+            "pilotctl handshake <your-prefix>-moderator \"chat hub\"",
+            "pilotctl handshake <your-prefix>-translator \"chat hub\"",
+            "pilotctl handshake <your-prefix>-archive-bot \"chat hub\""
+          ]
+        },
+        {
+          "id": "moderator",
+          "hostname": "<your-prefix>-moderator",
+          "role": "Content Moderator",
+          "description": "Filters messages for policy violations, spam, and harmful content. Can blocklist abusive agents and alerts admins on serious violations.",
+          "skills": [
+            "pilot-event-filter",
+            "pilot-blocklist",
+            "pilot-audit-log",
+            "pilot-alert"
+          ],
+          "setup_commands": [
+            "clawhub install pilot-event-filter pilot-blocklist pilot-audit-log pilot-alert",
+            "pilotctl set-hostname <your-prefix>-moderator",
+            "",
+            "# Trust chat server",
+            "pilotctl handshake <your-prefix>-chat \"chat hub\""
+          ]
+        },
+        {
+          "id": "translator",
+          "hostname": "<your-prefix>-translator",
+          "role": "Auto-Translator",
+          "description": "Translates messages between languages in real time. Streams translated content back to the chat server for delivery to participants.",
+          "skills": [
+            "pilot-translate",
+            "pilot-stream-data",
+            "pilot-task-router"
+          ],
+          "setup_commands": [
+            "clawhub install pilot-translate pilot-stream-data pilot-task-router",
+            "pilotctl set-hostname <your-prefix>-translator",
+            "",
+            "# Trust chat server",
+            "pilotctl handshake <your-prefix>-chat \"chat hub\""
+          ]
+        },
+        {
+          "id": "archive-bot",
+          "hostname": "<your-prefix>-archive-bot",
+          "role": "Archive Bot",
+          "description": "Archives all conversations for compliance and search. Maintains a searchable event log and runs periodic backup jobs.",
+          "skills": [
+            "pilot-archive",
+            "pilot-event-log",
+            "pilot-backup",
+            "pilot-cron"
+          ],
+          "setup_commands": [
+            "clawhub install pilot-archive pilot-event-log pilot-backup pilot-cron",
+            "pilotctl set-hostname <your-prefix>-archive-bot",
+            "",
+            "# Trust chat server for message stream",
+            "pilotctl handshake <your-prefix>-chat \"chat hub\""
+          ]
+        }
+      ],
+      "data_flows": [
+        {
+          "from": "<your-prefix>-chat",
+          "to": "<your-prefix>-moderator",
+          "description": "Sends messages for content filtering",
+          "port": "1002"
+        },
+        {
+          "from": "<your-prefix>-chat",
+          "to": "<your-prefix>-translator",
+          "description": "Sends messages for translation",
+          "port": "1002"
+        },
+        {
+          "from": "<your-prefix>-translator",
+          "to": "<your-prefix>-chat",
+          "description": "Returns translated messages",
+          "port": "1002"
+        },
+        {
+          "from": "<your-prefix>-chat",
+          "to": "<your-prefix>-archive-bot",
+          "description": "Streams all messages for archival",
+          "port": "1002"
+        },
+        {
+          "from": "<your-prefix>-moderator",
+          "to": "<your-prefix>-chat",
+          "description": "Sends block/filter actions",
+          "port": "1002"
+        }
+      ],
+      "quick_start": [
+        "# Replace <your-prefix> with a unique name (e.g. acme)",
+        "",
+        "# On chat server",
+        "clawhub install pilot-group-chat pilot-thread pilot-presence pilot-broadcast",
+        "pilotctl set-hostname <your-prefix>-chat",
+        "",
+        "# On moderator node",
+        "clawhub install pilot-event-filter pilot-blocklist pilot-audit-log pilot-alert",
+        "pilotctl set-hostname <your-prefix>-moderator",
+        "",
+        "# On translator node",
+        "clawhub install pilot-translate pilot-stream-data pilot-task-router",
+        "pilotctl set-hostname <your-prefix>-translator",
+        "",
+        "# On archive node",
+        "clawhub install pilot-archive pilot-event-log pilot-backup pilot-cron",
+        "pilotctl set-hostname <your-prefix>-archive-bot",
+        "",
+        "# Establish trust \u2014 all agents trust the chat server",
+        "# The chat server must handshake each agent, and each agent",
+        "# must handshake the chat server. Auto-approved when mutual.",
+        "",
+        "# Verify trust is established",
+        "pilotctl trust"
+      ]
+    },
+    {
+      "slug": "mcp-bridge-fleet",
+      "name": "MCP Bridge Fleet",
+      "tagline": "Connect MCP servers, A2A agents, and legacy tools",
+      "description": "Bridge different agent ecosystems over Pilot tunnels. An MCP gateway exposes MCP-compatible tool servers, an A2A bridge connects Google A2A agents, and a tool registry lets agents discover available capabilities across protocols. All traffic is encrypted and trust-gated.",
+      "difficulty": "beginner",
+      "agent_count": 3,
+      "skills_used": [
+        "pilot-mcp-bridge",
+        "pilot-api-gateway",
+        "pilot-health",
+        "pilot-metrics",
+        "pilot-a2a-bridge",
+        "pilot-task-router",
+        "pilot-audit-log",
+        "pilot-directory",
+        "pilot-discover",
+        "pilot-announce-capabilities",
+        "pilot-load-balancer"
+      ],
+      "agents": [
+        {
+          "id": "mcp-gateway",
+          "hostname": "<your-prefix>-mcp-gw",
+          "role": "MCP Gateway",
+          "description": "Bridges MCP tool servers onto the Pilot network. Agents can call MCP tools through encrypted tunnels without exposing HTTP endpoints.",
+          "skills": [
+            "pilot-mcp-bridge",
+            "pilot-api-gateway",
+            "pilot-health",
+            "pilot-metrics"
+          ],
+          "setup_commands": [
+            "clawhub install pilot-mcp-bridge pilot-api-gateway pilot-health pilot-metrics",
+            "pilotctl set-hostname <your-prefix>-mcp-gw",
+            "",
+            "# Trust the tool registry",
+            "pilotctl handshake <your-prefix>-tool-registry \"mcp bridge fleet\""
+          ]
+        },
+        {
+          "id": "a2a-bridge",
+          "hostname": "<your-prefix>-a2a-bridge",
+          "role": "A2A Bridge",
+          "description": "Connects Google A2A protocol agents to the Pilot network. Routes tasks between A2A and Pilot agents transparently.",
+          "skills": [
+            "pilot-a2a-bridge",
+            "pilot-task-router",
+            "pilot-audit-log"
+          ],
+          "setup_commands": [
+            "clawhub install pilot-a2a-bridge pilot-task-router pilot-audit-log",
+            "pilotctl set-hostname <your-prefix>-a2a-bridge",
+            "",
+            "# Trust the tool registry",
+            "pilotctl handshake <your-prefix>-tool-registry \"mcp bridge fleet\""
+          ]
+        },
+        {
+          "id": "tool-registry",
+          "hostname": "<your-prefix>-tool-registry",
+          "role": "Tool Registry",
+          "description": "Central directory where MCP tools, A2A agents, and native Pilot skills register their capabilities. Other agents query it to discover what tools are available.",
+          "skills": [
+            "pilot-directory",
+            "pilot-discover",
+            "pilot-announce-capabilities",
+            "pilot-load-balancer"
+          ],
+          "setup_commands": [
+            "clawhub install pilot-directory pilot-discover pilot-announce-capabilities pilot-load-balancer",
+            "pilotctl set-hostname <your-prefix>-tool-registry",
+            "",
+            "# Trust both bridge agents",
+            "pilotctl handshake <your-prefix>-mcp-gw \"mcp bridge fleet\"",
+            "pilotctl handshake <your-prefix>-a2a-bridge \"mcp bridge fleet\""
+          ]
+        }
+      ],
+      "data_flows": [
+        {
+          "from": "<your-prefix>-mcp-gw",
+          "to": "<your-prefix>-tool-registry",
+          "description": "Registers available MCP tools",
+          "port": "1002"
+        },
+        {
+          "from": "<your-prefix>-a2a-bridge",
+          "to": "<your-prefix>-tool-registry",
+          "description": "Registers available A2A agents",
+          "port": "1002"
+        },
+        {
+          "from": "<your-prefix>-tool-registry",
+          "to": "<your-prefix>-mcp-gw",
+          "description": "Routes tool calls to MCP servers",
+          "port": "1002"
+        },
+        {
+          "from": "<your-prefix>-tool-registry",
+          "to": "<your-prefix>-a2a-bridge",
+          "description": "Routes tasks to A2A agents",
+          "port": "1002"
+        }
+      ],
+      "quick_start": [
+        "# Replace <your-prefix> with a unique name (e.g. acme)",
+        "",
+        "# On MCP gateway node",
+        "clawhub install pilot-mcp-bridge pilot-api-gateway pilot-health pilot-metrics",
+        "pilotctl set-hostname <your-prefix>-mcp-gw",
+        "",
+        "# On A2A bridge node",
+        "clawhub install pilot-a2a-bridge pilot-task-router pilot-audit-log",
+        "pilotctl set-hostname <your-prefix>-a2a-bridge",
+        "",
+        "# On tool registry node",
+        "clawhub install pilot-directory pilot-discover pilot-announce-capabilities pilot-load-balancer",
+        "pilotctl set-hostname <your-prefix>-tool-registry",
+        "",
+        "# Establish trust \u2014 both bridges trust the registry",
+        "# Each bridge handshakes the registry, and the registry",
+        "# handshakes each bridge. Auto-approved when mutual.",
+        "",
+        "# Verify trust is established",
+        "pilotctl trust"
+      ]
+    },
+    {
+      "slug": "compliance-governance",
+      "name": "Compliance & Governance",
+      "tagline": "Enforce policies, audit actions, certify compliance",
+      "description": "Automated compliance for regulated environments. A policy engine evaluates every agent action against governance rules, an auditor maintains tamper-evident logs, a certifier issues and verifies compliance certificates, and a reporter generates audit reports on schedule.",
+      "difficulty": "advanced",
+      "agent_count": 4,
+      "skills_used": [
+        "pilot-event-filter",
+        "pilot-sla",
+        "pilot-workflow",
+        "pilot-task-chain",
+        "pilot-audit-log",
+        "pilot-verify",
+        "pilot-event-log",
+        "pilot-cron",
+        "pilot-certificate",
+        "pilot-keychain",
+        "pilot-receipt",
+        "pilot-metrics",
+        "pilot-webhook-bridge",
+        "pilot-slack-bridge",
+        "pilot-archive"
+      ],
+      "agents": [
+        {
+          "id": "policy-engine",
+          "hostname": "<your-prefix>-policy",
+          "role": "Policy Engine",
+          "description": "Evaluates agent actions against governance rules and SLA policies. Blocks non-compliant actions and routes violations to the auditor.",
+          "skills": [
+            "pilot-event-filter",
+            "pilot-sla",
+            "pilot-workflow",
+            "pilot-task-chain"
+          ],
+          "setup_commands": [
+            "clawhub install pilot-event-filter pilot-sla pilot-workflow pilot-task-chain",
+            "pilotctl set-hostname <your-prefix>-policy",
+            "",
+            "# Trust auditor and certifier",
+            "pilotctl handshake <your-prefix>-auditor \"compliance\"",
+            "pilotctl handshake <your-prefix>-certifier \"compliance\""
+          ]
+        },
+        {
+          "id": "auditor",
+          "hostname": "<your-prefix>-auditor",
+          "role": "Audit Trail",
+          "description": "Maintains tamper-evident, append-only logs of all agent actions. Runs periodic integrity checks and flags anomalies.",
+          "skills": [
+            "pilot-audit-log",
+            "pilot-verify",
+            "pilot-event-log",
+            "pilot-cron"
+          ],
+          "setup_commands": [
+            "clawhub install pilot-audit-log pilot-verify pilot-event-log pilot-cron",
+            "pilotctl set-hostname <your-prefix>-auditor",
+            "",
+            "# Trust policy engine and reporter",
+            "pilotctl handshake <your-prefix>-policy \"compliance\"",
+            "pilotctl handshake <your-prefix>-reporter \"compliance\""
+          ]
+        },
+        {
+          "id": "certifier",
+          "hostname": "<your-prefix>-certifier",
+          "role": "Compliance Certifier",
+          "description": "Issues compliance certificates to agents that pass policy checks. Manages a keychain for certificate signing and issues receipts for every certification.",
+          "skills": [
+            "pilot-certificate",
+            "pilot-keychain",
+            "pilot-verify",
+            "pilot-receipt"
+          ],
+          "setup_commands": [
+            "clawhub install pilot-certificate pilot-keychain pilot-verify pilot-receipt",
+            "pilotctl set-hostname <your-prefix>-certifier",
+            "",
+            "# Trust policy engine and reporter",
+            "pilotctl handshake <your-prefix>-policy \"compliance\"",
+            "pilotctl handshake <your-prefix>-reporter \"compliance\""
+          ]
+        },
+        {
+          "id": "reporter",
+          "hostname": "<your-prefix>-reporter",
+          "role": "Compliance Reporter",
+          "description": "Generates periodic compliance reports from audit logs and certification data. Archives reports and sends summaries to stakeholders via Slack and webhooks.",
+          "skills": [
+            "pilot-metrics",
+            "pilot-webhook-bridge",
+            "pilot-slack-bridge",
+            "pilot-archive"
+          ],
+          "setup_commands": [
+            "clawhub install pilot-metrics pilot-webhook-bridge pilot-slack-bridge pilot-archive",
+            "pilotctl set-hostname <your-prefix>-reporter",
+            "",
+            "# Trust auditor and certifier for report data",
+            "pilotctl handshake <your-prefix>-auditor \"compliance\"",
+            "pilotctl handshake <your-prefix>-certifier \"compliance\""
+          ]
+        }
+      ],
+      "data_flows": [
+        {
+          "from": "<your-prefix>-policy",
+          "to": "<your-prefix>-auditor",
+          "description": "Sends policy violations and action logs",
+          "port": "1002"
+        },
+        {
+          "from": "<your-prefix>-policy",
+          "to": "<your-prefix>-certifier",
+          "description": "Requests compliance certification for passing agents",
+          "port": "1002"
+        },
+        {
+          "from": "<your-prefix>-auditor",
+          "to": "<your-prefix>-reporter",
+          "description": "Provides audit data for reports",
+          "port": "1002"
+        },
+        {
+          "from": "<your-prefix>-certifier",
+          "to": "<your-prefix>-reporter",
+          "description": "Provides certification records for reports",
+          "port": "1002"
+        }
+      ],
+      "quick_start": [
+        "# Replace <your-prefix> with a unique name (e.g. acme)",
+        "",
+        "# On policy engine node",
+        "clawhub install pilot-event-filter pilot-sla pilot-workflow pilot-task-chain",
+        "pilotctl set-hostname <your-prefix>-policy",
+        "",
+        "# On auditor node",
+        "clawhub install pilot-audit-log pilot-verify pilot-event-log pilot-cron",
+        "pilotctl set-hostname <your-prefix>-auditor",
+        "",
+        "# On certifier node",
+        "clawhub install pilot-certificate pilot-keychain pilot-verify pilot-receipt",
+        "pilotctl set-hostname <your-prefix>-certifier",
+        "",
+        "# On reporter node",
+        "clawhub install pilot-metrics pilot-webhook-bridge pilot-slack-bridge pilot-archive",
+        "pilotctl set-hostname <your-prefix>-reporter",
+        "",
+        "# Establish trust",
+        "# policy <-> auditor, policy <-> certifier",
+        "# auditor <-> reporter, certifier <-> reporter",
+        "# Both sides must handshake for auto-approval.",
         "",
         "# Verify trust is established",
         "pilotctl trust"
