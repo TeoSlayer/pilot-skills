@@ -191,19 +191,19 @@
         "pilotctl trust"
       ],
       "workflow": [
-        "# On <your-prefix>-gateway — submit a capability request:",
+        "# On <your-prefix>-gateway \u2014 submit a capability request:",
         "pilotctl publish <your-prefix>-matchmaker capability-request '{\"requester\":\"client-a\",\"need\":\"image-classification\",\"budget\":50}'",
         "",
-        "# On <your-prefix>-matchmaker — query directory and find match:",
+        "# On <your-prefix>-matchmaker \u2014 query directory and find match:",
         "pilotctl publish <your-prefix>-directory discover-capability '{\"capability\":\"image-classification\",\"min_reputation\":4.0}'",
         "",
-        "# On <your-prefix>-directory — return matching providers:",
+        "# On <your-prefix>-directory \u2014 return matching providers:",
         "pilotctl publish <your-prefix>-matchmaker capability-match '{\"providers\":[{\"agent\":\"img-classifier-1\",\"reputation\":4.8,\"price\":30}]}'",
         "",
-        "# On <your-prefix>-matchmaker — initiate escrow:",
+        "# On <your-prefix>-matchmaker \u2014 initiate escrow:",
         "pilotctl publish <your-prefix>-escrow escrow-create '{\"requester\":\"client-a\",\"provider\":\"img-classifier-1\",\"amount\":30,\"task\":\"image-classification\"}'",
         "",
-        "# On <your-prefix>-escrow — settle and update reputation:",
+        "# On <your-prefix>-escrow \u2014 settle and update reputation:",
         "pilotctl publish <your-prefix>-directory reputation-update '{\"agent\":\"img-classifier-1\",\"rating\":5,\"transaction\":\"TXN-2891\"}'"
       ]
     },
@@ -530,18 +530,18 @@
         "pilotctl trust"
       ],
       "workflow": [
-        "# On <your-prefix>-backup-sched — trigger a scheduled backup:",
+        "# On <your-prefix>-backup-sched \u2014 trigger a scheduled backup:",
         "pilotctl publish <your-prefix>-backup-primary backup-start '{\"job_id\":\"BK-0315\",\"type\":\"full\",\"targets\":[\"postgres\",\"redis\"]}'",
         "",
-        "# On <your-prefix>-backup-primary — create and ship backup:",
+        "# On <your-prefix>-backup-primary \u2014 create and ship backup:",
         "pilotctl send-file <your-prefix>-backup-secondary ./backups/BK-0315-postgres.tar.gz",
         "pilotctl send-file <your-prefix>-backup-secondary ./backups/BK-0315-redis.rdb",
         "pilotctl publish <your-prefix>-backup-secondary sync-backup '{\"job_id\":\"BK-0315\",\"files\":2,\"size_mb\":1240,\"checksum\":\"sha256:d4e5f6\"}'",
         "",
-        "# On <your-prefix>-backup-secondary — confirm sync:",
+        "# On <your-prefix>-backup-secondary \u2014 confirm sync:",
         "pilotctl publish <your-prefix>-backup-sched sync-confirmed '{\"job_id\":\"BK-0315\",\"verified\":true,\"checksum_match\":true}'",
         "",
-        "# On <your-prefix>-restore-tester — test restore and report:",
+        "# On <your-prefix>-restore-tester \u2014 test restore and report:",
         "pilotctl publish <your-prefix>-backup-sched restore-result '{\"job_id\":\"BK-0315\",\"restore\":\"success\",\"tables_verified\":42,\"rows_checked\":100000}'"
       ]
     },
@@ -705,18 +705,18 @@
         "pilotctl trust"
       ],
       "workflow": [
-        "# On <your-prefix>-chat — broadcast a message to room participants:",
+        "# On <your-prefix>-chat \u2014 broadcast a message to room participants:",
         "pilotctl publish <your-prefix>-moderator chat-message '{\"room\":\"general\",\"sender\":\"agent-alice\",\"text\":\"Has anyone seen the deploy logs?\"}'",
         "pilotctl publish <your-prefix>-translator chat-message '{\"room\":\"general\",\"sender\":\"agent-alice\",\"text\":\"Has anyone seen the deploy logs?\",\"lang\":\"en\"}'",
         "pilotctl publish <your-prefix>-archive-bot chat-message '{\"room\":\"general\",\"sender\":\"agent-alice\",\"text\":\"Has anyone seen the deploy logs?\",\"ts\":1711929600}'",
         "",
-        "# On <your-prefix>-moderator — approve or filter:",
+        "# On <your-prefix>-moderator \u2014 approve or filter:",
         "pilotctl publish <your-prefix>-chat moderation-result '{\"msg_id\":\"M-5012\",\"action\":\"approve\",\"flags\":[]}'",
         "",
-        "# On <your-prefix>-translator — return translation:",
-        "pilotctl publish <your-prefix>-chat translated-message '{\"msg_id\":\"M-5012\",\"original_lang\":\"en\",\"target_lang\":\"ja\",\"text\":\"デプロイログを見た人はいますか？\"}'",
+        "# On <your-prefix>-translator \u2014 return translation:",
+        "pilotctl publish <your-prefix>-chat translated-message '{\"msg_id\":\"M-5012\",\"original_lang\":\"en\",\"target_lang\":\"ja\",\"text\":\"\u30c7\u30d7\u30ed\u30a4\u30ed\u30b0\u3092\u898b\u305f\u4eba\u306f\u3044\u307e\u3059\u304b\uff1f\"}'",
         "",
-        "# On <your-prefix>-archive-bot — confirm archival:",
+        "# On <your-prefix>-archive-bot \u2014 confirm archival:",
         "pilotctl publish <your-prefix>-chat archive-confirm '{\"msg_id\":\"M-5012\",\"stored\":true,\"index\":\"chat-2024-03\"}'"
       ]
     },
@@ -843,15 +843,15 @@
         "pilotctl trust"
       ],
       "workflow": [
-        "# On <your-prefix>-ci-builder — receive a GitHub webhook and send build artifact:",
+        "# On <your-prefix>-ci-builder \u2014 receive a GitHub webhook and send build artifact:",
         "pilotctl send-file <your-prefix>-ci-tester ./build/app-v2.3.tar.gz",
         "pilotctl publish <your-prefix>-ci-tester build-ready '{\"commit\":\"a1b2c3d\",\"branch\":\"main\",\"artifact\":\"app-v2.3.tar.gz\"}'",
         "",
-        "# On <your-prefix>-ci-tester — run tests and forward to deployer:",
+        "# On <your-prefix>-ci-tester \u2014 run tests and forward to deployer:",
         "pilotctl send-file <your-prefix>-ci-deployer ./build/app-v2.3.tar.gz",
         "pilotctl publish <your-prefix>-ci-deployer tests-passed '{\"commit\":\"a1b2c3d\",\"tests\":142,\"passed\":142,\"coverage\":87}'",
         "",
-        "# On <your-prefix>-ci-deployer — deploy and send receipt:",
+        "# On <your-prefix>-ci-deployer \u2014 deploy and send receipt:",
         "pilotctl publish <your-prefix>-ci-builder deploy-receipt '{\"commit\":\"a1b2c3d\",\"env\":\"production\",\"status\":\"success\",\"url\":\"https://app.example.com\"}'"
       ]
     },
@@ -1222,17 +1222,17 @@
         "pilotctl trust"
       ],
       "workflow": [
-        "# On <your-prefix>-policy — evaluate an agent action and route:",
+        "# On <your-prefix>-policy \u2014 evaluate an agent action and route:",
         "pilotctl publish <your-prefix>-auditor policy-violation '{\"agent\":\"data-processor-3\",\"action\":\"write_to_prod\",\"rule\":\"require-approval\",\"severity\":\"high\"}'",
         "pilotctl publish <your-prefix>-certifier cert-request '{\"agent\":\"data-processor-1\",\"scope\":\"prod-write\",\"policy_checks_passed\":true}'",
         "",
-        "# On <your-prefix>-auditor — log and forward to reporter:",
+        "# On <your-prefix>-auditor \u2014 log and forward to reporter:",
         "pilotctl publish <your-prefix>-reporter audit-finding '{\"finding_id\":\"AUD-0721\",\"agent\":\"data-processor-3\",\"violation\":\"unauthorized prod write\",\"severity\":\"high\"}'",
         "",
-        "# On <your-prefix>-certifier — issue cert and notify reporter:",
+        "# On <your-prefix>-certifier \u2014 issue cert and notify reporter:",
         "pilotctl publish <your-prefix>-reporter cert-issued '{\"agent\":\"data-processor-1\",\"cert_id\":\"CERT-2024-0315\",\"scope\":\"prod-write\",\"expires\":\"2024-06-15\"}'",
         "",
-        "# On <your-prefix>-reporter — generate summary:",
+        "# On <your-prefix>-reporter \u2014 generate summary:",
         "pilotctl publish <your-prefix>-reporter slack-forward '{\"channel\":\"#compliance\",\"text\":\"Weekly report: 3 violations, 12 certs issued, 99.2% compliance rate\"}'"
       ]
     },
@@ -1652,18 +1652,18 @@
         "pilotctl trust"
       ],
       "workflow": [
-        "# On <your-prefix>-coordinator — fan out a new PR to all assistants:",
+        "# On <your-prefix>-coordinator \u2014 fan out a new PR to all assistants:",
         "pilotctl task submit <your-prefix>-reviewer --task '{\"pr\":1234,\"repo\":\"acme/api\",\"action\":\"review\",\"diff_url\":\"https://github.com/acme/api/pull/1234.diff\"}'",
         "pilotctl task submit <your-prefix>-test-runner --task '{\"pr\":1234,\"repo\":\"acme/api\",\"action\":\"test\",\"branch\":\"feature/auth\"}'",
         "pilotctl task submit <your-prefix>-doc-writer --task '{\"pr\":1234,\"repo\":\"acme/api\",\"action\":\"docs\",\"changed_files\":[\"auth.go\",\"middleware.go\"]}'",
         "",
-        "# On <your-prefix>-reviewer — return findings:",
+        "# On <your-prefix>-reviewer \u2014 return findings:",
         "pilotctl publish <your-prefix>-coordinator review-result '{\"pr\":1234,\"issues\":2,\"approval\":\"changes_requested\",\"comments\":[\"missing error check on line 45\"]}'",
         "",
-        "# On <your-prefix>-test-runner — return test results:",
+        "# On <your-prefix>-test-runner \u2014 return test results:",
         "pilotctl publish <your-prefix>-coordinator test-result '{\"pr\":1234,\"passed\":89,\"failed\":0,\"coverage\":82}'",
         "",
-        "# On <your-prefix>-doc-writer — return generated docs:",
+        "# On <your-prefix>-doc-writer \u2014 return generated docs:",
         "pilotctl send-file <your-prefix>-coordinator ./docs/auth-middleware.md",
         "pilotctl publish <your-prefix>-coordinator docs-result '{\"pr\":1234,\"files_generated\":[\"auth-middleware.md\"]}'"
       ]
@@ -1867,20 +1867,20 @@
         "pilotctl trust"
       ],
       "workflow": [
-        "# On <your-prefix>-ingest — trigger data ingestion and send to transformer:",
+        "# On <your-prefix>-ingest \u2014 trigger data ingestion and send to transformer:",
         "pilotctl send-file <your-prefix>-transform ./data/raw/orders-2024-03.csv",
         "pilotctl publish <your-prefix>-transform ingest-batch '{\"source\":\"s3://data/orders\",\"rows\":50000,\"batch_id\":\"B-1042\"}'",
         "",
-        "# On <your-prefix>-transform — process and forward to validator:",
+        "# On <your-prefix>-transform \u2014 process and forward to validator:",
         "pilotctl send-file <your-prefix>-validate ./data/transformed/orders-B-1042.parquet",
         "pilotctl publish <your-prefix>-validate transform-complete '{\"batch_id\":\"B-1042\",\"rows_in\":50000,\"rows_out\":49823}'",
         "",
-        "# On <your-prefix>-validate — validate and forward good records:",
+        "# On <your-prefix>-validate \u2014 validate and forward good records:",
         "pilotctl send-file <your-prefix>-loader ./data/validated/orders-B-1042.parquet",
         "pilotctl publish <your-prefix>-loader validation-passed '{\"batch_id\":\"B-1042\",\"valid\":49700,\"quarantined\":123}'",
         "pilotctl publish <your-prefix>-reporter validation-metrics '{\"batch_id\":\"B-1042\",\"error_rate\":0.0025}'",
         "",
-        "# On <your-prefix>-loader — load and send receipt:",
+        "# On <your-prefix>-loader \u2014 load and send receipt:",
         "pilotctl publish <your-prefix>-reporter load-receipt '{\"batch_id\":\"B-1042\",\"rows_loaded\":49700,\"target\":\"warehouse.orders\"}'"
       ]
     },
@@ -2173,14 +2173,14 @@
         "pilotctl trust"
       ],
       "workflow": [
-        "# On <your-prefix>-alert-hub — subscribe to health events from monitors:",
+        "# On <your-prefix>-alert-hub \u2014 subscribe to health events from monitors:",
         "pilotctl subscribe <your-prefix>-web-monitor health-alert",
         "pilotctl subscribe <your-prefix>-db-monitor health-alert",
         "",
-        "# On <your-prefix>-web-monitor — publish a health alert:",
+        "# On <your-prefix>-web-monitor \u2014 publish a health alert:",
         "pilotctl publish <your-prefix>-alert-hub health-alert '{\"host\":\"web-01\",\"status\":\"critical\",\"cpu\":95,\"mem\":88}'",
         "",
-        "# On <your-prefix>-db-monitor — publish a database alert:",
+        "# On <your-prefix>-db-monitor \u2014 publish a database alert:",
         "pilotctl publish <your-prefix>-alert-hub health-alert '{\"host\":\"db-01\",\"status\":\"warning\",\"disk_pct\":88,\"repl_lag_ms\":450}'",
         "",
         "# The alert-hub receives both events and forwards to Slack:",
@@ -2770,17 +2770,17 @@
         "pilotctl trust"
       ],
       "workflow": [
-        "# On <your-prefix>-detector — publish an anomaly alert:",
+        "# On <your-prefix>-detector \u2014 publish an anomaly alert:",
         "pilotctl publish <your-prefix>-triage anomaly-detected '{\"source\":\"web-01\",\"type\":\"error_spike\",\"rate\":450,\"threshold\":100}'",
         "",
-        "# On <your-prefix>-triage — classify and route to remediator:",
+        "# On <your-prefix>-triage \u2014 classify and route to remediator:",
         "pilotctl publish <your-prefix>-remediator incident-action '{\"id\":\"INC-2847\",\"severity\":\"P1\",\"action\":\"restart_service\",\"target\":\"web-01\"}'",
         "pilotctl publish <your-prefix>-notifier incident-alert '{\"id\":\"INC-2847\",\"severity\":\"P1\",\"summary\":\"Error spike on web-01 (450/min)\"}'",
         "",
-        "# On <your-prefix>-remediator — execute and report:",
+        "# On <your-prefix>-remediator \u2014 execute and report:",
         "pilotctl publish <your-prefix>-notifier remediation-complete '{\"id\":\"INC-2847\",\"action\":\"restart_service\",\"result\":\"success\",\"duration_s\":12}'",
         "",
-        "# On <your-prefix>-notifier — forward to Slack:",
+        "# On <your-prefix>-notifier \u2014 forward to Slack:",
         "pilotctl publish <your-prefix>-notifier slack-forward '{\"channel\":\"#incidents\",\"text\":\"P1 INC-2847 resolved: web-01 restarted (12s)\"}'"
       ]
     },
@@ -2935,17 +2935,17 @@
         "pilotctl trust"
       ],
       "workflow": [
-        "# On <your-prefix>-rag-ingest — send a document for processing:",
+        "# On <your-prefix>-rag-ingest \u2014 send a document for processing:",
         "pilotctl send-file <your-prefix>-rag-embedder ./docs/architecture-guide.pdf",
         "pilotctl publish <your-prefix>-rag-embedder doc-ingested '{\"doc_id\":\"doc-0042\",\"chunks\":24,\"source\":\"architecture-guide.pdf\"}'",
         "",
-        "# On <your-prefix>-rag-embedder — send embeddings to indexer:",
+        "# On <your-prefix>-rag-embedder \u2014 send embeddings to indexer:",
         "pilotctl publish <your-prefix>-rag-indexer embeddings-ready '{\"doc_id\":\"doc-0042\",\"vectors\":24,\"model\":\"text-embedding-3-small\",\"dims\":1536}'",
         "",
-        "# On <your-prefix>-rag-query — search the knowledge base:",
+        "# On <your-prefix>-rag-query \u2014 search the knowledge base:",
         "pilotctl task submit <your-prefix>-rag-indexer --task '{\"query\":\"How does the auth middleware work?\",\"top_k\":5}'",
         "",
-        "# On <your-prefix>-rag-indexer — return search results:",
+        "# On <your-prefix>-rag-indexer \u2014 return search results:",
         "pilotctl publish <your-prefix>-rag-query search-results '{\"query_id\":\"Q-128\",\"results\":[{\"doc\":\"architecture-guide.pdf\",\"chunk\":12,\"score\":0.94}]}'"
       ]
     },
@@ -3213,16 +3213,16 @@
         "pilotctl trust"
       ],
       "workflow": [
-        "# On <your-prefix>-mcp-gw — register an MCP tool:",
+        "# On <your-prefix>-mcp-gw \u2014 register an MCP tool:",
         "pilotctl publish <your-prefix>-tool-registry tool-register '{\"name\":\"web-search\",\"protocol\":\"mcp\",\"provider\":\"<your-prefix>-mcp-gw\",\"schema\":{\"query\":\"string\"}}'",
         "",
-        "# On <your-prefix>-a2a-bridge — register an A2A agent:",
+        "# On <your-prefix>-a2a-bridge \u2014 register an A2A agent:",
         "pilotctl publish <your-prefix>-tool-registry tool-register '{\"name\":\"code-review\",\"protocol\":\"a2a\",\"provider\":\"<your-prefix>-a2a-bridge\",\"schema\":{\"repo\":\"string\",\"pr\":\"number\"}}'",
         "",
-        "# On <your-prefix>-tool-registry — route a tool call to MCP:",
+        "# On <your-prefix>-tool-registry \u2014 route a tool call to MCP:",
         "pilotctl publish <your-prefix>-mcp-gw tool-call '{\"call_id\":\"C-401\",\"tool\":\"web-search\",\"params\":{\"query\":\"Pilot Protocol docs\"}}'",
         "",
-        "# On <your-prefix>-mcp-gw — return result:",
+        "# On <your-prefix>-mcp-gw \u2014 return result:",
         "pilotctl publish <your-prefix>-tool-registry tool-result '{\"call_id\":\"C-401\",\"result\":{\"url\":\"https://pilotprotocol.network\",\"title\":\"Pilot Protocol\"}}'"
       ]
     },
@@ -3382,19 +3382,19 @@
         "pilotctl trust"
       ],
       "workflow": [
-        "# On <your-prefix>-data-prep — send cleaned dataset to trainer:",
+        "# On <your-prefix>-data-prep \u2014 send cleaned dataset to trainer:",
         "pilotctl send-file <your-prefix>-trainer ./datasets/training-v5.parquet",
         "pilotctl publish <your-prefix>-trainer dataset-ready '{\"name\":\"training-v5\",\"rows\":150000,\"features\":64}'",
         "",
-        "# On <your-prefix>-trainer — send model checkpoint and metrics:",
+        "# On <your-prefix>-trainer \u2014 send model checkpoint and metrics:",
         "pilotctl send-file <your-prefix>-evaluator ./models/resnet-v5-epoch20.pt",
         "pilotctl publish <your-prefix>-evaluator training-complete '{\"model\":\"resnet-v5\",\"loss\":0.023,\"accuracy\":0.967,\"epochs\":20}'",
         "",
-        "# On <your-prefix>-evaluator — approve and promote to serving:",
+        "# On <your-prefix>-evaluator \u2014 approve and promote to serving:",
         "pilotctl send-file <your-prefix>-serving ./models/resnet-v5-epoch20.pt",
         "pilotctl publish <your-prefix>-serving model-approved '{\"model\":\"resnet-v5\",\"benchmark\":0.971,\"approved\":true}'",
         "",
-        "# On <your-prefix>-serving — report inference metrics:",
+        "# On <your-prefix>-serving \u2014 report inference metrics:",
         "pilotctl publish <your-prefix>-evaluator inference-metrics '{\"model\":\"resnet-v5\",\"qps\":1200,\"p99_ms\":45,\"drift\":0.003}'"
       ]
     },
@@ -3532,7 +3532,7 @@
         "pilotctl trust"
       ],
       "workflow": [
-        "# On <your-prefix>-origin — broadcast a content update to all edges:",
+        "# On <your-prefix>-origin \u2014 broadcast a content update to all edges:",
         "pilotctl send-file <your-prefix>-edge-us ./content/index.html",
         "pilotctl send-file <your-prefix>-edge-eu ./content/index.html",
         "pilotctl send-file <your-prefix>-edge-asia ./content/index.html",
@@ -3540,7 +3540,7 @@
         "pilotctl publish <your-prefix>-edge-eu content-update '{\"file\":\"index.html\",\"version\":42,\"hash\":\"sha256:a1b2c3\"}'",
         "pilotctl publish <your-prefix>-edge-asia content-update '{\"file\":\"index.html\",\"version\":42,\"hash\":\"sha256:a1b2c3\"}'",
         "",
-        "# On any edge — confirm sync and send heartbeat:",
+        "# On any edge \u2014 confirm sync and send heartbeat:",
         "pilotctl publish <your-prefix>-origin sync-complete '{\"region\":\"us\",\"file\":\"index.html\",\"version\":42}'",
         "pilotctl publish <your-prefix>-origin heartbeat '{\"region\":\"us\",\"status\":\"healthy\",\"disk_pct\":34}'"
       ]
@@ -3892,18 +3892,18 @@
         "pilotctl trust"
       ],
       "workflow": [
-        "# On <your-prefix>-collector — stream security events to analyzer:",
+        "# On <your-prefix>-collector \u2014 stream security events to analyzer:",
         "pilotctl publish <your-prefix>-analyzer security-event '{\"type\":\"auth_failure\",\"source\":\"10.0.1.50\",\"user\":\"admin\",\"attempts\":15}'",
         "pilotctl publish <your-prefix>-analyzer security-event '{\"type\":\"port_scan\",\"source\":\"203.0.113.42\",\"ports_scanned\":1024}'",
         "",
-        "# On <your-prefix>-analyzer — classify threat and route:",
+        "# On <your-prefix>-analyzer \u2014 classify threat and route:",
         "pilotctl publish <your-prefix>-enforcer threat-verdict '{\"source\":\"203.0.113.42\",\"threat\":\"port_scan\",\"severity\":\"high\",\"action\":\"block\"}'",
         "pilotctl publish <your-prefix>-dashboard threat-alert '{\"source\":\"203.0.113.42\",\"threat\":\"port_scan\",\"severity\":\"high\"}'",
         "",
-        "# On <your-prefix>-enforcer — block and report:",
+        "# On <your-prefix>-enforcer \u2014 block and report:",
         "pilotctl publish <your-prefix>-dashboard enforcement-action '{\"source\":\"203.0.113.42\",\"action\":\"blocked\",\"rule\":\"auto-block-port-scan\"}'",
         "",
-        "# On <your-prefix>-dashboard — subscribe to all feeds:",
+        "# On <your-prefix>-dashboard \u2014 subscribe to all feeds:",
         "pilotctl subscribe <your-prefix>-analyzer threat-alert",
         "pilotctl subscribe <your-prefix>-enforcer enforcement-action"
       ]
@@ -4578,16 +4578,16 @@
         "pilotctl trust"
       ],
       "workflow": [
-        "# On <your-prefix>-leader — distribute tasks to workers:",
+        "# On <your-prefix>-leader \u2014 distribute tasks to workers:",
         "pilotctl publish <your-prefix>-worker-1 task-assignment '{\"task_id\":\"T-001\",\"type\":\"image_resize\",\"input\":\"batch-a.zip\"}'",
         "pilotctl publish <your-prefix>-worker-2 task-assignment '{\"task_id\":\"T-002\",\"type\":\"image_resize\",\"input\":\"batch-b.zip\"}'",
         "pilotctl publish <your-prefix>-worker-3 task-assignment '{\"task_id\":\"T-003\",\"type\":\"image_resize\",\"input\":\"batch-c.zip\"}'",
         "",
-        "# On <your-prefix>-worker-1 — complete and report:",
+        "# On <your-prefix>-worker-1 \u2014 complete and report:",
         "pilotctl publish <your-prefix>-leader task-result '{\"task_id\":\"T-001\",\"status\":\"success\",\"output\":\"batch-a-resized.zip\",\"duration_s\":34}'",
         "pilotctl publish <your-prefix>-monitor worker-metrics '{\"worker\":\"worker-1\",\"cpu\":72,\"tasks_done\":15,\"queue\":0}'",
         "",
-        "# On <your-prefix>-monitor — check swarm health:",
+        "# On <your-prefix>-monitor \u2014 check swarm health:",
         "pilotctl subscribe <your-prefix>-worker-1 worker-metrics",
         "pilotctl subscribe <your-prefix>-worker-2 worker-metrics",
         "pilotctl subscribe <your-prefix>-worker-3 worker-metrics"
