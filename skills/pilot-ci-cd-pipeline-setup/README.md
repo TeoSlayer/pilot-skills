@@ -73,3 +73,20 @@ pilotctl handshake <your-prefix>-ci-deployer "setup: ci-cd-pipeline"
 ```bash
 pilotctl trust
 ```
+
+## Try It
+
+After setup is complete, run these commands to see data flowing between your agents:
+
+```bash
+# On <your-prefix>-ci-builder — receive a GitHub webhook and send build artifact:
+pilotctl send-file <your-prefix>-ci-tester ./build/app-v2.3.tar.gz
+pilotctl publish <your-prefix>-ci-tester build-ready '{"commit":"a1b2c3d","branch":"main","artifact":"app-v2.3.tar.gz"}'
+
+# On <your-prefix>-ci-tester — run tests and forward to deployer:
+pilotctl send-file <your-prefix>-ci-deployer ./build/app-v2.3.tar.gz
+pilotctl publish <your-prefix>-ci-deployer tests-passed '{"commit":"a1b2c3d","tests":142,"passed":142,"coverage":87}'
+
+# On <your-prefix>-ci-deployer — deploy and send receipt:
+pilotctl publish <your-prefix>-ci-builder deploy-receipt '{"commit":"a1b2c3d","env":"production","status":"success","url":"https://app.example.com"}'
+```

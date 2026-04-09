@@ -85,3 +85,21 @@ pilotctl handshake <your-prefix>-edge-us "setup: multi-region-content-sync"
 ```bash
 pilotctl trust
 ```
+
+## Try It
+
+After setup is complete, run these commands to see data flowing between your agents:
+
+```bash
+# On <your-prefix>-origin — broadcast a content update to all edges:
+pilotctl send-file <your-prefix>-edge-us ./content/index.html
+pilotctl send-file <your-prefix>-edge-eu ./content/index.html
+pilotctl send-file <your-prefix>-edge-asia ./content/index.html
+pilotctl publish <your-prefix>-edge-us content-update '{"file":"index.html","version":42,"hash":"sha256:a1b2c3"}'
+pilotctl publish <your-prefix>-edge-eu content-update '{"file":"index.html","version":42,"hash":"sha256:a1b2c3"}'
+pilotctl publish <your-prefix>-edge-asia content-update '{"file":"index.html","version":42,"hash":"sha256:a1b2c3"}'
+
+# On any edge — confirm sync and send heartbeat:
+pilotctl publish <your-prefix>-origin sync-complete '{"region":"us","file":"index.html","version":42}'
+pilotctl publish <your-prefix>-origin heartbeat '{"region":"us","status":"healthy","disk_pct":34}'
+```

@@ -88,3 +88,22 @@ pilotctl handshake <your-prefix>-rag-indexer "rag pipeline"
 ```bash
 pilotctl trust
 ```
+
+## Try It
+
+After setup is complete, run these commands to see data flowing between your agents:
+
+```bash
+# On <your-prefix>-rag-ingest — send a document for processing:
+pilotctl send-file <your-prefix>-rag-embedder ./docs/architecture-guide.pdf
+pilotctl publish <your-prefix>-rag-embedder doc-ingested '{"doc_id":"doc-0042","chunks":24,"source":"architecture-guide.pdf"}'
+
+# On <your-prefix>-rag-embedder — send embeddings to indexer:
+pilotctl publish <your-prefix>-rag-indexer embeddings-ready '{"doc_id":"doc-0042","vectors":24,"model":"text-embedding-3-small","dims":1536}'
+
+# On <your-prefix>-rag-query — search the knowledge base:
+pilotctl task submit <your-prefix>-rag-indexer --task '{"query":"How does the auth middleware work?","top_k":5}'
+
+# On <your-prefix>-rag-indexer — return search results:
+pilotctl publish <your-prefix>-rag-query search-results '{"query_id":"Q-128","results":[{"doc":"architecture-guide.pdf","chunk":12,"score":0.94}]}'
+```

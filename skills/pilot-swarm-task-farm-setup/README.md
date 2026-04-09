@@ -100,3 +100,23 @@ pilotctl handshake <your-prefix>-worker-3 "swarm task farm"
 ```bash
 pilotctl trust
 ```
+
+## Try It
+
+After setup is complete, run these commands to see data flowing between your agents:
+
+```bash
+# On <your-prefix>-leader — distribute tasks to workers:
+pilotctl publish <your-prefix>-worker-1 task-assignment '{"task_id":"T-001","type":"image_resize","input":"batch-a.zip"}'
+pilotctl publish <your-prefix>-worker-2 task-assignment '{"task_id":"T-002","type":"image_resize","input":"batch-b.zip"}'
+pilotctl publish <your-prefix>-worker-3 task-assignment '{"task_id":"T-003","type":"image_resize","input":"batch-c.zip"}'
+
+# On <your-prefix>-worker-1 — complete and report:
+pilotctl publish <your-prefix>-leader task-result '{"task_id":"T-001","status":"success","output":"batch-a-resized.zip","duration_s":34}'
+pilotctl publish <your-prefix>-monitor worker-metrics '{"worker":"worker-1","cpu":72,"tasks_done":15,"queue":0}'
+
+# On <your-prefix>-monitor — check swarm health:
+pilotctl subscribe <your-prefix>-worker-1 worker-metrics
+pilotctl subscribe <your-prefix>-worker-2 worker-metrics
+pilotctl subscribe <your-prefix>-worker-3 worker-metrics
+```

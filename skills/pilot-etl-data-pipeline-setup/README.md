@@ -101,3 +101,25 @@ pilotctl handshake <your-prefix>-transform "setup: etl-data-pipeline"
 ```bash
 pilotctl trust
 ```
+
+## Try It
+
+After setup is complete, run these commands to see data flowing between your agents:
+
+```bash
+# On <your-prefix>-ingest — trigger data ingestion and send to transformer:
+pilotctl send-file <your-prefix>-transform ./data/raw/orders-2024-03.csv
+pilotctl publish <your-prefix>-transform ingest-batch '{"source":"s3://data/orders","rows":50000,"batch_id":"B-1042"}'
+
+# On <your-prefix>-transform — process and forward to validator:
+pilotctl send-file <your-prefix>-validate ./data/transformed/orders-B-1042.parquet
+pilotctl publish <your-prefix>-validate transform-complete '{"batch_id":"B-1042","rows_in":50000,"rows_out":49823}'
+
+# On <your-prefix>-validate — validate and forward good records:
+pilotctl send-file <your-prefix>-loader ./data/validated/orders-B-1042.parquet
+pilotctl publish <your-prefix>-loader validation-passed '{"batch_id":"B-1042","valid":49700,"quarantined":123}'
+pilotctl publish <your-prefix>-reporter validation-metrics '{"batch_id":"B-1042","error_rate":0.0025}'
+
+# On <your-prefix>-loader — load and send receipt:
+pilotctl publish <your-prefix>-reporter load-receipt '{"batch_id":"B-1042","rows_loaded":49700,"target":"warehouse.orders"}'
+```

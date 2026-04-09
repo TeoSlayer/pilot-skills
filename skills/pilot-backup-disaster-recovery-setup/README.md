@@ -100,3 +100,23 @@ pilotctl handshake <your-prefix>-backup-sched "backup dr"
 ```bash
 pilotctl trust
 ```
+
+## Try It
+
+After setup is complete, run these commands to see data flowing between your agents:
+
+```bash
+# On <your-prefix>-backup-sched — trigger a scheduled backup:
+pilotctl publish <your-prefix>-backup-primary backup-start '{"job_id":"BK-0315","type":"full","targets":["postgres","redis"]}'
+
+# On <your-prefix>-backup-primary — create and ship backup:
+pilotctl send-file <your-prefix>-backup-secondary ./backups/BK-0315-postgres.tar.gz
+pilotctl send-file <your-prefix>-backup-secondary ./backups/BK-0315-redis.rdb
+pilotctl publish <your-prefix>-backup-secondary sync-backup '{"job_id":"BK-0315","files":2,"size_mb":1240,"checksum":"sha256:d4e5f6"}'
+
+# On <your-prefix>-backup-secondary — confirm sync:
+pilotctl publish <your-prefix>-backup-sched sync-confirmed '{"job_id":"BK-0315","verified":true,"checksum_match":true}'
+
+# On <your-prefix>-restore-tester — test restore and report:
+pilotctl publish <your-prefix>-backup-sched restore-result '{"job_id":"BK-0315","restore":"success","tables_verified":42,"rows_checked":100000}'
+```

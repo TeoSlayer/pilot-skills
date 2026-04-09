@@ -85,3 +85,24 @@ pilotctl handshake <your-prefix>-coordinator "setup: dev-team-assistants"
 ```bash
 pilotctl trust
 ```
+
+## Try It
+
+After setup is complete, run these commands to see data flowing between your agents:
+
+```bash
+# On <your-prefix>-coordinator — fan out a new PR to all assistants:
+pilotctl task submit <your-prefix>-reviewer --task '{"pr":1234,"repo":"acme/api","action":"review","diff_url":"https://github.com/acme/api/pull/1234.diff"}'
+pilotctl task submit <your-prefix>-test-runner --task '{"pr":1234,"repo":"acme/api","action":"test","branch":"feature/auth"}'
+pilotctl task submit <your-prefix>-doc-writer --task '{"pr":1234,"repo":"acme/api","action":"docs","changed_files":["auth.go","middleware.go"]}'
+
+# On <your-prefix>-reviewer — return findings:
+pilotctl publish <your-prefix>-coordinator review-result '{"pr":1234,"issues":2,"approval":"changes_requested","comments":["missing error check on line 45"]}'
+
+# On <your-prefix>-test-runner — return test results:
+pilotctl publish <your-prefix>-coordinator test-result '{"pr":1234,"passed":89,"failed":0,"coverage":82}'
+
+# On <your-prefix>-doc-writer — return generated docs:
+pilotctl send-file <your-prefix>-coordinator ./docs/auth-middleware.md
+pilotctl publish <your-prefix>-coordinator docs-result '{"pr":1234,"files_generated":["auth-middleware.md"]}'
+```

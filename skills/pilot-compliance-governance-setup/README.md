@@ -94,3 +94,22 @@ pilotctl handshake <your-prefix>-certifier "compliance"
 ```bash
 pilotctl trust
 ```
+
+## Try It
+
+After setup is complete, run these commands to see data flowing between your agents:
+
+```bash
+# On <your-prefix>-policy — evaluate an agent action and route:
+pilotctl publish <your-prefix>-auditor policy-violation '{"agent":"data-processor-3","action":"write_to_prod","rule":"require-approval","severity":"high"}'
+pilotctl publish <your-prefix>-certifier cert-request '{"agent":"data-processor-1","scope":"prod-write","policy_checks_passed":true}'
+
+# On <your-prefix>-auditor — log and forward to reporter:
+pilotctl publish <your-prefix>-reporter audit-finding '{"finding_id":"AUD-0721","agent":"data-processor-3","violation":"unauthorized prod write","severity":"high"}'
+
+# On <your-prefix>-certifier — issue cert and notify reporter:
+pilotctl publish <your-prefix>-reporter cert-issued '{"agent":"data-processor-1","cert_id":"CERT-2024-0315","scope":"prod-write","expires":"2024-06-15"}'
+
+# On <your-prefix>-reporter — generate summary:
+pilotctl publish <your-prefix>-reporter slack-forward '{"channel":"#compliance","text":"Weekly report: 3 violations, 12 certs issued, 99.2% compliance rate"}'
+```

@@ -87,3 +87,22 @@ pilotctl handshake <your-prefix>-remediator "setup: incident-response"
 ```bash
 pilotctl trust
 ```
+
+## Try It
+
+After setup is complete, run these commands to see data flowing between your agents:
+
+```bash
+# On <your-prefix>-detector — publish an anomaly alert:
+pilotctl publish <your-prefix>-triage anomaly-detected '{"source":"web-01","type":"error_spike","rate":450,"threshold":100}'
+
+# On <your-prefix>-triage — classify and route to remediator:
+pilotctl publish <your-prefix>-remediator incident-action '{"id":"INC-2847","severity":"P1","action":"restart_service","target":"web-01"}'
+pilotctl publish <your-prefix>-notifier incident-alert '{"id":"INC-2847","severity":"P1","summary":"Error spike on web-01 (450/min)"}'
+
+# On <your-prefix>-remediator — execute and report:
+pilotctl publish <your-prefix>-notifier remediation-complete '{"id":"INC-2847","action":"restart_service","result":"success","duration_s":12}'
+
+# On <your-prefix>-notifier — forward to Slack:
+pilotctl publish <your-prefix>-notifier slack-forward '{"channel":"#incidents","text":"P1 INC-2847 resolved: web-01 restarted (12s)"}'
+```

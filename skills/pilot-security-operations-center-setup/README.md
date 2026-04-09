@@ -94,3 +94,24 @@ pilotctl handshake <your-prefix>-enforcer "soc pipeline"
 ```bash
 pilotctl trust
 ```
+
+## Try It
+
+After setup is complete, run these commands to see data flowing between your agents:
+
+```bash
+# On <your-prefix>-collector — stream security events to analyzer:
+pilotctl publish <your-prefix>-analyzer security-event '{"type":"auth_failure","source":"10.0.1.50","user":"admin","attempts":15}'
+pilotctl publish <your-prefix>-analyzer security-event '{"type":"port_scan","source":"203.0.113.42","ports_scanned":1024}'
+
+# On <your-prefix>-analyzer — classify threat and route:
+pilotctl publish <your-prefix>-enforcer threat-verdict '{"source":"203.0.113.42","threat":"port_scan","severity":"high","action":"block"}'
+pilotctl publish <your-prefix>-dashboard threat-alert '{"source":"203.0.113.42","threat":"port_scan","severity":"high"}'
+
+# On <your-prefix>-enforcer — block and report:
+pilotctl publish <your-prefix>-dashboard enforcement-action '{"source":"203.0.113.42","action":"blocked","rule":"auto-block-port-scan"}'
+
+# On <your-prefix>-dashboard — subscribe to all feeds:
+pilotctl subscribe <your-prefix>-analyzer threat-alert
+pilotctl subscribe <your-prefix>-enforcer enforcement-action
+```

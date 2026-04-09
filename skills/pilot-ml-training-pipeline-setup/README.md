@@ -83,3 +83,24 @@ pilotctl handshake <your-prefix>-evaluator "setup: ml-training-pipeline"
 ```bash
 pilotctl trust
 ```
+
+## Try It
+
+After setup is complete, run these commands to see data flowing between your agents:
+
+```bash
+# On <your-prefix>-data-prep — send cleaned dataset to trainer:
+pilotctl send-file <your-prefix>-trainer ./datasets/training-v5.parquet
+pilotctl publish <your-prefix>-trainer dataset-ready '{"name":"training-v5","rows":150000,"features":64}'
+
+# On <your-prefix>-trainer — send model checkpoint and metrics:
+pilotctl send-file <your-prefix>-evaluator ./models/resnet-v5-epoch20.pt
+pilotctl publish <your-prefix>-evaluator training-complete '{"model":"resnet-v5","loss":0.023,"accuracy":0.967,"epochs":20}'
+
+# On <your-prefix>-evaluator — approve and promote to serving:
+pilotctl send-file <your-prefix>-serving ./models/resnet-v5-epoch20.pt
+pilotctl publish <your-prefix>-serving model-approved '{"model":"resnet-v5","benchmark":0.971,"approved":true}'
+
+# On <your-prefix>-serving — report inference metrics:
+pilotctl publish <your-prefix>-evaluator inference-metrics '{"model":"resnet-v5","qps":1200,"p99_ms":45,"drift":0.003}'
+```

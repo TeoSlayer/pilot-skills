@@ -100,3 +100,24 @@ pilotctl handshake <your-prefix>-gateway "marketplace"
 ```bash
 pilotctl trust
 ```
+
+## Try It
+
+After setup is complete, run these commands to see data flowing between your agents:
+
+```bash
+# On <your-prefix>-gateway — submit a capability request:
+pilotctl publish <your-prefix>-matchmaker capability-request '{"requester":"client-a","need":"image-classification","budget":50}'
+
+# On <your-prefix>-matchmaker — query directory and find match:
+pilotctl publish <your-prefix>-directory discover-capability '{"capability":"image-classification","min_reputation":4.0}'
+
+# On <your-prefix>-directory — return matching providers:
+pilotctl publish <your-prefix>-matchmaker capability-match '{"providers":[{"agent":"img-classifier-1","reputation":4.8,"price":30}]}'
+
+# On <your-prefix>-matchmaker — initiate escrow:
+pilotctl publish <your-prefix>-escrow escrow-create '{"requester":"client-a","provider":"img-classifier-1","amount":30,"task":"image-classification"}'
+
+# On <your-prefix>-escrow — settle and update reputation:
+pilotctl publish <your-prefix>-directory reputation-update '{"agent":"img-classifier-1","rating":5,"transaction":"TXN-2891"}'
+```

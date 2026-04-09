@@ -73,3 +73,21 @@ pilotctl handshake <your-prefix>-a2a-bridge "mcp bridge fleet"
 ```bash
 pilotctl trust
 ```
+
+## Try It
+
+After setup is complete, run these commands to see data flowing between your agents:
+
+```bash
+# On <your-prefix>-mcp-gw — register an MCP tool:
+pilotctl publish <your-prefix>-tool-registry tool-register '{"name":"web-search","protocol":"mcp","provider":"<your-prefix>-mcp-gw","schema":{"query":"string"}}'
+
+# On <your-prefix>-a2a-bridge — register an A2A agent:
+pilotctl publish <your-prefix>-tool-registry tool-register '{"name":"code-review","protocol":"a2a","provider":"<your-prefix>-a2a-bridge","schema":{"repo":"string","pr":"number"}}'
+
+# On <your-prefix>-tool-registry — route a tool call to MCP:
+pilotctl publish <your-prefix>-mcp-gw tool-call '{"call_id":"C-401","tool":"web-search","params":{"query":"Pilot Protocol docs"}}'
+
+# On <your-prefix>-mcp-gw — return result:
+pilotctl publish <your-prefix>-tool-registry tool-result '{"call_id":"C-401","result":{"url":"https://pilotprotocol.network","title":"Pilot Protocol"}}'
+```

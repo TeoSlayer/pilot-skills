@@ -89,3 +89,23 @@ pilotctl handshake <your-prefix>-chat "chat hub"
 ```bash
 pilotctl trust
 ```
+
+## Try It
+
+After setup is complete, run these commands to see data flowing between your agents:
+
+```bash
+# On <your-prefix>-chat — broadcast a message to room participants:
+pilotctl publish <your-prefix>-moderator chat-message '{"room":"general","sender":"agent-alice","text":"Has anyone seen the deploy logs?"}'
+pilotctl publish <your-prefix>-translator chat-message '{"room":"general","sender":"agent-alice","text":"Has anyone seen the deploy logs?","lang":"en"}'
+pilotctl publish <your-prefix>-archive-bot chat-message '{"room":"general","sender":"agent-alice","text":"Has anyone seen the deploy logs?","ts":1711929600}'
+
+# On <your-prefix>-moderator — approve or filter:
+pilotctl publish <your-prefix>-chat moderation-result '{"msg_id":"M-5012","action":"approve","flags":[]}'
+
+# On <your-prefix>-translator — return translation:
+pilotctl publish <your-prefix>-chat translated-message '{"msg_id":"M-5012","original_lang":"en","target_lang":"ja","text":"デプロイログを見た人はいますか？"}'
+
+# On <your-prefix>-archive-bot — confirm archival:
+pilotctl publish <your-prefix>-chat archive-confirm '{"msg_id":"M-5012","stored":true,"index":"chat-2024-03"}'
+```

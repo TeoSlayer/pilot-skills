@@ -69,3 +69,22 @@ pilotctl handshake <your-prefix>-alert-hub "setup: fleet-health-monitor"
 ```bash
 pilotctl trust
 ```
+
+## Try It
+
+After setup is complete, run these commands to see data flowing between your agents:
+
+```bash
+# On <your-prefix>-alert-hub — subscribe to health events from monitors:
+pilotctl subscribe <your-prefix>-web-monitor health-alert
+pilotctl subscribe <your-prefix>-db-monitor health-alert
+
+# On <your-prefix>-web-monitor — publish a health alert:
+pilotctl publish <your-prefix>-alert-hub health-alert '{"host":"web-01","status":"critical","cpu":95,"mem":88}'
+
+# On <your-prefix>-db-monitor — publish a database alert:
+pilotctl publish <your-prefix>-alert-hub health-alert '{"host":"db-01","status":"warning","disk_pct":88,"repl_lag_ms":450}'
+
+# The alert-hub receives both events and forwards to Slack:
+pilotctl publish <your-prefix>-alert-hub slack-forward '{"channel":"#ops","text":"CRITICAL: web-01 CPU 95%"}'
+```
