@@ -1,0 +1,19 @@
+name: Trigger Website Deploy
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'skills.json'
+      - 'setups.json'
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger pilotprotocol website deploy
+        run: |
+          curl -X POST \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token ${{ secrets.PILOT_DEPLOY_TOKEN }}" \
+            https://api.github.com/repos/TeoSlayer/pilotprotocol/dispatches \
+            -d '{"event_type":"pilot-skills-updated"}'
