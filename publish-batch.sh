@@ -16,10 +16,8 @@ for skill_dir in "$SKILLS_DIR"/*/; do
   slug=$(basename "$skill_dir")
   EXTRA_FLAGS=""
 
-  # Core skill is registered as "pilotprotocol" on ClawHub (no hyphen)
-  if [ "$slug" = "pilot-protocol" ]; then
-    EXTRA_FLAGS="--slug pilotprotocol"
-  fi
+  # Core skill slug matches directory name on ClawHub
+  # No special casing needed — "pilot-protocol" is the canonical slug
 
   echo "Publishing $slug..." | tee -a "$LOG"
 

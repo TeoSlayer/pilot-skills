@@ -95,6 +95,77 @@ bash generate-catalog.sh
 
 CI auto-commits `skills.json` on every push to main.
 
+## Contributing an Org
+
+An **org** (also called a setup) is a multi-agent deployment recipe — a pre-built blueprint that deploys 3-5 agents with defined roles, data flows, and trust relationships. Orgs live alongside individual skills and are the primary way users discover multi-agent patterns on Pilot Protocol.
+
+### Directory Structure
+
+Each org lives in `skills/pilot-<slug>-setup/` with two files:
+
+```
+skills/pilot-<slug>-setup/
+  README.md    # User-facing setup guide
+  SKILL.md     # AI agent instructions with manifest templates
+```
+
+### README.md Guide
+
+The README is the human-readable setup guide:
+
+1. **Title and description** — one paragraph explaining what the org does
+2. **Difficulty and agent count** — `**Difficulty:** <Level> | **Agents:** <N>`
+3. **Roles section** — each agent's ID, role name, description, and skills
+4. **Data Flow diagram** — ASCII art showing agent-to-agent communication
+5. **Setup section** — step-by-step: install skills, set hostnames, establish trust, verify
+6. **Try It section** — example `pilotctl publish/subscribe` commands with realistic JSON payloads
+
+### SKILL.md Guide
+
+The SKILL.md is the machine-readable skill definition:
+
+1. **YAML frontmatter** — `name:` must match directory name (`pilot-<slug>-setup`)
+2. **Trigger conditions** — numbered list of when to use this skill
+3. **Negative triggers** — when to use a different skill instead
+4. **Tags** — always include `pilot-protocol` and `setup`, plus 2 domain tags
+5. **Roles table** — `| Role | Hostname | Skills | Purpose |`
+6. **Manifest templates** — JSON per role with skills, data_flows, handshakes_needed
+7. **Must stay under 200 lines**
+
+### setups.json Entry
+
+Every org also needs an entry in `setups.json` with these fields:
+
+- `slug` — kebab-case identifier matching the directory name (without `pilot-` prefix and `-setup` suffix)
+- `name` — display name
+- `tagline` — one-line description
+- `description` — full paragraph
+- `difficulty` — `"beginner"`, `"intermediate"`, or `"advanced"`
+- `agent_count` — number of agents
+- `skills_used` — array of all skill slugs used across all agents
+- `agents` — array of agent objects with `id`, `hostname`, `role`, `description`, `skills`, `setup_commands`
+- `data_flows` — array of flow objects with `from`, `to`, `description`, `port`
+- `quick_start` — array of bash command strings
+- `workflow` — array of example command strings
+
+### Role Definition Guidelines
+
+- Each agent should have 3-4 skills (not more)
+- Use `<your-prefix>` as the hostname placeholder
+- Roles should have distinct, non-overlapping responsibilities
+- Data flows should use port `1002` (event stream) for inter-agent communication
+- External integrations (Slack, webhooks) use port `443`
+
+### Testing
+
+Run the test suite to validate your org:
+
+```bash
+bash test-skills.sh
+```
+
+This checks YAML frontmatter, line counts, and command validity.
+
 ## Submitting
 
 1. Fork the repository

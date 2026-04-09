@@ -3,13 +3,13 @@
 [![Tests](https://github.com/TeoSlayer/pilot-skills/actions/workflows/test.yml/badge.svg)](https://github.com/TeoSlayer/pilot-skills/actions/workflows/test.yml)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
 [![Skills](https://img.shields.io/badge/skills-81-22c55e)](https://teoslayer.github.io/pilot-skills/)
-[![ClawHub](https://img.shields.io/badge/ClawHub-vulture--labs-orange)](https://clawhub.ai/teoslayer/pilotprotocol)
+[![ClawHub](https://img.shields.io/badge/ClawHub-teoslayer-orange)](https://clawhub.ai/teoslayer/pilot-protocol)
 
 A collection of agent skills built on [Pilot Protocol](https://pilotprotocol.network) — the overlay network stack for AI agents.
 
 Each skill wraps `pilotctl` to provide a focused capability: messaging, file sync, trust management, task routing, swarm coordination, and more. All skills depend on the core `pilot-protocol` skill and a running Pilot daemon.
 
-**[Browse the catalog](https://teoslayer.github.io/pilot-skills/)** &middot; **[Skill Zoo](https://pilotprotocol.network/for/skills)** &middot; **[ClawHub](https://clawhub.ai/teoslayer/pilotprotocol)**
+**[Browse the catalog](https://teoslayer.github.io/pilot-skills/)** &middot; **[Skill Zoo](https://pilotprotocol.network/for/skills)** &middot; **[ClawHub](https://clawhub.ai/teoslayer/pilot-protocol)**
 
 ## Quick Start
 
@@ -146,6 +146,52 @@ clawhub install pilot-chat
 | [pilot-swarm-config](skills/pilot-swarm-config/) | Distributed configuration management for swarms |
 | [pilot-formation](skills/pilot-formation/) | Deploy predefined topologies — star, ring, mesh, tree |
 
+### Deployment Orgs
+
+Pre-built multi-agent deployment recipes. Each org deploys 3-5 agents with defined roles, trust relationships, and data flows.
+
+**Beginner**
+
+| Org | Agents | Description |
+|-----|--------|-------------|
+| [Fleet Health Monitor](skills/pilot-fleet-health-monitor-setup/) | 3 | Monitor servers, detect anomalies, alert humans |
+| [Chat Collaboration Hub](skills/pilot-chat-collaboration-hub-setup/) | 4 | Multi-agent chat with moderation, translation, and archiving |
+| [Content Marketing Pipeline](skills/pilot-content-marketing-pipeline-setup/) | 3 | Research, write, and publish content |
+| [Customer Support Triage](skills/pilot-customer-support-triage-setup/) | 3 | Classify, resolve, and escalate support tickets |
+| [Social Media Manager](skills/pilot-social-media-manager-setup/) | 3 | Plan, create, and analyze social media content |
+
+**Intermediate**
+
+| Org | Agents | Description |
+|-----|--------|-------------|
+| [CI/CD Pipeline](skills/pilot-ci-cd-pipeline-setup/) | 3 | Build, test, and deploy with zero central server |
+| [ML Training Pipeline](skills/pilot-ml-training-pipeline-setup/) | 4 | End-to-end ML: data prep, training, evaluation, serving |
+| [Multi-Region Content Sync](skills/pilot-multi-region-content-sync-setup/) | 4 | Origin + edge node content distribution |
+| [Knowledge Base RAG](skills/pilot-knowledge-base-rag-setup/) | 4 | Ingest, embed, index, and query documents |
+| [MCP Bridge Fleet](skills/pilot-mcp-bridge-fleet-setup/) | 3 | Bridge MCP and A2A protocols over Pilot tunnels |
+| [Cloud Cost Optimizer](skills/pilot-cloud-cost-optimizer-setup/) | 4 | Scan, analyze, optimize, and report cloud spending |
+| [Legal Contract Review](skills/pilot-legal-contract-review-setup/) | 3 | Extract clauses, assess risk, summarize contracts |
+| [AI Tutoring System](skills/pilot-ai-tutoring-system-setup/) | 3 | Curate lessons, tutor learners, assess knowledge gaps |
+| [Smart Home Coordinator](skills/pilot-smart-home-coordinator-setup/) | 4 | Collect sensor data, coordinate devices, display status |
+
+**Advanced**
+
+| Org | Agents | Description |
+|-----|--------|-------------|
+| [Incident Response](skills/pilot-incident-response-setup/) | 4 | Detect, triage, remediate, and notify on incidents |
+| [Dev Team Assistants](skills/pilot-dev-team-assistants-setup/) | 4 | Code review, test running, doc writing, coordination |
+| [ETL Data Pipeline](skills/pilot-etl-data-pipeline-setup/) | 5 | Five-stage data pipeline: ingest, transform, validate, load, report |
+| [Swarm Task Farm](skills/pilot-swarm-task-farm-setup/) | 5 | Self-organizing compute swarm with leader election |
+| [Security Operations Center](skills/pilot-security-operations-center-setup/) | 4 | Log collection, threat analysis, enforcement, dashboard |
+| [Agent Marketplace](skills/pilot-agent-marketplace-setup/) | 4 | Decentralized agent marketplace with escrow |
+| [Backup & Disaster Recovery](skills/pilot-backup-disaster-recovery-setup/) | 4 | Scheduled backups, offsite replication, restore testing |
+| [Compliance & Governance](skills/pilot-compliance-governance-setup/) | 4 | Policy enforcement, auditing, certification, reporting |
+| [Supply Chain Orchestrator](skills/pilot-supply-chain-orchestrator-setup/) | 4 | Inventory, routing, procurement, compliance |
+| [Financial Trading Desk](skills/pilot-financial-trading-desk-setup/) | 4 | Market analysis, sentiment, risk management, execution |
+| [Scientific Research Team](skills/pilot-scientific-research-team-setup/) | 4 | Literature review, hypothesis, experiments, reports |
+| [Fraud Detection Pipeline](skills/pilot-fraud-detection-pipeline-setup/) | 4 | Transaction monitoring, pattern analysis, investigation, enforcement |
+| [Game NPC Network](skills/pilot-game-npc-network-setup/) | 4 | Autonomous NPC village with emergent narratives |
+
 ## Architecture
 
 The core skill includes detailed reference documentation:
@@ -217,7 +263,7 @@ AGPL-3.0 — see [LICENSE](LICENSE) for details.
 
 - [Skill Catalog](https://teoslayer.github.io/pilot-skills/) — Browse all skills
 - [Skill Zoo](https://pilotprotocol.network/for/skills) — Marketing page on the website
-- [ClawHub](https://clawhub.ai/teoslayer/pilotprotocol) — Install skills
+- [ClawHub](https://clawhub.ai/teoslayer/pilot-protocol) — Install skills
 - [Pilot Protocol](https://pilotprotocol.network) — Project website
 - [Core Skill](skills/pilot-protocol/SKILL.md) — The base `pilot-protocol` skill
 - [IETF Draft](https://datatracker.ietf.org/doc/draft-teodor-pilot-problem-statement/) — Standards track
