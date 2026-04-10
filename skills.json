@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-04-09T22:36:57Z",
+  "generated_at": "2026-04-10T16:37:22Z",
   "version": "1.0.0",
-  "total": 108,
+  "total": 141,
   "categories": [
     {
       "name": "Core",
@@ -1438,6 +1438,24 @@
       "slug": "setups",
       "skills": [
         {
+          "slug": "pilot-ad-campaign-manager-setup",
+          "name": "pilot-ad-campaign-manager-setup",
+          "description": "Deploy an ad campaign management system with 4 agents that automate campaign strategy, creative production, real-time bidding, and performance analytics.",
+          "tags": [
+            "pilot-protocol",
+            "setup",
+            "advertising",
+            "campaigns",
+            "bidding"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-ad-campaign-manager-setup",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-ad-campaign-manager-setup",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-ad-campaign-manager-setup",
+          "install": "clawhub install pilot-ad-campaign-manager-setup"
+        },
+        {
           "slug": "pilot-agent-marketplace-setup",
           "name": "pilot-agent-marketplace-setup",
           "description": "Deploy a decentralized agent marketplace with 4 agents.",
@@ -1473,6 +1491,42 @@
           "install": "clawhub install pilot-ai-tutoring-system-setup"
         },
         {
+          "slug": "pilot-api-gateway-manager-setup",
+          "name": "pilot-api-gateway-manager-setup",
+          "description": "Deploy an API gateway management system with 4 agents.",
+          "tags": [
+            "pilot-protocol",
+            "setup",
+            "api-gateway",
+            "microservices",
+            "routing"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-api-gateway-manager-setup",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-api-gateway-manager-setup",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-api-gateway-manager-setup",
+          "install": "clawhub install pilot-api-gateway-manager-setup"
+        },
+        {
+          "slug": "pilot-autonomous-warehouse-setup",
+          "name": "pilot-autonomous-warehouse-setup",
+          "description": "Deploy an autonomous warehouse orchestration system with 4 agents.",
+          "tags": [
+            "pilot-protocol",
+            "setup",
+            "warehouse",
+            "logistics",
+            "robotics"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-autonomous-warehouse-setup",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-autonomous-warehouse-setup",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-autonomous-warehouse-setup",
+          "install": "clawhub install pilot-autonomous-warehouse-setup"
+        },
+        {
           "slug": "pilot-backup-disaster-recovery-setup",
           "name": "pilot-backup-disaster-recovery-setup",
           "description": "Deploy a backup and disaster recovery system with 4 agents.",
@@ -1488,6 +1542,24 @@
           "clawhub_url": "https://clawhub.ai/teoslayer/pilot-backup-disaster-recovery-setup",
           "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-backup-disaster-recovery-setup",
           "install": "clawhub install pilot-backup-disaster-recovery-setup"
+        },
+        {
+          "slug": "pilot-brand-protection-setup",
+          "name": "pilot-brand-protection-setup",
+          "description": "Deploy a brand protection system with 4 agents for scanning, classification, enforcement, and reporting.",
+          "tags": [
+            "pilot-protocol",
+            "setup",
+            "brand-protection",
+            "compliance",
+            "monitoring"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-brand-protection-setup",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-brand-protection-setup",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-brand-protection-setup",
+          "install": "clawhub install pilot-brand-protection-setup"
         },
         {
           "slug": "pilot-chat-collaboration-hub-setup",
@@ -1542,6 +1614,40 @@
           "install": "clawhub install pilot-cloud-cost-optimizer-setup"
         },
         {
+          "slug": "pilot-code-review-pipeline-setup",
+          "name": "pilot-code-review-pipeline-setup",
+          "description": "Deploy an automated code review pipeline with 3 agents.",
+          "tags": [
+            "pilot-protocol",
+            "setup",
+            "code-review",
+            "ci-cd"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-code-review-pipeline-setup",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-code-review-pipeline-setup",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-code-review-pipeline-setup",
+          "install": "clawhub install pilot-code-review-pipeline-setup"
+        },
+        {
+          "slug": "pilot-competitor-intelligence-setup",
+          "name": "pilot-competitor-intelligence-setup",
+          "description": "Deploy a competitive intelligence system with 4 agents for crawling, analysis, tracking, and alerting.",
+          "tags": [
+            "pilot-protocol",
+            "setup",
+            "intelligence",
+            "competitive-analysis"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-competitor-intelligence-setup",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-competitor-intelligence-setup",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-competitor-intelligence-setup",
+          "install": "clawhub install pilot-competitor-intelligence-setup"
+        },
+        {
           "slug": "pilot-compliance-governance-setup",
           "name": "pilot-compliance-governance-setup",
           "description": "Deploy a compliance and governance system with 4 agents.",
@@ -1577,6 +1683,24 @@
           "install": "clawhub install pilot-content-marketing-pipeline-setup"
         },
         {
+          "slug": "pilot-customer-onboarding-setup",
+          "name": "pilot-customer-onboarding-setup",
+          "description": "Deploy a customer onboarding system with 3 agents that automate the new customer journey from welcome through setup to success tracking.",
+          "tags": [
+            "pilot-protocol",
+            "setup",
+            "onboarding",
+            "customer-success",
+            "saas"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-customer-onboarding-setup",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-customer-onboarding-setup",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-customer-onboarding-setup",
+          "install": "clawhub install pilot-customer-onboarding-setup"
+        },
+        {
           "slug": "pilot-customer-support-triage-setup",
           "name": "pilot-customer-support-triage-setup",
           "description": "Deploy a customer support triage system with 3 agents.",
@@ -1593,6 +1717,23 @@
           "clawhub_url": "https://clawhub.ai/teoslayer/pilot-customer-support-triage-setup",
           "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-customer-support-triage-setup",
           "install": "clawhub install pilot-customer-support-triage-setup"
+        },
+        {
+          "slug": "pilot-data-labeling-pipeline-setup",
+          "name": "pilot-data-labeling-pipeline-setup",
+          "description": "Deploy a data labeling pipeline with 4 agents for ingestion, auto-labeling, quality review, and dataset export.",
+          "tags": [
+            "pilot-protocol",
+            "setup",
+            "data-labeling",
+            "machine-learning"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-data-labeling-pipeline-setup",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-data-labeling-pipeline-setup",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-data-labeling-pipeline-setup",
+          "install": "clawhub install pilot-data-labeling-pipeline-setup"
         },
         {
           "slug": "pilot-dev-team-assistants-setup",
@@ -1612,6 +1753,95 @@
           "install": "clawhub install pilot-dev-team-assistants-setup"
         },
         {
+          "slug": "pilot-digital-twin-setup",
+          "name": "pilot-digital-twin-setup",
+          "description": "Deploy a digital twin platform with 4 agents.",
+          "tags": [
+            "pilot-protocol",
+            "setup",
+            "digital-twin",
+            "iot",
+            "predictive-maintenance"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-digital-twin-setup",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-digital-twin-setup",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-digital-twin-setup",
+          "install": "clawhub install pilot-digital-twin-setup"
+        },
+        {
+          "slug": "pilot-disaster-response-setup",
+          "name": "pilot-disaster-response-setup",
+          "description": "Deploy a disaster response coordination system with 4 agents.",
+          "tags": [
+            "pilot-protocol",
+            "setup",
+            "disaster-response",
+            "emergency",
+            "public-safety"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-disaster-response-setup",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-disaster-response-setup",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-disaster-response-setup",
+          "install": "clawhub install pilot-disaster-response-setup"
+        },
+        {
+          "slug": "pilot-document-processing-setup",
+          "name": "pilot-document-processing-setup",
+          "description": "Deploy a document processing pipeline with 3 agents that automate ingestion, data extraction, and search indexing.",
+          "tags": [
+            "pilot-protocol",
+            "setup",
+            "documents",
+            "extraction",
+            "indexing"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-document-processing-setup",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-document-processing-setup",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-document-processing-setup",
+          "install": "clawhub install pilot-document-processing-setup"
+        },
+        {
+          "slug": "pilot-e-commerce-ops-setup",
+          "name": "pilot-e-commerce-ops-setup",
+          "description": "Deploy an e-commerce operations system with 4 agents for catalog, orders, inventory, and support.",
+          "tags": [
+            "pilot-protocol",
+            "setup",
+            "e-commerce",
+            "operations"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-e-commerce-ops-setup",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-e-commerce-ops-setup",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-e-commerce-ops-setup",
+          "install": "clawhub install pilot-e-commerce-ops-setup"
+        },
+        {
+          "slug": "pilot-energy-grid-optimizer-setup",
+          "name": "pilot-energy-grid-optimizer-setup",
+          "description": "Deploy an energy grid optimization system with 4 agents.",
+          "tags": [
+            "pilot-protocol",
+            "setup",
+            "energy",
+            "smart-grid",
+            "iot"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-energy-grid-optimizer-setup",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-energy-grid-optimizer-setup",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-energy-grid-optimizer-setup",
+          "install": "clawhub install pilot-energy-grid-optimizer-setup"
+        },
+        {
           "slug": "pilot-etl-data-pipeline-setup",
           "name": "pilot-etl-data-pipeline-setup",
           "description": "Deploy a five-stage ETL data pipeline with 5 agents.",
@@ -1627,6 +1857,42 @@
           "clawhub_url": "https://clawhub.ai/teoslayer/pilot-etl-data-pipeline-setup",
           "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-etl-data-pipeline-setup",
           "install": "clawhub install pilot-etl-data-pipeline-setup"
+        },
+        {
+          "slug": "pilot-expense-tracker-setup",
+          "name": "pilot-expense-tracker-setup",
+          "description": "Deploy an expense tracking pipeline with 3 agents that automate receipt collection, categorization, and report generation.",
+          "tags": [
+            "pilot-protocol",
+            "setup",
+            "expense",
+            "finance",
+            "receipts"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-expense-tracker-setup",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-expense-tracker-setup",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-expense-tracker-setup",
+          "install": "clawhub install pilot-expense-tracker-setup"
+        },
+        {
+          "slug": "pilot-feedback-collector-setup",
+          "name": "pilot-feedback-collector-setup",
+          "description": "Deploy a feedback collection pipeline with 3 agents that automate intake, sentiment analysis, and actionable routing.",
+          "tags": [
+            "pilot-protocol",
+            "setup",
+            "feedback",
+            "sentiment",
+            "customer-experience"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-feedback-collector-setup",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-feedback-collector-setup",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-feedback-collector-setup",
+          "install": "clawhub install pilot-feedback-collector-setup"
         },
         {
           "slug": "pilot-financial-trading-desk-setup",
@@ -1700,6 +1966,23 @@
           "install": "clawhub install pilot-game-npc-network-setup"
         },
         {
+          "slug": "pilot-healthcare-triage-setup",
+          "name": "pilot-healthcare-triage-setup",
+          "description": "Deploy a healthcare triage system with 4 agents for patient intake, symptom analysis, appointment scheduling, and HIPAA-compliant records.",
+          "tags": [
+            "pilot-protocol",
+            "setup",
+            "healthcare",
+            "triage"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-healthcare-triage-setup",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-healthcare-triage-setup",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-healthcare-triage-setup",
+          "install": "clawhub install pilot-healthcare-triage-setup"
+        },
+        {
           "slug": "pilot-incident-response-setup",
           "name": "pilot-incident-response-setup",
           "description": "Deploy an incident response pipeline with 4 agents.",
@@ -1715,6 +1998,24 @@
           "clawhub_url": "https://clawhub.ai/teoslayer/pilot-incident-response-setup",
           "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-incident-response-setup",
           "install": "clawhub install pilot-incident-response-setup"
+        },
+        {
+          "slug": "pilot-inventory-management-setup",
+          "name": "pilot-inventory-management-setup",
+          "description": "Deploy an inventory management system with 3 agents.",
+          "tags": [
+            "pilot-protocol",
+            "setup",
+            "inventory",
+            "warehouse",
+            "supply-chain"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-inventory-management-setup",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-inventory-management-setup",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-inventory-management-setup",
+          "install": "clawhub install pilot-inventory-management-setup"
         },
         {
           "slug": "pilot-knowledge-base-rag-setup",
@@ -1752,6 +2053,24 @@
           "install": "clawhub install pilot-legal-contract-review-setup"
         },
         {
+          "slug": "pilot-log-analytics-setup",
+          "name": "pilot-log-analytics-setup",
+          "description": "Deploy a log analytics system with 4 agents for collection, parsing, alerting, and visualization.",
+          "tags": [
+            "pilot-protocol",
+            "setup",
+            "log-analytics",
+            "observability",
+            "monitoring"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-log-analytics-setup",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-log-analytics-setup",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-log-analytics-setup",
+          "install": "clawhub install pilot-log-analytics-setup"
+        },
+        {
           "slug": "pilot-mcp-bridge-fleet-setup",
           "name": "pilot-mcp-bridge-fleet-setup",
           "description": "Deploy an MCP and A2A bridge fleet with 3 agents.",
@@ -1767,6 +2086,42 @@
           "clawhub_url": "https://clawhub.ai/teoslayer/pilot-mcp-bridge-fleet-setup",
           "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-mcp-bridge-fleet-setup",
           "install": "clawhub install pilot-mcp-bridge-fleet-setup"
+        },
+        {
+          "slug": "pilot-media-monitoring-setup",
+          "name": "pilot-media-monitoring-setup",
+          "description": "Deploy a media monitoring and intelligence platform with 4 agents.",
+          "tags": [
+            "pilot-protocol",
+            "setup",
+            "media",
+            "monitoring",
+            "sentiment"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-media-monitoring-setup",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-media-monitoring-setup",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-media-monitoring-setup",
+          "install": "clawhub install pilot-media-monitoring-setup"
+        },
+        {
+          "slug": "pilot-meeting-assistant-setup",
+          "name": "pilot-meeting-assistant-setup",
+          "description": "Deploy a meeting assistant system with 3 agents.",
+          "tags": [
+            "pilot-protocol",
+            "setup",
+            "meetings",
+            "productivity",
+            "collaboration"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-meeting-assistant-setup",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-meeting-assistant-setup",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-meeting-assistant-setup",
+          "install": "clawhub install pilot-meeting-assistant-setup"
         },
         {
           "slug": "pilot-ml-training-pipeline-setup",
@@ -1801,6 +2156,162 @@
           "clawhub_url": "https://clawhub.ai/teoslayer/pilot-multi-region-content-sync-setup",
           "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-multi-region-content-sync-setup",
           "install": "clawhub install pilot-multi-region-content-sync-setup"
+        },
+        {
+          "slug": "pilot-newsletter-automation-setup",
+          "name": "pilot-newsletter-automation-setup",
+          "description": "Deploy an automated newsletter pipeline with 3 agents.",
+          "tags": [
+            "pilot-protocol",
+            "setup",
+            "newsletter",
+            "email"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-newsletter-automation-setup",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-newsletter-automation-setup",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-newsletter-automation-setup",
+          "install": "clawhub install pilot-newsletter-automation-setup"
+        },
+        {
+          "slug": "pilot-penetration-testing-setup",
+          "name": "pilot-penetration-testing-setup",
+          "description": "Deploy an automated penetration testing pipeline with 4 agents.",
+          "tags": [
+            "pilot-protocol",
+            "setup",
+            "security",
+            "pentest"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-penetration-testing-setup",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-penetration-testing-setup",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-penetration-testing-setup",
+          "install": "clawhub install pilot-penetration-testing-setup"
+        },
+        {
+          "slug": "pilot-podcast-production-setup",
+          "name": "pilot-podcast-production-setup",
+          "description": "Deploy a podcast production pipeline with 3 agents.",
+          "tags": [
+            "pilot-protocol",
+            "setup",
+            "podcast",
+            "production",
+            "media"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-podcast-production-setup",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-podcast-production-setup",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-podcast-production-setup",
+          "install": "clawhub install pilot-podcast-production-setup"
+        },
+        {
+          "slug": "pilot-proposal-writer-setup",
+          "name": "pilot-proposal-writer-setup",
+          "description": "Deploy a multi-agent proposal writing system with 3 agents.",
+          "tags": [
+            "pilot-protocol",
+            "setup",
+            "proposal",
+            "writing"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-proposal-writer-setup",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-proposal-writer-setup",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-proposal-writer-setup",
+          "install": "clawhub install pilot-proposal-writer-setup"
+        },
+        {
+          "slug": "pilot-quality-assurance-pipeline-setup",
+          "name": "pilot-quality-assurance-pipeline-setup",
+          "description": "Deploy a quality assurance pipeline with 3 agents that automate test generation, execution, and reporting.",
+          "tags": [
+            "pilot-protocol",
+            "setup",
+            "testing",
+            "qa",
+            "quality-assurance"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-quality-assurance-pipeline-setup",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-quality-assurance-pipeline-setup",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-quality-assurance-pipeline-setup",
+          "install": "clawhub install pilot-quality-assurance-pipeline-setup"
+        },
+        {
+          "slug": "pilot-real-estate-analyzer-setup",
+          "name": "pilot-real-estate-analyzer-setup",
+          "description": "Deploy a real estate analysis system with 4 agents for property scraping, market valuation, comparable analysis, and deal alerting.",
+          "tags": [
+            "pilot-protocol",
+            "setup",
+            "real-estate",
+            "investment"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-real-estate-analyzer-setup",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-real-estate-analyzer-setup",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-real-estate-analyzer-setup",
+          "install": "clawhub install pilot-real-estate-analyzer-setup"
+        },
+        {
+          "slug": "pilot-recruitment-pipeline-setup",
+          "name": "pilot-recruitment-pipeline-setup",
+          "description": "Deploy a recruitment pipeline with 3 agents for candidate sourcing, screening, and interview scheduling.",
+          "tags": [
+            "pilot-protocol",
+            "setup",
+            "recruitment",
+            "hiring"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-recruitment-pipeline-setup",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-recruitment-pipeline-setup",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-recruitment-pipeline-setup",
+          "install": "clawhub install pilot-recruitment-pipeline-setup"
+        },
+        {
+          "slug": "pilot-release-management-setup",
+          "name": "pilot-release-management-setup",
+          "description": "Deploy an automated release management pipeline with 3 agents.",
+          "tags": [
+            "pilot-protocol",
+            "setup",
+            "release",
+            "changelog"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-release-management-setup",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-release-management-setup",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-release-management-setup",
+          "install": "clawhub install pilot-release-management-setup"
+        },
+        {
+          "slug": "pilot-sales-pipeline-setup",
+          "name": "pilot-sales-pipeline-setup",
+          "description": "Deploy a sales pipeline with 4 agents that automate lead prospecting, qualification, outreach, and CRM synchronization.",
+          "tags": [
+            "pilot-protocol",
+            "setup",
+            "sales",
+            "pipeline",
+            "crm"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-sales-pipeline-setup",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-sales-pipeline-setup",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-sales-pipeline-setup",
+          "install": "clawhub install pilot-sales-pipeline-setup"
         },
         {
           "slug": "pilot-scientific-research-team-setup",
@@ -1874,6 +2385,24 @@
           "install": "clawhub install pilot-social-media-manager-setup"
         },
         {
+          "slug": "pilot-status-page-setup",
+          "name": "pilot-status-page-setup",
+          "description": "Deploy a status page pipeline with 3 agents that automate service monitoring, status aggregation, and public incident communication.",
+          "tags": [
+            "pilot-protocol",
+            "setup",
+            "status-page",
+            "monitoring",
+            "incidents"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-status-page-setup",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-status-page-setup",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-status-page-setup",
+          "install": "clawhub install pilot-status-page-setup"
+        },
+        {
           "slug": "pilot-supply-chain-orchestrator-setup",
           "name": "pilot-supply-chain-orchestrator-setup",
           "description": "Deploy a supply chain orchestration pipeline with 4 agents.",
@@ -1907,6 +2436,59 @@
           "clawhub_url": "https://clawhub.ai/teoslayer/pilot-swarm-task-farm-setup",
           "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-swarm-task-farm-setup",
           "install": "clawhub install pilot-swarm-task-farm-setup"
+        },
+        {
+          "slug": "pilot-threat-intelligence-setup",
+          "name": "pilot-threat-intelligence-setup",
+          "description": "Deploy a threat intelligence platform with 4 agents.",
+          "tags": [
+            "pilot-protocol",
+            "setup",
+            "security",
+            "threat-intelligence",
+            "cyber"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-threat-intelligence-setup",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-threat-intelligence-setup",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-threat-intelligence-setup",
+          "install": "clawhub install pilot-threat-intelligence-setup"
+        },
+        {
+          "slug": "pilot-translation-pipeline-setup",
+          "name": "pilot-translation-pipeline-setup",
+          "description": "Deploy an automated translation pipeline with 3 agents.",
+          "tags": [
+            "pilot-protocol",
+            "setup",
+            "translation",
+            "localization"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-translation-pipeline-setup",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-translation-pipeline-setup",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-translation-pipeline-setup",
+          "install": "clawhub install pilot-translation-pipeline-setup"
+        },
+        {
+          "slug": "pilot-video-production-pipeline-setup",
+          "name": "pilot-video-production-pipeline-setup",
+          "description": "Deploy a video production pipeline with 3 agents that automate script writing, editing coordination, and multi-platform distribution.",
+          "tags": [
+            "pilot-protocol",
+            "setup",
+            "video",
+            "content",
+            "production"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-video-production-pipeline-setup",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-video-production-pipeline-setup",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-video-production-pipeline-setup",
+          "install": "clawhub install pilot-video-production-pipeline-setup"
         }
       ]
     }

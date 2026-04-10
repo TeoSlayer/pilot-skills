@@ -2,7 +2,7 @@
 
 [![Tests](https://github.com/TeoSlayer/pilot-skills/actions/workflows/test.yml/badge.svg)](https://github.com/TeoSlayer/pilot-skills/actions/workflows/test.yml)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
-[![Skills](https://img.shields.io/badge/skills-81-22c55e)](https://teoslayer.github.io/pilot-skills/)
+[![Skills](https://img.shields.io/badge/skills-141-22c55e)](https://teoslayer.github.io/pilot-skills/)
 [![ClawHub](https://img.shields.io/badge/ClawHub-teoslayer-orange)](https://clawhub.ai/teoslayer/pilot-protocol)
 
 A collection of agent skills built on [Pilot Protocol](https://pilotprotocol.network) — the overlay network stack for AI agents.
@@ -148,49 +148,82 @@ clawhub install pilot-chat
 
 ### Deployment Orgs
 
-Pre-built multi-agent deployment recipes. Each org deploys 3-5 agents with defined roles, trust relationships, and data flows.
+Pre-built multi-agent deployment recipes. Each org deploys 3-5 agents with defined roles, trust relationships, and data flows. **60 orgs** across beginner, intermediate, and advanced difficulty levels.
 
-**Beginner**
+**Beginner** (16 orgs)
 
-| Org | Agents | Description |
-|-----|--------|-------------|
-| [Fleet Health Monitor](skills/pilot-fleet-health-monitor-setup/) | 3 | Monitor servers, detect anomalies, alert humans |
-| [Chat Collaboration Hub](skills/pilot-chat-collaboration-hub-setup/) | 4 | Multi-agent chat with moderation, translation, and archiving |
-| [Content Marketing Pipeline](skills/pilot-content-marketing-pipeline-setup/) | 3 | Research, write, and publish content |
-| [Customer Support Triage](skills/pilot-customer-support-triage-setup/) | 3 | Classify, resolve, and escalate support tickets |
-| [Social Media Manager](skills/pilot-social-media-manager-setup/) | 3 | Plan, create, and analyze social media content |
+| Org | Agents |
+|-----|--------|
+| [Code Review Pipeline](skills/pilot-code-review-pipeline-setup/) | 3 |
+| [Content Marketing Pipeline](skills/pilot-content-marketing-pipeline-setup/) | 3 |
+| [Customer Support Triage](skills/pilot-customer-support-triage-setup/) | 3 |
+| [Document Processing](skills/pilot-document-processing-setup/) | 3 |
+| [Expense Tracker](skills/pilot-expense-tracker-setup/) | 3 |
+| [Feedback Collector](skills/pilot-feedback-collector-setup/) | 3 |
+| [Fleet Health Monitor](skills/pilot-fleet-health-monitor-setup/) | 3 |
+| [Inventory Management](skills/pilot-inventory-management-setup/) | 3 |
+| [MCP Bridge Fleet](skills/pilot-mcp-bridge-fleet-setup/) | 3 |
+| [Meeting Assistant](skills/pilot-meeting-assistant-setup/) | 3 |
+| [Newsletter Automation](skills/pilot-newsletter-automation-setup/) | 3 |
+| [Podcast Production](skills/pilot-podcast-production-setup/) | 3 |
+| [Release Management](skills/pilot-release-management-setup/) | 3 |
+| [Social Media Manager](skills/pilot-social-media-manager-setup/) | 3 |
+| [Status Page](skills/pilot-status-page-setup/) | 3 |
+| [Translation Pipeline](skills/pilot-translation-pipeline-setup/) | 3 |
 
-**Intermediate**
+**Intermediate** (22 orgs)
 
-| Org | Agents | Description |
-|-----|--------|-------------|
-| [CI/CD Pipeline](skills/pilot-ci-cd-pipeline-setup/) | 3 | Build, test, and deploy with zero central server |
-| [ML Training Pipeline](skills/pilot-ml-training-pipeline-setup/) | 4 | End-to-end ML: data prep, training, evaluation, serving |
-| [Multi-Region Content Sync](skills/pilot-multi-region-content-sync-setup/) | 4 | Origin + edge node content distribution |
-| [Knowledge Base RAG](skills/pilot-knowledge-base-rag-setup/) | 4 | Ingest, embed, index, and query documents |
-| [MCP Bridge Fleet](skills/pilot-mcp-bridge-fleet-setup/) | 3 | Bridge MCP and A2A protocols over Pilot tunnels |
-| [Cloud Cost Optimizer](skills/pilot-cloud-cost-optimizer-setup/) | 4 | Scan, analyze, optimize, and report cloud spending |
-| [Legal Contract Review](skills/pilot-legal-contract-review-setup/) | 3 | Extract clauses, assess risk, summarize contracts |
-| [AI Tutoring System](skills/pilot-ai-tutoring-system-setup/) | 3 | Curate lessons, tutor learners, assess knowledge gaps |
-| [Smart Home Coordinator](skills/pilot-smart-home-coordinator-setup/) | 4 | Collect sensor data, coordinate devices, display status |
+| Org | Agents |
+|-----|--------|
+| [Ad Campaign Manager](skills/pilot-ad-campaign-manager-setup/) | 4 |
+| [AI Tutoring System](skills/pilot-ai-tutoring-system-setup/) | 3 |
+| [API Gateway Manager](skills/pilot-api-gateway-manager-setup/) | 4 |
+| [Backup & Disaster Recovery](skills/pilot-backup-disaster-recovery-setup/) | 4 |
+| [Brand Protection](skills/pilot-brand-protection-setup/) | 4 |
+| [Chat & Collaboration Hub](skills/pilot-chat-collaboration-hub-setup/) | 4 |
+| [CI/CD Pipeline](skills/pilot-ci-cd-pipeline-setup/) | 3 |
+| [Cloud Cost Optimizer](skills/pilot-cloud-cost-optimizer-setup/) | 4 |
+| [Competitor Intelligence](skills/pilot-competitor-intelligence-setup/) | 4 |
+| [Customer Onboarding](skills/pilot-customer-onboarding-setup/) | 3 |
+| [Dev Team Assistants](skills/pilot-dev-team-assistants-setup/) | 4 |
+| [E-Commerce Ops](skills/pilot-e-commerce-ops-setup/) | 4 |
+| [Knowledge Base (RAG)](skills/pilot-knowledge-base-rag-setup/) | 4 |
+| [Legal Contract Review](skills/pilot-legal-contract-review-setup/) | 3 |
+| [Log Analytics](skills/pilot-log-analytics-setup/) | 4 |
+| [Multi-Region Content Sync](skills/pilot-multi-region-content-sync-setup/) | 4 |
+| [Proposal Writer](skills/pilot-proposal-writer-setup/) | 3 |
+| [Quality Assurance Pipeline](skills/pilot-quality-assurance-pipeline-setup/) | 3 |
+| [Recruitment Pipeline](skills/pilot-recruitment-pipeline-setup/) | 3 |
+| [Sales Pipeline](skills/pilot-sales-pipeline-setup/) | 4 |
+| [Smart Home Coordinator](skills/pilot-smart-home-coordinator-setup/) | 4 |
+| [Video Production Pipeline](skills/pilot-video-production-pipeline-setup/) | 3 |
 
-**Advanced**
+**Advanced** (22 orgs)
 
-| Org | Agents | Description |
-|-----|--------|-------------|
-| [Incident Response](skills/pilot-incident-response-setup/) | 4 | Detect, triage, remediate, and notify on incidents |
-| [Dev Team Assistants](skills/pilot-dev-team-assistants-setup/) | 4 | Code review, test running, doc writing, coordination |
-| [ETL Data Pipeline](skills/pilot-etl-data-pipeline-setup/) | 5 | Five-stage data pipeline: ingest, transform, validate, load, report |
-| [Swarm Task Farm](skills/pilot-swarm-task-farm-setup/) | 5 | Self-organizing compute swarm with leader election |
-| [Security Operations Center](skills/pilot-security-operations-center-setup/) | 4 | Log collection, threat analysis, enforcement, dashboard |
-| [Agent Marketplace](skills/pilot-agent-marketplace-setup/) | 4 | Decentralized agent marketplace with escrow |
-| [Backup & Disaster Recovery](skills/pilot-backup-disaster-recovery-setup/) | 4 | Scheduled backups, offsite replication, restore testing |
-| [Compliance & Governance](skills/pilot-compliance-governance-setup/) | 4 | Policy enforcement, auditing, certification, reporting |
-| [Supply Chain Orchestrator](skills/pilot-supply-chain-orchestrator-setup/) | 4 | Inventory, routing, procurement, compliance |
-| [Financial Trading Desk](skills/pilot-financial-trading-desk-setup/) | 4 | Market analysis, sentiment, risk management, execution |
-| [Scientific Research Team](skills/pilot-scientific-research-team-setup/) | 4 | Literature review, hypothesis, experiments, reports |
-| [Fraud Detection Pipeline](skills/pilot-fraud-detection-pipeline-setup/) | 4 | Transaction monitoring, pattern analysis, investigation, enforcement |
-| [Game NPC Network](skills/pilot-game-npc-network-setup/) | 4 | Autonomous NPC village with emergent narratives |
+| Org | Agents |
+|-----|--------|
+| [Agent Marketplace](skills/pilot-agent-marketplace-setup/) | 4 |
+| [Autonomous Warehouse](skills/pilot-autonomous-warehouse-setup/) | 4 |
+| [Compliance & Governance](skills/pilot-compliance-governance-setup/) | 4 |
+| [Data Labeling Pipeline](skills/pilot-data-labeling-pipeline-setup/) | 4 |
+| [Digital Twin](skills/pilot-digital-twin-setup/) | 4 |
+| [Disaster Response](skills/pilot-disaster-response-setup/) | 4 |
+| [Energy Grid Optimizer](skills/pilot-energy-grid-optimizer-setup/) | 4 |
+| [ETL Data Pipeline](skills/pilot-etl-data-pipeline-setup/) | 5 |
+| [Financial Trading Desk](skills/pilot-financial-trading-desk-setup/) | 4 |
+| [Fraud Detection Pipeline](skills/pilot-fraud-detection-pipeline-setup/) | 4 |
+| [Game NPC Network](skills/pilot-game-npc-network-setup/) | 4 |
+| [Healthcare Triage](skills/pilot-healthcare-triage-setup/) | 4 |
+| [Incident Response](skills/pilot-incident-response-setup/) | 4 |
+| [Media Monitoring](skills/pilot-media-monitoring-setup/) | 4 |
+| [ML Training Pipeline](skills/pilot-ml-training-pipeline-setup/) | 4 |
+| [Penetration Testing](skills/pilot-penetration-testing-setup/) | 4 |
+| [Real Estate Analyzer](skills/pilot-real-estate-analyzer-setup/) | 4 |
+| [Scientific Research Team](skills/pilot-scientific-research-team-setup/) | 4 |
+| [Security Operations Center](skills/pilot-security-operations-center-setup/) | 4 |
+| [Supply Chain Orchestrator](skills/pilot-supply-chain-orchestrator-setup/) | 4 |
+| [Swarm Task Farm](skills/pilot-swarm-task-farm-setup/) | 5 |
+| [Threat Intelligence](skills/pilot-threat-intelligence-setup/) | 4 |
 
 ## Architecture
 
