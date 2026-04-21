@@ -2,7 +2,7 @@
 
 [![Tests](https://github.com/TeoSlayer/pilot-skills/actions/workflows/test.yml/badge.svg)](https://github.com/TeoSlayer/pilot-skills/actions/workflows/test.yml)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
-[![Skills](https://img.shields.io/badge/skills-141-22c55e)](https://teoslayer.github.io/pilot-skills/)
+[![Skills](https://img.shields.io/badge/skills-173-22c55e)](https://teoslayer.github.io/pilot-skills/)
 [![ClawHub](https://img.shields.io/badge/ClawHub-teoslayer-orange)](https://clawhub.ai/teoslayer/pilot-protocol)
 
 A collection of agent skills built on [Pilot Protocol](https://pilotprotocol.network) — the overlay network stack for AI agents.
@@ -145,6 +145,50 @@ clawhub install pilot-chat
 | [pilot-role-assign](skills/pilot-role-assign/) | Assign and manage roles within a swarm |
 | [pilot-swarm-config](skills/pilot-swarm-config/) | Distributed configuration management for swarms |
 | [pilot-formation](skills/pilot-formation/) | Deploy predefined topologies — star, ring, mesh, tree |
+
+### Service Agents
+
+Skills that wrap the **pilot-service-agents catalogue** — hundreds of always-on
+data agents running on Pilot Protocol that proxy real-world APIs (Google Maps,
+OpenAlex, USGS, NHTSA, CoinGecko, NASA, and many more) so callers don't need
+their own API keys or HTTP plumbing. All discovery flows through `list-agents`;
+each per-category skill documents what's available, what isn't, and the exact
+commands to run.
+
+| Skill | Description |
+|-------|-------------|
+| [pilot-service-agents](skills/pilot-service-agents/) | Discover and query the full catalogue via the list-agents directory |
+| [pilot-service-agents-academic](skills/pilot-service-agents-academic/) | Scholarly literature — OpenAlex, Crossref, Europe PMC, PubMed, DOAJ, DBLP |
+| [pilot-service-agents-books](skills/pilot-service-agents-books/) | Book catalogs — Project Gutenberg, Open Library |
+| [pilot-service-agents-climate](skills/pilot-service-agents-climate/) | Climate & energy-grid data — carbon intensity, Electricity Maps |
+| [pilot-service-agents-culture](skills/pilot-service-agents-culture/) | Museum collections — Art Institute of Chicago, Met Museum |
+| [pilot-service-agents-data](skills/pilot-service-agents-data/) | General open-data APIs — PubChem, REST Countries (full) |
+| [pilot-service-agents-dev](skills/pilot-service-agents-dev/) | Developer platforms — GitHub, Docker Hub, crates.io |
+| [pilot-service-agents-economics](skills/pilot-service-agents-economics/) | Macroeconomic indicators — IMF, World Bank, Eurostat |
+| [pilot-service-agents-entertainment](skills/pilot-service-agents-entertainment/) | Games, anime/manga, trivia — PokeAPI, Jikan, CheapShark |
+| [pilot-service-agents-finance](skills/pilot-service-agents-finance/) | Markets — Coinbase, Binance, Bitstamp, CoinGecko, FX rates |
+| [pilot-service-agents-flights](skills/pilot-service-agents-flights/) | Aircraft tracking & aviation weather — ADS-B, METAR/TAF/SIGMET |
+| [pilot-service-agents-food](skills/pilot-service-agents-food/) | Food, recipes, nutrition — OpenFoodFacts, TheCocktailDB, TheMealDB |
+| [pilot-service-agents-geo](skills/pilot-service-agents-geo/) | Geographic & geolocation — Google Maps suite, IP lookups |
+| [pilot-service-agents-gov-finance](skills/pilot-service-agents-gov-finance/) | Government financial records — SEC EDGAR, BLS, HTS/USITC |
+| [pilot-service-agents-government](skills/pilot-service-agents-government/) | Civic & regulatory data — Federal Register, elections, FBI |
+| [pilot-service-agents-health](skills/pilot-service-agents-health/) | Public-health & biomedical — ClinicalTrials.gov, openFDA, CDC, WHO |
+| [pilot-service-agents-infra](skills/pilot-service-agents-infra/) | Pilot infrastructure agents — list-agents, pilot-ai, feedback |
+| [pilot-service-agents-knowledge](skills/pilot-service-agents-knowledge/) | Structured-knowledge lookups — Google KG, DuckDuckGo, Archive.org |
+| [pilot-service-agents-language](skills/pilot-service-agents-language/) | NLP services — translation, TTS, dictionaries, word tools |
+| [pilot-service-agents-music](skills/pilot-service-agents-music/) | Music metadata & lyrics — iTunes, Lyrics.ovh |
+| [pilot-service-agents-nature](skills/pilot-service-agents-nature/) | Biodiversity observations — iNaturalist |
+| [pilot-service-agents-news](skills/pilot-service-agents-news/) | News feeds & forums — HN, dev.to, GDELT, Stack Exchange, Reddit |
+| [pilot-service-agents-packages](skills/pilot-service-agents-packages/) | Package-registry metadata — npm, PyPI, Maven Central |
+| [pilot-service-agents-reference](skills/pilot-service-agents-reference/) | Utility lookups — dictionaries, jokes, colors, FX, D&D |
+| [pilot-service-agents-science](skills/pilot-service-agents-science/) | Scientific datasets — USGS, ChEMBL, PubChem, NASA EONET, CERN |
+| [pilot-service-agents-security](skills/pilot-service-agents-security/) | Threat-intel lookups — CVE, crt.sh, WHOIS, DNS, URL risk |
+| [pilot-service-agents-space](skills/pilot-service-agents-space/) | Space & astronomy — NASA APOD, Open Notify astronauts |
+| [pilot-service-agents-sports](skills/pilot-service-agents-sports/) | Live scores & stats — MLB, NFL, NHL, NBA, F1, cricket |
+| [pilot-service-agents-traffic](skills/pilot-service-agents-traffic/) | Bike-share & urban mobility — CityBikes, GBFS, TfL |
+| [pilot-service-agents-transit](skills/pilot-service-agents-transit/) | Public-transit schedules — Amtrak, BART, Deutsche Bahn, Swiss SBB |
+| [pilot-service-agents-vehicles](skills/pilot-service-agents-vehicles/) | NHTSA records — VIN decoder, recalls, complaints |
+| [pilot-service-agents-weather](skills/pilot-service-agents-weather/) | Forecasts & climate — Open-Meteo forecast, archive, marine, flood |
 
 ### Deployment Orgs
 

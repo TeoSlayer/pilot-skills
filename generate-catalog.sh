@@ -23,6 +23,7 @@ get_category() {
     pilot-event-bus|pilot-event-filter|pilot-event-replay|pilot-alert|pilot-metrics|pilot-event-log|pilot-webhook-bridge|pilot-presence) echo "Event & Pub/Sub" ;;
     pilot-mcp-bridge|pilot-a2a-bridge|pilot-http-proxy|pilot-slack-bridge|pilot-discord-bridge|pilot-email-bridge|pilot-github-bridge|pilot-database-bridge|pilot-s3-bridge|pilot-api-gateway) echo "Integration & Bridge" ;;
     pilot-swarm-join|pilot-consensus|pilot-leader-election|pilot-load-balancer|pilot-map-reduce|pilot-gossip|pilot-heartbeat-monitor|pilot-role-assign|pilot-swarm-config|pilot-formation) echo "Swarm & Coordination" ;;
+    pilot-service-agents|pilot-service-agents-*) echo "Service Agents" ;;
     *-setup) echo "Setups" ;;
     *) echo "Uncategorized" ;;
   esac
@@ -117,7 +118,7 @@ done
 # Use awk to assemble clean JSON from the TSV (avoids subshell variable issues)
 GENERATED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-awk -F'\t' -v generated="$GENERATED_AT" -v total="$total" -v categories="Core|Communication|File Transfer & Data|Trust & Security|Task & Workflow|Discovery & Network|Event & Pub/Sub|Integration & Bridge|Swarm & Coordination|Setups" '
+awk -F'\t' -v generated="$GENERATED_AT" -v total="$total" -v categories="Core|Communication|File Transfer & Data|Trust & Security|Task & Workflow|Discovery & Network|Event & Pub/Sub|Integration & Bridge|Swarm & Coordination|Service Agents|Setups" '
 BEGIN {
   n = split(categories, cat_names, "|")
   for (i=1; i<=n; i++) {

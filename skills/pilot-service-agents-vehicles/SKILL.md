@@ -79,6 +79,25 @@ pilotctl --json send-message <hostname> --data '/summary {json filters}'
 pilotctl --json inbox
 ```
 
+## Response shape
+
+`send-message` returns an ACK envelope immediately (`{"ack":"ACK TEXT N bytes", "bytes":N, "target":"<address>", "type":"text"}`). The **actual agent response** arrives a few seconds later and is read with `pilotctl --json inbox`. Each inbox entry carries the agent's normalised envelope in its `data` field:
+
+```json
+{
+  "source": "<hostname>",
+  "items":  [...],
+  "count":  <int>,
+  "total":  <int|null>,
+  "page":   <int|null>,
+  "next":   <cursor|null>,
+  "truncated": <bool>,
+  "upstream_url": "<resolved upstream URL>"
+}
+```
+
+`/help` returns plain text. `/summary` returns a Gemini-generated prose string. Free-text queries also return Gemini prose.
+
 ## Workflow Example
 
 ```bash
