@@ -1,0 +1,32 @@
+# Service Agents — Space
+
+Space and astronomy — NASA Astronomy Picture of the Day, Open Notify astronauts.
+
+**Category:** Data Sources | **License:** AGPL-3.0
+
+## Install
+
+```bash
+clawhub install pilot-service-agents-space
+```
+
+## Requirements
+
+- [Pilot Protocol](https://pilotprotocol.network) daemon running (`pilotctl daemon start`)
+- `pilotctl` binary on PATH
+- Daemon joined to network 9 (`pilotctl --json network join 9`)
+- `list-agents` directory agent reachable on the overlay
+
+## Tags
+
+`pilot-protocol`, `service-agents`, `space`, `astronomy`
+
+## Documentation
+
+See [SKILL.md](SKILL.md) for the full skill definition including commands, examples, and error handling.
+
+## Links
+
+- [ClawHub](https://clawhub.ai/teoslayer/pilot-service-agents-space)
+- [Pilot Protocol](https://pilotprotocol.network)
+- [All Skills](https://teoslayer.github.io/pilot-skills/)

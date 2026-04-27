@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-04-20T17:42:44Z",
+  "generated_at": "2026-04-21T06:10:41Z",
   "version": "1.0.0",
-  "total": 141,
+  "total": 173,
   "categories": [
     {
       "name": "Core",
@@ -1430,6 +1430,557 @@
           "clawhub_url": "https://clawhub.ai/teoslayer/pilot-swarm-join",
           "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-swarm-join",
           "install": "clawhub install pilot-swarm-join"
+        }
+      ]
+    },
+    {
+      "name": "Service Agents",
+      "slug": "service-agents",
+      "skills": [
+        {
+          "slug": "pilot-service-agents-academic",
+          "name": "pilot-service-agents-academic",
+          "description": "Scholarly literature and bibliographic databases \u2014 OpenAlex, Crossref, Europe PMC, PubMed, DOAJ, DBLP, Semantic Scholar.",
+          "tags": [
+            "pilot-protocol",
+            "service-agents",
+            "academic",
+            "scholarly"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-service-agents-academic",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-service-agents-academic",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-service-agents-academic",
+          "install": "clawhub install pilot-service-agents-academic"
+        },
+        {
+          "slug": "pilot-service-agents-books",
+          "name": "pilot-service-agents-books",
+          "description": "Book search and catalogs \u2014 Project Gutenberg (Gutendex) and Open Library.",
+          "tags": [
+            "pilot-protocol",
+            "service-agents",
+            "books",
+            "library"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-service-agents-books",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-service-agents-books",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-service-agents-books",
+          "install": "clawhub install pilot-service-agents-books"
+        },
+        {
+          "slug": "pilot-service-agents-climate",
+          "name": "pilot-service-agents-climate",
+          "description": "Climate and energy-grid data \u2014 UK carbon intensity, Electricity Maps zones, Open-Meteo climate.",
+          "tags": [
+            "pilot-protocol",
+            "service-agents",
+            "climate",
+            "energy"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-service-agents-climate",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-service-agents-climate",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-service-agents-climate",
+          "install": "clawhub install pilot-service-agents-climate"
+        },
+        {
+          "slug": "pilot-service-agents-culture",
+          "name": "pilot-service-agents-culture",
+          "description": "Museum and cultural collections \u2014 Art Institute of Chicago, Metropolitan Museum of Art.",
+          "tags": [
+            "pilot-protocol",
+            "service-agents",
+            "culture",
+            "museums"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-service-agents-culture",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-service-agents-culture",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-service-agents-culture",
+          "install": "clawhub install pilot-service-agents-culture"
+        },
+        {
+          "slug": "pilot-service-agents-data",
+          "name": "pilot-service-agents-data",
+          "description": "General open-data APIs that didn't fit a narrower category \u2014 PubChem compounds/substances, REST Countries full catalog.",
+          "tags": [
+            "pilot-protocol",
+            "service-agents",
+            "data",
+            "datasets"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-service-agents-data",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-service-agents-data",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-service-agents-data",
+          "install": "clawhub install pilot-service-agents-data"
+        },
+        {
+          "slug": "pilot-service-agents-dev",
+          "name": "pilot-service-agents-dev",
+          "description": "Developer-platform metadata \u2014 GitHub, Docker Hub, crates.io, and other ecosystem registries.",
+          "tags": [
+            "pilot-protocol",
+            "service-agents",
+            "dev",
+            "developer-tools"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-service-agents-dev",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-service-agents-dev",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-service-agents-dev",
+          "install": "clawhub install pilot-service-agents-dev"
+        },
+        {
+          "slug": "pilot-service-agents-economics",
+          "name": "pilot-service-agents-economics",
+          "description": "Macroeconomic indicators \u2014 IMF DataMapper, World Bank, Eurostat SDMX, Coinbase reference prices.",
+          "tags": [
+            "pilot-protocol",
+            "service-agents",
+            "economics",
+            "macro"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-service-agents-economics",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-service-agents-economics",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-service-agents-economics",
+          "install": "clawhub install pilot-service-agents-economics"
+        },
+        {
+          "slug": "pilot-service-agents-entertainment",
+          "name": "pilot-service-agents-entertainment",
+          "description": "Games, manga/anime, trivia, and fandom APIs \u2014 PokeAPI, Jikan, CheapShark, misc.",
+          "tags": [
+            "pilot-protocol",
+            "service-agents",
+            "entertainment",
+            "games"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-service-agents-entertainment",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-service-agents-entertainment",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-service-agents-entertainment",
+          "install": "clawhub install pilot-service-agents-entertainment"
+        },
+        {
+          "slug": "pilot-service-agents-finance",
+          "name": "pilot-service-agents-finance",
+          "description": "Public market data \u2014 crypto spot prices, FX rates, order books, and macro indicators.",
+          "tags": [
+            "pilot-protocol",
+            "service-agents",
+            "finance",
+            "markets"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-service-agents-finance",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-service-agents-finance",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-service-agents-finance",
+          "install": "clawhub install pilot-service-agents-finance"
+        },
+        {
+          "slug": "pilot-service-agents-flights",
+          "name": "pilot-service-agents-flights",
+          "description": "Aircraft tracking and aviation weather \u2014 ADS-B feeds (ICAO + bbox), airport directory, METAR/TAF/SIGMET.",
+          "tags": [
+            "pilot-protocol",
+            "service-agents",
+            "flights",
+            "aviation"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-service-agents-flights",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-service-agents-flights",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-service-agents-flights",
+          "install": "clawhub install pilot-service-agents-flights"
+        },
+        {
+          "slug": "pilot-service-agents-food",
+          "name": "pilot-service-agents-food",
+          "description": "Food, recipes, and nutrition \u2014 OpenFoodFacts, TheCocktailDB, TheMealDB, Fruityvice, Open Brewery DB.",
+          "tags": [
+            "pilot-protocol",
+            "service-agents",
+            "food",
+            "recipes"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-service-agents-food",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-service-agents-food",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-service-agents-food",
+          "install": "clawhub install pilot-service-agents-food"
+        },
+        {
+          "slug": "pilot-service-agents-geo",
+          "name": "pilot-service-agents-geo",
+          "description": "Geographic and geolocation APIs \u2014 Google Maps suite (premium) plus open geocoders and IP-to-location lookups.",
+          "tags": [
+            "pilot-protocol",
+            "service-agents",
+            "geo",
+            "maps"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-service-agents-geo",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-service-agents-geo",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-service-agents-geo",
+          "install": "clawhub install pilot-service-agents-geo"
+        },
+        {
+          "slug": "pilot-service-agents-gov-finance",
+          "name": "pilot-service-agents-gov-finance",
+          "description": "Government economic and financial records \u2014 SEC EDGAR, BLS time series, HTS/USITC tariffs, US Dept of Ed.",
+          "tags": [
+            "pilot-protocol",
+            "service-agents",
+            "gov-finance",
+            "sec"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-service-agents-gov-finance",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-service-agents-gov-finance",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-service-agents-gov-finance",
+          "install": "clawhub install pilot-service-agents-gov-finance"
+        },
+        {
+          "slug": "pilot-service-agents-government",
+          "name": "pilot-service-agents-government",
+          "description": "Government and civic data \u2014 federal register, FBI wanted, elections info, national open-data portals.",
+          "tags": [
+            "pilot-protocol",
+            "service-agents",
+            "government",
+            "civic"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-service-agents-government",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-service-agents-government",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-service-agents-government",
+          "install": "clawhub install pilot-service-agents-government"
+        },
+        {
+          "slug": "pilot-service-agents-health",
+          "name": "pilot-service-agents-health",
+          "description": "Public-health and biomedical APIs \u2014 ClinicalTrials.gov, openFDA, CDC, WHO, ClinVar, DailyMed, disease.sh.",
+          "tags": [
+            "pilot-protocol",
+            "service-agents",
+            "health",
+            "biomedical"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-service-agents-health",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-service-agents-health",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-service-agents-health",
+          "install": "clawhub install pilot-service-agents-health"
+        },
+        {
+          "slug": "pilot-service-agents-infra",
+          "name": "pilot-service-agents-infra",
+          "description": "Pilot Protocol network infrastructure agents \u2014 the directory (list-agents), command assistant (pilot-ai), feedback (feedback).",
+          "tags": [
+            "pilot-protocol",
+            "service-agents",
+            "infra",
+            "network"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-service-agents-infra",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-service-agents-infra",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-service-agents-infra",
+          "install": "clawhub install pilot-service-agents-infra"
+        },
+        {
+          "slug": "pilot-service-agents-knowledge",
+          "name": "pilot-service-agents-knowledge",
+          "description": "Structured-knowledge and factual lookups \u2014 Google Knowledge Graph (premium), DuckDuckGo Instant, Archive.org, holidays, geocoders.",
+          "tags": [
+            "pilot-protocol",
+            "service-agents",
+            "knowledge",
+            "factual"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-service-agents-knowledge",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-service-agents-knowledge",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-service-agents-knowledge",
+          "install": "clawhub install pilot-service-agents-knowledge"
+        },
+        {
+          "slug": "pilot-service-agents-language",
+          "name": "pilot-service-agents-language",
+          "description": "Language and NLP services \u2014 translation, text-to-speech, dictionaries, word tools, Bible text, linguistic corpora.",
+          "tags": [
+            "pilot-protocol",
+            "service-agents",
+            "language",
+            "nlp"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-service-agents-language",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-service-agents-language",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-service-agents-language",
+          "install": "clawhub install pilot-service-agents-language"
+        },
+        {
+          "slug": "pilot-service-agents-music",
+          "name": "pilot-service-agents-music",
+          "description": "Music metadata and lyrics \u2014 iTunes search and Lyrics.ovh.",
+          "tags": [
+            "pilot-protocol",
+            "service-agents",
+            "music",
+            "lyrics"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-service-agents-music",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-service-agents-music",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-service-agents-music",
+          "install": "clawhub install pilot-service-agents-music"
+        },
+        {
+          "slug": "pilot-service-agents-nature",
+          "name": "pilot-service-agents-nature",
+          "description": "Biodiversity observations \u2014 iNaturalist species sightings.",
+          "tags": [
+            "pilot-protocol",
+            "service-agents",
+            "nature",
+            "biodiversity"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-service-agents-nature",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-service-agents-nature",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-service-agents-nature",
+          "install": "clawhub install pilot-service-agents-nature"
+        },
+        {
+          "slug": "pilot-service-agents-news",
+          "name": "pilot-service-agents-news",
+          "description": "News feeds, forum aggregators, and current-events streams \u2014 Hacker News, dev.to, GDELT, Reddit, Stack Exchange, USGS hazards.",
+          "tags": [
+            "pilot-protocol",
+            "service-agents",
+            "news",
+            "current-events"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-service-agents-news",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-service-agents-news",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-service-agents-news",
+          "install": "clawhub install pilot-service-agents-news"
+        },
+        {
+          "slug": "pilot-service-agents-packages",
+          "name": "pilot-service-agents-packages",
+          "description": "Package-registry metadata \u2014 npm, PyPI, Maven Central (Solr-backed).",
+          "tags": [
+            "pilot-protocol",
+            "service-agents",
+            "packages",
+            "registries"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-service-agents-packages",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-service-agents-packages",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-service-agents-packages",
+          "install": "clawhub install pilot-service-agents-packages"
+        },
+        {
+          "slug": "pilot-service-agents-reference",
+          "name": "pilot-service-agents-reference",
+          "description": "Lightweight utility lookups \u2014 dictionaries, jokes, colors, currencies, random facts, D&D data, etc.",
+          "tags": [
+            "pilot-protocol",
+            "service-agents",
+            "reference",
+            "lookup"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-service-agents-reference",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-service-agents-reference",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-service-agents-reference",
+          "install": "clawhub install pilot-service-agents-reference"
+        },
+        {
+          "slug": "pilot-service-agents-science",
+          "name": "pilot-service-agents-science",
+          "description": "Primary-source scientific and research APIs \u2014 earthquakes, molecules, space weather, particle physics, volcanoes.",
+          "tags": [
+            "pilot-protocol",
+            "service-agents",
+            "science",
+            "research"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-service-agents-science",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-service-agents-science",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-service-agents-science",
+          "install": "clawhub install pilot-service-agents-science"
+        },
+        {
+          "slug": "pilot-service-agents-security",
+          "name": "pilot-service-agents-security",
+          "description": "Security and threat-intel lookups \u2014 CVEs, certificate transparency, URL/IP threat checks, DNS, WHOIS.",
+          "tags": [
+            "pilot-protocol",
+            "service-agents",
+            "security",
+            "threat-intel"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-service-agents-security",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-service-agents-security",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-service-agents-security",
+          "install": "clawhub install pilot-service-agents-security"
+        },
+        {
+          "slug": "pilot-service-agents-space",
+          "name": "pilot-service-agents-space",
+          "description": "Space and astronomy \u2014 NASA Astronomy Picture of the Day, Open Notify astronauts.",
+          "tags": [
+            "pilot-protocol",
+            "service-agents",
+            "space",
+            "astronomy"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-service-agents-space",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-service-agents-space",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-service-agents-space",
+          "install": "clawhub install pilot-service-agents-space"
+        },
+        {
+          "slug": "pilot-service-agents-sports",
+          "name": "pilot-service-agents-sports",
+          "description": "Live sports scores, fixtures, and historical stats \u2014 MLB, NFL, NHL, NBA, Formula 1, cricket, and generic TheSportsDB.",
+          "tags": [
+            "pilot-protocol",
+            "service-agents",
+            "sports",
+            "live-scores"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-service-agents-sports",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-service-agents-sports",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-service-agents-sports",
+          "install": "clawhub install pilot-service-agents-sports"
+        },
+        {
+          "slug": "pilot-service-agents-traffic",
+          "name": "pilot-service-agents-traffic",
+          "description": "Urban transport and bike-share \u2014 CityBikes index, GBFS feeds, Transport for London lines/arrivals.",
+          "tags": [
+            "pilot-protocol",
+            "service-agents",
+            "traffic",
+            "mobility"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-service-agents-traffic",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-service-agents-traffic",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-service-agents-traffic",
+          "install": "clawhub install pilot-service-agents-traffic"
+        },
+        {
+          "slug": "pilot-service-agents-transit",
+          "name": "pilot-service-agents-transit",
+          "description": "Public-transit schedules and live data \u2014 Amtrak, BART, Deutsche Bahn, Swiss SBB, BC Ferries, BVG Berlin, and more.",
+          "tags": [
+            "pilot-protocol",
+            "service-agents",
+            "transit",
+            "public-transport"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-service-agents-transit",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-service-agents-transit",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-service-agents-transit",
+          "install": "clawhub install pilot-service-agents-transit"
+        },
+        {
+          "slug": "pilot-service-agents-vehicles",
+          "name": "pilot-service-agents-vehicles",
+          "description": "NHTSA vehicle records \u2014 VIN decoder, makes, models, recalls, consumer complaints.",
+          "tags": [
+            "pilot-protocol",
+            "service-agents",
+            "vehicles",
+            "nhtsa"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-service-agents-vehicles",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-service-agents-vehicles",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-service-agents-vehicles",
+          "install": "clawhub install pilot-service-agents-vehicles"
+        },
+        {
+          "slug": "pilot-service-agents-weather",
+          "name": "pilot-service-agents-weather",
+          "description": "Weather forecasts and historical climate \u2014 Open-Meteo (forecast, archive, air quality, marine, flood), Seven Timer astronomy.",
+          "tags": [
+            "pilot-protocol",
+            "service-agents",
+            "weather",
+            "forecast"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-service-agents-weather",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-service-agents-weather",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-service-agents-weather",
+          "install": "clawhub install pilot-service-agents-weather"
+        },
+        {
+          "slug": "pilot-service-agents",
+          "name": "pilot-service-agents",
+          "description": "Discover and query the pilot-service-agents catalogue \u2014 ~370 always-on data agents reachable over Pilot Protocol that wrap real-world APIs (Google Maps, OpenAlex, NHTSA, USGS, CoinGecko, NASA, aviation weather, and many more) so callers don't need their own API keys, rate limits, or HTTP plumbing.",
+          "tags": [
+            "pilot-protocol",
+            "service-agents",
+            "data-sources",
+            "discovery",
+            "data-exchange"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-service-agents",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-service-agents",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-service-agents",
+          "install": "clawhub install pilot-service-agents"
         }
       ]
     },
