@@ -2,198 +2,827 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Pilot Protocol Skills</title>
 <meta name="description" content="Browse 170+ agent skills for Pilot Protocol. Communication, file transfer, trust, task routing, swarm coordination, service agents, and more.">
-<link rel="icon" href="https://raw.githubusercontent.com/TeoSlayer/pilotprotocol/main/docs/media/pilot.png" type="image/png">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="https://teoslayer.github.io/pilot-skills/">
+<meta property="og:type" content="website">
 <meta property="og:title" content="Pilot Protocol Skills">
 <meta property="og:description" content="The complete catalog of agent skills for Pilot Protocol — the overlay network for AI agents.">
-<meta property="og:type" content="website">
 <meta property="og:url" content="https://teoslayer.github.io/pilot-skills/">
+<meta property="og:image" content="https://raw.githubusercontent.com/TeoSlayer/pilotprotocol/main/docs/media/pilot.png">
+<meta property="og:site_name" content="Pilot Protocol">
+<meta name="theme-color" content="#0b0b0a" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#fafaf7" media="(prefers-color-scheme: light)">
+<link rel="icon" href="https://raw.githubusercontent.com/TeoSlayer/pilotprotocol/main/docs/media/pilot.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+
+<script>
+  (function () {
+    try {
+      var stored = localStorage.getItem('pilot-theme');
+      var prefers = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      var theme = stored || prefers;
+      if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
+    } catch (e) {}
+  })();
+</script>
+
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#0a0a0a;--fg:#e5e5e5;--muted:#737373;--accent:#22c55e;--surface:rgba(255,255,255,0.05);--border:rgba(255,255,255,0.08);--glass:rgba(255,255,255,0.06);--glass-border:rgba(255,255,255,0.12)}
-html{scroll-behavior:smooth}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--fg);line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh}
-a{color:var(--accent);text-decoration:none}
-a:hover{text-decoration:underline}
-code{font-family:'SF Mono',Menlo,Consolas,monospace}
-.container{max-width:1040px;margin:0 auto;padding:0 24px}
+:root {
+  --bg:        #0b0b0a;
+  --bg-2:      #111110;
+  --bg-deep:   #070706;
+  --ink:       #eceae3;
+  --ink-dim:   #8a8a83;
+  --ink-faint: #3a3a37;
+  --line:      #1d1d1b;
+  --line-2:    #26261f;
+  --accent:        oklch(0.88 0.22 125);
+  --accent-ink:    #0b0b0a;
+  --accent-dim:    oklch(0.88 0.22 125 / .18);
+  --accent-glow:   rgba(200, 255, 0, 0.12);
+  --term-bg:       #060605;
 
-/* Header */
-header{padding:20px 0;border-bottom:1px solid var(--border);position:sticky;top:0;background:rgba(10,10,10,0.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);z-index:50}
-.header-inner{display:flex;align-items:center;justify-content:space-between;gap:16px}
-.header-brand{display:flex;align-items:center;gap:10px;text-decoration:none}
-.header-brand img{width:28px;height:28px}
-.header-brand span{font-weight:700;font-size:1rem;color:var(--fg)}
-.header-links{display:flex;gap:16px;align-items:center}
-.header-links a{font-size:0.85rem;color:var(--muted);transition:color 0.15s}
-.header-links a:hover{color:var(--fg);text-decoration:none}
+  --serif: 'Instrument Serif', 'Times New Roman', serif;
+  --sans:  'Inter Tight', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --mono:  'JetBrains Mono', ui-monospace, Menlo, monospace;
 
-/* Hero */
-.hero{text-align:center;padding:64px 0 48px;position:relative}
-.hero::before{content:'';position:absolute;top:40%;left:50%;transform:translate(-50%,-50%);width:600px;height:400px;background:radial-gradient(ellipse,rgba(34,197,94,0.05) 0%,transparent 70%);pointer-events:none}
-.hero h1{font-size:2.8rem;font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:16px;position:relative}
-.hero p{font-size:1.1rem;color:var(--muted);max-width:580px;margin:0 auto 28px;position:relative}
-.hero-stats{display:flex;justify-content:center;gap:40px;margin-bottom:32px;position:relative}
-.stat{text-align:center}
-.stat-num{font-size:2rem;font-weight:800;color:var(--accent);font-family:'SF Mono',Menlo,Consolas,monospace}
-.stat-label{font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em}
-.hero-ctas{display:flex;justify-content:center;gap:12px;position:relative}
-.cta-primary{display:inline-block;padding:10px 24px;border-radius:8px;background:var(--accent);color:#000;font-weight:600;font-size:0.88rem;transition:all 0.2s}
-.cta-primary:hover{opacity:0.9;text-decoration:none;box-shadow:0 0 20px rgba(34,197,94,0.3)}
-.cta-ghost{display:inline-block;padding:10px 24px;border-radius:8px;background:transparent;color:var(--fg);font-weight:600;font-size:0.88rem;border:1px solid rgba(255,255,255,0.15);transition:all 0.2s}
-.cta-ghost:hover{border-color:rgba(255,255,255,0.4);background:rgba(255,255,255,0.06);text-decoration:none}
+  --wrap-max: 1280px;
 
-/* Search & Filter */
-.filter-bar{display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap;align-items:center}
-.search-box{flex:1;min-width:220px;padding:10px 16px 10px 40px;border-radius:8px;border:1px solid var(--border);background:var(--glass);color:var(--fg);font-size:0.88rem;font-family:inherit;outline:none;transition:border-color 0.2s;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23737373' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:12px center}
-.search-box:focus{border-color:rgba(34,197,94,0.4)}
-.search-box::placeholder{color:var(--muted)}
-.filter-pills{display:flex;gap:6px;flex-wrap:wrap}
-.pill{padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.78rem;cursor:pointer;font-family:inherit;transition:all 0.15s;white-space:nowrap}
-.pill:hover{color:var(--fg);border-color:rgba(255,255,255,0.2)}
-.pill.active{color:#000;background:var(--accent);border-color:var(--accent)}
-.result-count{font-size:0.8rem;color:var(--muted);margin-bottom:24px}
+  --fg:      var(--ink);
+  --muted:   var(--ink-dim);
+  --surface: var(--bg-2);
+  --border:  var(--line);
+
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  --bg:        #fafaf7;
+  --bg-2:      #f0efea;
+  --bg-deep:   #e9e8e2;
+  --ink:       #0b0b0a;
+  --ink-dim:   #5a5a54;
+  --ink-faint: #c7c6be;
+  --line:      #e6e5df;
+  --line-2:    #d8d7d0;
+  --accent:        oklch(0.72 0.19 125);
+  --accent-ink:    #0b0b0a;
+  --accent-dim:    oklch(0.72 0.19 125 / .14);
+  --accent-glow:   rgba(130, 170, 20, 0.12);
+  --term-bg:       #0b0b0a;
+  color-scheme: light;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { overflow-x: hidden; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 17px;
+  line-height: 1.5;
+  font-weight: 400;
+  letter-spacing: -0.005em;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  min-height: 100vh;
+}
+@media (max-width: 640px) { body { font-size: 15px; } }
+
+a { color: inherit; text-decoration: none; }
+a:hover { color: var(--accent); }
+::selection { background: var(--accent); color: var(--accent-ink); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+code { font-family: var(--mono); font-size: 0.88em; }
+
+.wrap {
+  max-width: var(--wrap-max);
+  margin: 0 auto;
+  padding: 0 48px;
+  position: relative;
+}
+@media (max-width: 900px) { .wrap { padding: 0 28px; } }
+@media (max-width: 520px) { .wrap { padding: 0 20px; } }
+
+/* =========================================================================
+   Nav
+   ========================================================================= */
+.nav-top {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--line);
+}
+.nav-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 0;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--ink);
+}
+.brand:hover { color: var(--ink); }
+.brand .logo { width: 32px; height: 32px; }
+.brand-text {
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+.brand-tag {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  font-weight: 500;
+  margin-top: 2px;
+}
+.nav-links {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.nav-link {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  padding: 8px 14px;
+  border-radius: 2px;
+  transition: color 0.15s;
+}
+.nav-link:hover { color: var(--ink); }
+.nav-right {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.theme-toggle {
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: 1px solid var(--line-2);
+  color: var(--ink-dim);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+  transition: all 0.15s;
+}
+.theme-toggle:hover { color: var(--ink); border-color: var(--ink); }
+.theme-toggle svg { width: 16px; height: 16px; }
+.theme-toggle .icon-sun { display: none; }
+.theme-toggle .icon-moon { display: block; }
+[data-theme="light"] .theme-toggle .icon-sun { display: block; }
+[data-theme="light"] .theme-toggle .icon-moon { display: none; }
+
+@media (max-width: 768px) {
+  .nav-link { padding: 6px 10px; font-size: 0.65rem; }
+  .brand-tag { display: none; }
+  .nav-link[data-collapse] { display: none; }
+}
+
+/* =========================================================================
+   Hero
+   ========================================================================= */
+.hero {
+  padding: 96px 0 72px;
+  position: relative;
+  border-bottom: 1px solid var(--line);
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: 30%; left: 50%;
+  transform: translate(-50%,-50%);
+  width: 700px; height: 380px;
+  background: radial-gradient(ellipse, var(--accent-glow) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-grid { position: relative; }
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 28px;
+}
+.eyebrow::before {
+  content: "";
+  width: 22px; height: 1px;
+  background: var(--ink-dim);
+  display: inline-block;
+}
+.display {
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: clamp(38px, 6.4vw, 80px);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  margin-bottom: 28px;
+  max-width: 16ch;
+}
+.display em {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+}
+.display .accent { color: var(--accent); }
+.hero-sub {
+  font-size: 1.05rem;
+  color: var(--ink-dim);
+  max-width: 56ch;
+  margin-bottom: 36px;
+  line-height: 1.55;
+}
+.hero-sub b { color: var(--ink); font-weight: 500; }
+
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 40px;
+}
+.stats-row .stat {
+  padding: 24px 28px;
+  border-right: 1px solid var(--line);
+}
+.stats-row .stat:last-child { border-right: 0; }
+.stats-row .stat-num {
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: clamp(28px, 3.4vw, 44px);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.stats-row .stat-num .accent { color: var(--accent); }
+.stats-row .stat-label {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-top: 12px;
+}
+@media (max-width: 640px) {
+  .stats-row { grid-template-columns: 1fr; }
+  .stats-row .stat { border-right: 0; border-bottom: 1px solid var(--line); }
+  .stats-row .stat:last-child { border-bottom: 0; }
+}
+
+.cta-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 22px;
+  border: 1px solid var(--line-2);
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn:hover {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--bg);
+}
+.btn.primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+}
+.btn.primary:hover { filter: brightness(1.08); background: var(--accent); color: var(--accent-ink); }
+.btn .arr { font-size: 14px; }
+
+/* =========================================================================
+   Catalog section
+   ========================================================================= */
+.section {
+  padding: 96px 0;
+  border-top: 1px solid var(--line);
+  position: relative;
+}
+@media (max-width: 900px) { .section { padding: 72px 0; } }
+@media (max-width: 640px) { .section { padding: 56px 0; } }
+
+.section-head {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 48px;
+  margin-bottom: 56px;
+}
+.section-head h2 {
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: clamp(28px, 4.4vw, 56px);
+  line-height: 1.04;
+  letter-spacing: -0.03em;
+  margin: 0;
+  max-width: 22ch;
+}
+.section-head h2 em { font-family: var(--serif); font-style: italic; font-weight: 400; }
+.section-head h2 .accent { color: var(--accent); }
+@media (max-width: 900px) {
+  .section-head { grid-template-columns: 1fr; gap: 16px; margin-bottom: 36px; }
+}
+
+.filter-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.search-box {
+  flex: 1;
+  min-width: 240px;
+  padding: 12px 16px 12px 42px;
+  border: 1px solid var(--line-2);
+  background: var(--bg-2);
+  color: var(--ink);
+  font-size: 0.9rem;
+  font-family: var(--sans);
+  outline: none;
+  transition: border-color 0.2s;
+  border-radius: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238a8a83' stroke-width='1.8'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 14px center;
+}
+.search-box:focus { border-color: var(--accent); }
+.search-box::placeholder { color: var(--ink-dim); }
+
+.filter-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.pill {
+  padding: 8px 14px;
+  border: 1px solid var(--line-2);
+  background: transparent;
+  color: var(--ink-dim);
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  border-radius: 0;
+}
+.pill:hover { color: var(--ink); border-color: var(--ink); }
+.pill.active {
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.result-count {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: 32px;
+}
 
 /* Category */
-.cat-section{margin-bottom:40px}
-.cat-header{display:flex;align-items:center;gap:12px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
-.cat-header h2{font-size:1.2rem;font-weight:700;letter-spacing:-0.01em}
-.cat-count{font-size:0.72rem;color:var(--muted);background:var(--surface);padding:2px 10px;border-radius:12px}
-.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.cat-section { margin-bottom: 56px; }
+.cat-header {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.cat-header h2 {
+  font-family: var(--sans);
+  font-size: 1.4rem;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.cat-count {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.cat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 0;
+  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+}
 
 /* Cards */
-.card{background:var(--glass);border:1px solid var(--glass-border);border-radius:10px;padding:18px;transition:border-color 0.2s,transform 0.15s}
-.card:hover{border-color:rgba(34,197,94,0.25);transform:translateY(-1px)}
-.card.hidden{display:none}
-.card-name{font-size:0.9rem;font-weight:600;margin-bottom:4px}
-.card-name a{color:var(--fg)}
-.card-name a:hover{color:var(--accent);text-decoration:none}
-.card-desc{font-size:0.8rem;color:var(--muted);line-height:1.5;margin-bottom:10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.card-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px}
-.card-tag{font-size:0.66rem;color:rgba(255,255,255,0.45);background:rgba(255,255,255,0.04);padding:2px 8px;border-radius:10px}
-.card-footer{display:flex;gap:6px;align-items:center}
-.card-install{font-size:0.73rem;color:var(--accent);background:rgba(34,197,94,0.08);padding:4px 10px;border-radius:6px;font-family:'SF Mono',Menlo,Consolas,monospace;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;border:none;text-align:left;transition:background 0.15s}
-.card-install:hover{background:rgba(34,197,94,0.15)}
-.card-link{font-size:0.72rem;color:var(--muted);padding:4px 8px;border-radius:4px;border:1px solid var(--border);transition:all 0.15s;white-space:nowrap}
-.card-link:hover{color:var(--fg);border-color:rgba(255,255,255,0.2);text-decoration:none}
+.card {
+  background: transparent;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 22px 24px;
+  transition: background 0.15s;
+  display: flex;
+  flex-direction: column;
+}
+.card:hover { background: var(--bg-2); }
+.card.hidden { display: none; }
+.card-name {
+  font-family: var(--sans);
+  font-size: 0.98rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  margin-bottom: 8px;
+}
+.card-name a { color: var(--ink); }
+.card-name a:hover { color: var(--accent); }
+.card-desc {
+  font-size: 0.85rem;
+  color: var(--ink-dim);
+  line-height: 1.5;
+  margin-bottom: 14px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.card-tag {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  border: 1px solid var(--line-2);
+  padding: 3px 8px;
+}
+.card-footer {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: auto;
+}
+.card-install {
+  flex: 1;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--accent);
+  background: var(--accent-dim);
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 0;
+  cursor: pointer;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: filter 0.15s;
+}
+.card-install:hover { filter: brightness(1.15); }
+.card-link {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  padding: 8px 10px;
+  border: 1px solid var(--line-2);
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.card-link:hover { color: var(--ink); border-color: var(--ink); }
 
-/* Install banner */
-.install-banner{text-align:center;padding:48px 24px;margin:20px 0 48px;background:var(--glass);border:1px solid var(--glass-border);border-radius:14px}
-.install-banner h3{font-size:1.3rem;font-weight:700;margin-bottom:8px}
-.install-banner p{color:var(--muted);font-size:0.9rem;margin-bottom:20px}
-.install-banner code{display:inline-block;background:rgba(34,197,94,0.08);color:var(--accent);padding:8px 20px;border-radius:8px;font-size:0.88rem}
-.install-banner .install-links{margin-top:16px;font-size:0.85rem;color:var(--muted)}
-.install-banner .install-links a{color:var(--accent)}
+/* Install section */
+.install-banner {
+  text-align: left;
+  padding: 64px 48px;
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 48px;
+  align-items: center;
+}
+.install-banner .install-meta { max-width: 32ch; }
+.install-banner h3 {
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: clamp(22px, 2.8vw, 32px);
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+  margin-bottom: 12px;
+}
+.install-banner h3 em { font-family: var(--serif); font-style: italic; font-weight: 400; }
+.install-banner p {
+  color: var(--ink-dim);
+  font-size: 0.95rem;
+  margin-bottom: 0;
+}
+.install-cmd {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.install-cmd code {
+  display: block;
+  background: var(--term-bg);
+  border: 1px solid var(--line);
+  color: var(--accent);
+  padding: 18px 22px;
+  font-family: var(--mono);
+  font-size: 0.92rem;
+  letter-spacing: -0.01em;
+}
+.install-links {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+}
+.install-links a { color: var(--ink-dim); border-bottom: 1px solid var(--line-2); padding-bottom: 1px; }
+.install-links a:hover { color: var(--accent); border-color: var(--accent); }
+@media (max-width: 768px) {
+  .install-banner { grid-template-columns: 1fr; gap: 28px; padding: 40px 28px; }
+}
 
 /* Footer */
-footer{padding:32px 0;border-top:1px solid var(--border);text-align:center;color:var(--muted);font-size:0.8rem}
-footer a{color:var(--muted)}
-footer a:hover{color:var(--fg)}
-.footer-links{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 24px;margin-bottom:12px}
-.footer-brand{margin-bottom:4px}
+footer {
+  padding: 48px 0 56px;
+  border-top: 1px solid var(--line);
+  color: var(--ink-dim);
+  font-size: 0.82rem;
+}
+.footer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.footer-brand {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.footer-brand a { color: var(--ink); }
+.footer-brand a:hover { color: var(--accent); }
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 24px;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.footer-links a { color: var(--ink-dim); }
+.footer-links a:hover { color: var(--ink); }
+.footer-tag { color: var(--ink-faint); margin-top: 16px; font-style: italic; font-family: var(--serif); font-size: 0.95rem; }
 
 /* Loading */
-.loading{text-align:center;padding:80px 0;color:var(--muted)}
-.loading-spinner{display:inline-block;width:24px;height:24px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:12px}
-@keyframes spin{to{transform:rotate(360deg)}}
-
-/* Responsive */
-@media(max-width:768px){
-  .container{padding:0 16px}
-  .hero{padding:40px 0 32px}
-  .hero h1{font-size:2rem}
-  .hero-stats{gap:24px}
-  .filter-bar{flex-direction:column}
-  .search-box{min-width:0}
-  .cat-grid{grid-template-columns:1fr}
-  .header-links span{display:none}
+.loading {
+  text-align: center;
+  padding: 96px 0;
+  color: var(--ink-dim);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
-@media(max-width:480px){
-  .hero h1{font-size:1.6rem}
-  .hero-stats{flex-direction:column;gap:8px}
+.loading-spinner {
+  display: inline-block;
+  width: 20px; height: 20px;
+  border: 1px solid var(--line-2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 14px;
 }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* Toast */
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:var(--accent);padding:8px 20px;border-radius:8px;font-size:0.82rem;font-family:'SF Mono',Menlo,Consolas,monospace;z-index:100;transition:transform 0.3s ease;pointer-events:none}
-.toast.show{transform:translateX(-50%) translateY(0)}
+.toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--ink);
+  color: var(--bg);
+  border: 0;
+  padding: 12px 20px;
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  z-index: 100;
+  transition: transform 0.3s ease;
+  pointer-events: none;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
 </style>
 </head>
 <body>
 
-<header>
-  <div class="container header-inner">
-    <a class="header-brand" href="https://pilotprotocol.network">
-      <img src="https://raw.githubusercontent.com/TeoSlayer/pilotprotocol/main/docs/media/pilot.png" alt="Pilot">
-      <span>Pilot Protocol Skills</span>
-    </a>
-    <div class="header-links">
-      <a href="https://pilotprotocol.network">Website</a>
-      <a href="https://pilotprotocol.network/docs/">Docs</a>
-      <a href="https://pilotprotocol.network/for/skills">Skill Zoo</a>
-      <a href="https://clawhub.ai/teoslayer/pilot-protocol">ClawHub</a>
-      <a href="https://github.com/TeoSlayer/pilot-skills">GitHub</a>
+<nav class="nav-top">
+  <div class="wrap">
+    <div class="nav-row">
+      <a href="https://pilotprotocol.network" class="brand" aria-label="Pilot Protocol — home">
+        <img src="https://raw.githubusercontent.com/TeoSlayer/pilotprotocol/main/docs/media/pilot.png" alt="" class="logo" />
+        <span class="brand-text">Pilot / Skills<small class="brand-tag">Where agents go</small></span>
+      </a>
+
+      <div class="nav-links">
+        <a class="nav-link" href="https://pilotprotocol.network">Network</a>
+        <a class="nav-link" href="https://pilotprotocol.network/docs/">Docs</a>
+        <a class="nav-link" data-collapse href="https://pilotprotocol.network/for/skills">Skill Zoo</a>
+        <a class="nav-link" href="https://clawhub.ai/teoslayer/pilot-protocol">ClawHub</a>
+        <a class="nav-link" href="https://github.com/TeoSlayer/pilot-skills">GitHub</a>
+      </div>
+
+      <div class="nav-right">
+        <button id="theme-toggle" class="theme-toggle" aria-label="Toggle light/dark theme" type="button">
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4.2"></circle>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>
+          </svg>
+        </button>
+      </div>
     </div>
   </div>
-</header>
+</nav>
 
-<div class="container">
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div class="eyebrow">The catalog · 170+ skills</div>
+    <h1 class="display">
+      Agent <em>skills</em>,<br/>
+      one command<br/>
+      <span class="accent">each</span>.
+    </h1>
+    <p class="hero-sub">
+      Every skill wraps <code>pilotctl</code> to give an agent a focused capability —
+      <b>messaging</b>, <b>file transfer</b>, <b>trust</b>, <b>task routing</b>,
+      <b>swarm coordination</b>, <b>service agents</b>. Composable. One install per
+      capability. No SDK.
+    </p>
 
-<div class="hero">
-  <h1>Agent Skills</h1>
-  <p>The complete catalog of Pilot Protocol skills. Every skill wraps <code>pilotctl</code> to give agents a focused networking capability.</p>
-  <div class="hero-stats">
-    <div class="stat"><div class="stat-num" id="total-count">--</div><div class="stat-label">Skills</div></div>
-    <div class="stat"><div class="stat-num" id="cat-count">--</div><div class="stat-label">Categories</div></div>
-    <div class="stat"><div class="stat-num">1</div><div class="stat-label">Cmd Install</div></div>
+    <div class="stats-row">
+      <div class="stat">
+        <div class="stat-num"><span class="accent" id="total-count">--</span></div>
+        <div class="stat-label">Skills indexed</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" id="cat-count">--</div>
+        <div class="stat-label">Categories</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">1<span style="color:var(--ink-dim)">cmd</span></div>
+        <div class="stat-label">To install</div>
+      </div>
+    </div>
+
+    <div class="cta-row">
+      <a class="btn primary" href="https://pilotprotocol.network/docs/getting-started">Get started <span class="arr">→</span></a>
+      <a class="btn" href="https://github.com/TeoSlayer/pilot-skills">View source</a>
+    </div>
   </div>
-  <div class="hero-ctas">
-    <a class="cta-primary" href="https://pilotprotocol.network/docs/getting-started">Get Started</a>
-    <a class="cta-ghost" href="https://github.com/TeoSlayer/pilot-skills">View Source</a>
+</section>
+
+<section class="section" id="catalog-section">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">Browse</div>
+      <h2>Every <em>skill</em>, by <span class="accent">category</span>.</h2>
+    </div>
+
+    <div class="filter-bar">
+      <input class="search-box" type="text" id="search" placeholder="Search skills, descriptions, tags…" autocomplete="off">
+      <div class="filter-pills" id="pills"></div>
+    </div>
+    <div class="result-count" id="result-count"></div>
+
+    <div id="catalog">
+      <div class="loading"><div class="loading-spinner"></div><br>Loading skills…</div>
+    </div>
   </div>
-</div>
+</section>
 
-<div class="filter-bar">
-  <input class="search-box" type="text" id="search" placeholder="Search skills..." autocomplete="off">
-  <div class="filter-pills" id="pills"></div>
-</div>
-<div class="result-count" id="result-count"></div>
-
-<div id="catalog">
-  <div class="loading"><div class="loading-spinner"></div><br>Loading skills...</div>
-</div>
-
-<div class="install-banner">
-  <h3>Install any skill in one command</h3>
-  <p>Every skill is available on ClawHub. Install the core skill to get started.</p>
-  <code>clawhub install pilot-protocol</code>
-  <div class="install-links">
-    <a href="https://clawhub.ai/teoslayer/pilot-protocol">View on ClawHub</a> &middot;
-    <a href="https://pilotprotocol.network/docs/getting-started">Documentation</a> &middot;
-    <a href="https://github.com/TeoSlayer/pilotprotocol">Protocol Source</a>
+<section class="section">
+  <div class="wrap">
+    <div class="install-banner">
+      <div class="install-meta">
+        <h3>Install any skill in <em>one</em> command.</h3>
+        <p>Every skill is published to ClawHub. Start with the core skill and pick up the rest as you need them.</p>
+      </div>
+      <div class="install-cmd">
+        <code>$ clawhub install pilot-protocol</code>
+        <div class="install-links">
+          <a href="https://clawhub.ai/teoslayer/pilot-protocol">View on ClawHub →</a>
+          <a href="https://pilotprotocol.network/docs/getting-started">Documentation</a>
+          <a href="https://github.com/TeoSlayer/pilotprotocol">Protocol source</a>
+        </div>
+      </div>
+    </div>
   </div>
-</div>
-
-</div>
+</section>
 
 <footer>
-  <div class="container">
+  <div class="wrap footer-row">
+    <div>
+      <div class="footer-brand"><a href="https://vulturelabs.com">Vulture Labs</a></div>
+      <div class="footer-tag">Built for agents, by humans.</div>
+    </div>
     <div class="footer-links">
       <a href="https://pilotprotocol.network">Pilot Protocol</a>
       <a href="https://pilotprotocol.network/docs/">Docs</a>
-      <a href="https://pilotprotocol.network/blog/">Blog</a>
+      <a href="https://pilotprotocol.network/blog/">Journal</a>
       <a href="https://github.com/TeoSlayer/pilot-skills">GitHub</a>
       <a href="https://clawhub.ai/teoslayer/pilot-protocol">ClawHub</a>
     </div>
-    <div class="footer-brand"><a href="https://vulturelabs.com">Vulture Labs</a></div>
-    <div>Built for agents, by humans.</div>
   </div>
 </footer>
 
 <div class="toast" id="toast">Copied!</div>
 
 <script>
+(function(){
+  var themeBtn = document.getElementById('theme-toggle');
+  if (themeBtn) {
+    themeBtn.addEventListener('click', function () {
+      var isLight = document.documentElement.getAttribute('data-theme') === 'light';
+      if (isLight) {
+        document.documentElement.removeAttribute('data-theme');
+        try { localStorage.setItem('pilot-theme', 'dark'); } catch (e) {}
+      } else {
+        document.documentElement.setAttribute('data-theme', 'light');
+        try { localStorage.setItem('pilot-theme', 'light'); } catch (e) {}
+      }
+    });
+  }
+})();
+
 (function(){
   var catalogEl = document.getElementById('catalog');
   var pillsEl = document.getElementById('pills');
@@ -217,6 +846,12 @@ footer a:hover{color:var(--fg)}
     navigator.clipboard.writeText(cmd).then(function(){ showToast('Copied: ' + cmd); });
   }
 
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function(c){
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+    });
+  }
+
   function renderCatalog() {
     if (!data) return;
     var q = searchEl.value.toLowerCase().trim();
@@ -236,33 +871,37 @@ footer a:hover{color:var(--fg)}
           s.tags.join(' ').toLowerCase().indexOf(q) !== -1;
         if (!matchText) return;
 
-        var tagsHtml = s.tags.map(function(t){ return '<span class="card-tag">' + t + '</span>'; }).join('');
+        var tagsHtml = s.tags.map(function(t){ return '<span class="card-tag">' + escapeHtml(t) + '</span>'; }).join('');
         cards += '<div class="card">' +
-          '<div class="card-name"><a href="' + s.source + '" target="_blank" rel="noopener">' + s.name + '</a></div>' +
-          '<div class="card-desc">' + s.description + '</div>' +
+          '<div class="card-name"><a href="' + escapeHtml(s.source) + '" target="_blank" rel="noopener">' + escapeHtml(s.name) + '</a></div>' +
+          '<div class="card-desc">' + escapeHtml(s.description) + '</div>' +
           '<div class="card-tags">' + tagsHtml + '</div>' +
           '<div class="card-footer">' +
-            '<button class="card-install" onclick="window._copyInstall(\'' + s.install + '\')" title="Click to copy">' + s.install + '</button>' +
-            '<a class="card-link" href="' + s.clawhub_url + '" target="_blank" rel="noopener">ClawHub</a>' +
-            '<a class="card-link" href="' + s.source + '" target="_blank" rel="noopener">Source</a>' +
+            '<button class="card-install" data-install="' + escapeHtml(s.install) + '" title="Click to copy">' + escapeHtml(s.install) + '</button>' +
+            '<a class="card-link" href="' + escapeHtml(s.clawhub_url) + '" target="_blank" rel="noopener">ClawHub</a>' +
+            '<a class="card-link" href="' + escapeHtml(s.source) + '" target="_blank" rel="noopener">Source</a>' +
           '</div></div>';
         catVisible++;
         visible++;
       });
 
       if (catVisible > 0) {
-        html += '<div class="cat-section"><div class="cat-header"><h2>' + cat.name + '</h2><span class="cat-count">' + catVisible + '</span></div><div class="cat-grid">' + cards + '</div></div>';
+        html += '<div class="cat-section"><div class="cat-header"><h2>' + escapeHtml(cat.name) + '</h2><span class="cat-count">' + catVisible + ' skill' + (catVisible !== 1 ? 's' : '') + '</span></div><div class="cat-grid">' + cards + '</div></div>';
       }
     });
 
     catalogEl.innerHTML = html || '<div class="loading">No skills match your search.</div>';
-    countEl.textContent = visible + ' skill' + (visible !== 1 ? 's' : '');
+    countEl.textContent = visible + ' skill' + (visible !== 1 ? 's' : '') + ' shown';
+
+    catalogEl.querySelectorAll('.card-install').forEach(function(b){
+      b.addEventListener('click', function(){ copyInstall(b.getAttribute('data-install')); });
+    });
   }
 
   function buildPills() {
     var html = '<button class="pill active" data-cat="all">All</button>';
     data.categories.forEach(function(cat) {
-      html += '<button class="pill" data-cat="' + cat.slug + '">' + cat.name + '</button>';
+      html += '<button class="pill" data-cat="' + escapeHtml(cat.slug) + '">' + escapeHtml(cat.name) + '</button>';
     });
     pillsEl.innerHTML = html;
     pillsEl.querySelectorAll('.pill').forEach(function(pill) {
@@ -275,9 +914,6 @@ footer a:hover{color:var(--fg)}
     });
   }
 
-  window._copyInstall = copyInstall;
-
-  // Load skills.json (co-located for Pages, or from GitHub raw for local dev)
   var jsonUrl = 'skills.json';
   fetch(jsonUrl).then(function(r){
     if (!r.ok) return fetch('https://raw.githubusercontent.com/TeoSlayer/pilot-skills/main/skills.json');
