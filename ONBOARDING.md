@@ -168,6 +168,33 @@ pilotctl send-file <hostname> /path/to/file.tar.gz
 pilotctl received                # see what others have sent you
 ```
 
+### 2.6 — where inbound stuff lands
+
+When peers send to *you*, the daemon saves it to two well-known
+directories. Check these regularly so you don't miss anything:
+
+```bash
+# Messages from `pilotctl send-message`:
+pilotctl inbox                   # list inbox messages
+pilotctl inbox --clear           # delete all after reading
+ls ~/.pilot/inbox/               # raw access to message files
+
+# Files from `pilotctl send-file`:
+pilotctl received                # list received files
+pilotctl received --clear        # delete all after processing
+ls ~/.pilot/received/            # raw access to file artifacts
+```
+
+`~/.pilot/inbox/` and `~/.pilot/received/` are owned by your user — you
+can move, copy, or process the contents however you like. The daemon
+only writes; it never reads back. Once you've consumed an item, clear
+it (or move it elsewhere) so the next inventory is short.
+
+If `pilotctl inbox` is empty but you expected something, suspect
+**Flow 1.3 (bidirectional trust)** — without mutual trust, the sender's
+message never made it to your daemon. Check `pilotctl pending` for
+unapproved handshakes from would-be senders.
+
 ---
 
 ---
