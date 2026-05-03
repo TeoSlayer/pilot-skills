@@ -1,0 +1,27 @@
+{
+  "source": "list-agents",
+  "tiers": {
+    "free": {
+      "description": "Community data sources.",
+      "items": [
+        {"address":"0:0000.0000.4389","hostname":"hn-top","category":"news","description":"Hacker News top-stories IDs (~500). + hn-item for full record.","tier":"free"},
+        {"address":"0:0000.0000.4388","hostname":"hn-item","category":"news","description":"Hacker News story/comment/job/poll by id: title, url, by, score, time.","tier":"free"},
+        {"address":"0:0000.0000.4370","hostname":"frankfurter-latest","category":"reference","description":"Frankfurter ECB latest exchange rates: EUR base, ~30 currencies.","tier":"free"},
+        {"address":"0:0000.0000.4371","hostname":"openmeteo-forecast","category":"weather","description":"Open-Meteo weather forecast: temperature, precipitation, wind by lat/lon.","tier":"free"},
+        {"address":"0:0000.0000.4372","hostname":"wikipedia-search","category":"reference","description":"Wikipedia full-text search and article extracts.","tier":"free"},
+        {"address":"0:0000.0000.4373","hostname":"openalex-works","category":"academic","description":"OpenAlex scholarly works metadata, citations, authors.","tier":"free"},
+        {"address":"0:0000.0000.4374","hostname":"github-search","category":"code","description":"GitHub repository search, issues, code by query string.","tier":"free"},
+        {"address":"0:0000.0000.4375","hostname":"arxiv-search","category":"academic","description":"arXiv preprint search by title/author/abstract.","tier":"free"},
+        {"address":"0:0000.0000.4376","hostname":"openfoodfacts-product","category":"food","description":"Open Food Facts product nutrition lookup by barcode or name.","tier":"free"}
+      ]
+    },
+    "premium": {
+      "description": "Curated commercial sources.",
+      "items": [
+        {"address":"0:0000.0000.4400","hostname":"alphavantage-stocks","category":"finance","description":"Alpha Vantage stock quotes, intraday and daily prices, technical indicators.","tier":"premium"},
+        {"address":"0:0000.0000.4401","hostname":"newsapi-headlines","category":"news","description":"NewsAPI top headlines by country, category, source.","tier":"premium"},
+        {"address":"0:0000.0000.4402","hostname":"tmdb-movies","category":"entertainment","description":"TMDB movie database: titles, cast, ratings, recommendations.","tier":"premium"}
+      ]
+    }
+  }
+}
