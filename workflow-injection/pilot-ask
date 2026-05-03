@@ -1,49 +1,146 @@
 #!/usr/bin/env bash
+# pilot-ask: query the pilot directory + matched specialist in one shot.
+#
+# Usage:
+#   pilot-ask "<topic>" "<question>"
+#
+# Output (stdout):
+#   - Specialist's reply data on success
+#   - "no_specialist:<topic>" if no relevant specialist found
+#   - "no_reply:<host>" if a request timed out
+#
+# Reads the local catalog cache at ~/.pilot/skills-cache/catalog.json
+# (refreshed by pilot-daemon every 15 min). Falls back to live query
+# on cache miss.
+
 set -e
-TOPIC="${1:-}"; QUESTION="${2:-$TOPIC}"
+TOPIC="${1:-}"
+QUESTION="${2:-$TOPIC}"
 [ -z "$TOPIC" ] && { echo "usage: pilot-ask <topic> [<question>]" >&2; exit 2; }
+
 INBOX="$HOME/.pilot/inbox"
+CACHE="$HOME/.pilot/skills-cache/catalog.json"
+CACHE_MAX_AGE_SEC=1800
 
-# Anchor: time RIGHT BEFORE we send (will check files newer than this)
-ANCHOR=$(date +%s)
+mkdir -p "$INBOX" "$(dirname "$CACHE")"
+mtime() { stat -f %m "$1" 2>/dev/null || stat -c %Y "$1" 2>/dev/null; }
 
-pilotctl handshake list-agents 2>/dev/null >/dev/null || true
-pilotctl send-message list-agents --data "/data {\"search\":\"$TOPIC\"}" >/dev/null 2>&1 || true
+# ----- Resolve catalog (cache or live) -----
+CATALOG_JSON=""
+if [ -f "$CACHE" ]; then
+    CACHE_AGE=$(( $(date +%s) - $(mtime "$CACHE") ))
+    if [ "$CACHE_AGE" -lt "$CACHE_MAX_AGE_SEC" ]; then
+        CATALOG_JSON=$(cat "$CACHE" 2>/dev/null)
+    fi
+fi
 
-# Wait up to 60s for a NEW file from list-agents
-LATEST=""
-for i in $(seq 1 60); do
-    sleep 1
-    for f in $(ls -1t "$INBOX"/*.json 2>/dev/null); do
-        FT=$(stat -f %m "$f" 2>/dev/null) || continue
-        [ "$FT" -lt "$ANCHOR" ] && break  # going past anchor = no newer files match
-        SRC=$(jq -r '.data | fromjson | .source // empty' "$f" 2>/dev/null) || continue
-        if [ "$SRC" = "list-agents" ]; then
-            LATEST="$f"; break 2
-        fi
+if [ -z "$CATALOG_JSON" ]; then
+    echo "(no fresh catalog cache, querying list-agents live...)" >&2
+    ANCHOR=$(date +%s)
+    pilotctl handshake list-agents 2>/dev/null >/dev/null || true
+    pilotctl send-message list-agents --data '/data {"limit":500}' >/dev/null 2>&1 || true
+    LATEST=""
+    for i in $(seq 1 60); do
+        sleep 1
+        for f in $(ls -1t "$INBOX"/*.json 2>/dev/null); do
+            FT=$(mtime "$f"); [ -z "$FT" ] && continue
+            [ "$FT" -lt "$ANCHOR" ] && break
+            SRC=$(jq -r '.data | fromjson | .source // empty' "$f" 2>/dev/null) || continue
+            if [ "$SRC" = "list-agents" ]; then LATEST="$f"; break 2; fi
+        done
     done
-done
+    if [ -n "$LATEST" ]; then
+        CATALOG_JSON=$(jq -r '.data | fromjson' "$LATEST")
+        echo "$CATALOG_JSON" > "$CACHE"
+    fi
+fi
 
-[ -z "$LATEST" ] && { echo "no_reply:list-agents (waited 60s)"; echo "no_specialist:$TOPIC"; exit 0; }
+if [ -z "$CATALOG_JSON" ]; then
+    echo "no_specialist:$TOPIC"
+    exit 0
+fi
 
-SPECIALIST=$(jq -r '.data | fromjson | (.tiers // {}) | to_entries[] | .value.items[]?.hostname' "$LATEST" 2>/dev/null | head -1)
-[ -z "$SPECIALIST" ] && { echo "no_specialist:$TOPIC"; exit 0; }
+# ----- Tokenized matching -----
+# Split topic into word-tokens (also split compounds heuristically).
+# A specialist is a candidate if ANY topic-token appears in
+# hostname OR category OR description.
 
-echo "Got specialist: $SPECIALIST" >&2
+# Generate topic tokens. Lower-case, split on space/hyphen/underscore,
+# also extract substring fragments for compound words (e.g. "hackernews"
+# becomes "hackernews", "hacker", "news" — splitting on common bigram
+# boundaries via shell heuristics is hard, so we just try the topic
+# wholesale + each space-split word + and a few common compound splits).
+TOPIC_LC=$(echo "$TOPIC" | tr '[:upper:]' '[:lower:]')
+# Build a JSON array of probe tokens
+TOKENS_JSON=$(printf '%s' "$TOPIC_LC" | tr ' -_' '\n' | jq -R . | jq -s '. + ["'"$TOPIC_LC"'"]')
+
+SPECIALIST=$(echo "$CATALOG_JSON" | jq -r --argjson tokens "$TOKENS_JSON" '
+    # For a token, generate probe variants:
+    #   - the full token
+    #   - first 5 chars (if token >= 6 chars)  e.g. "hackernews" -> "hacker"
+    #   - first 6 chars (if token >= 7 chars)  e.g. "hackernews" -> "hacker"
+    # We require >= 4-char minimum and skip 4-char prefixes of 5-char words
+    # ("haik" of "haiku") which produced false positives.
+    def probes($t):
+        [$t]
+        + (if ($t | length) >= 7 then [$t[:6]] else [] end)
+        + (if ($t | length) >= 8 then [$t[:7]] else [] end)
+        | unique;
+
+    [(.tiers // {}) | to_entries[] | .value.items[]?] + [.items[]?] |
+    # Dedup by hostname while preserving original order
+    (reduce .[] as $x ([]; if any(.[]; .hostname == $x.hostname) then . else . + [$x] end)) |
+    to_entries | map(.value + {_idx: .key}) |
+    map(
+        . as $row |
+        ($row.hostname // "" | ascii_downcase) as $host |
+        ($row.category // "" | ascii_downcase) as $cat |
+        ($row.description // "" | ascii_downcase) as $desc |
+        $row + {
+            score: (
+                [ $tokens[]
+                  | select(type == "string" and length >= 3)
+                  | ascii_downcase
+                  | . as $tok
+                  | probes($tok)
+                  | map(. as $p |
+                        if   $host | contains($p) then 50
+                        elif $cat  | contains($p) then 20
+                        elif $desc | contains($p) then 10
+                        else 0 end)
+                  | max
+                ] | add // 0
+            )
+        }
+    ) |
+    sort_by(-.score, ._idx) |
+    .[0] |
+    if (.score // 0) > 0 then .hostname else empty end
+' 2>/dev/null)
+
+if [ -z "$SPECIALIST" ] || [ "$SPECIALIST" = "null" ]; then
+    echo "no_specialist:$TOPIC"
+    exit 0
+fi
+
+echo "specialist=$SPECIALIST" >&2
 ANCHOR2=$(date +%s)
 pilotctl handshake "$SPECIALIST" 2>/dev/null >/dev/null || true
 pilotctl send-message "$SPECIALIST" --data "$QUESTION" >/dev/null 2>&1 || true
+
 REPLY=""
-for i in $(seq 1 60); do
+for i in $(seq 1 30); do
     sleep 1
     for f in $(ls -1t "$INBOX"/*.json 2>/dev/null); do
-        FT=$(stat -f %m "$f" 2>/dev/null) || continue
+        FT=$(mtime "$f"); [ -z "$FT" ] && continue
         [ "$FT" -lt "$ANCHOR2" ] && break
         AG=$(jq -r '.data | fromjson | .agent // empty' "$f" 2>/dev/null) || continue
-        if [ "$AG" = "$SPECIALIST" ]; then
-            REPLY="$f"; break 2
-        fi
+        if [ "$AG" = "$SPECIALIST" ]; then REPLY="$f"; break 2; fi
     done
 done
-[ -z "$REPLY" ] && { echo "no_reply:$SPECIALIST"; exit 0; }
+
+if [ -z "$REPLY" ]; then
+    echo "no_reply:$SPECIALIST"
+    exit 0
+fi
 jq -r '.data' "$REPLY"
