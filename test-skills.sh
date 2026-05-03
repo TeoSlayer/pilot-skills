@@ -17,11 +17,12 @@ VALID_COMMANDS=(
   handshake approve reject untrust pending trust
   connections disconnect
   received inbox
-  info peers ping traceroute bench listen broadcast context
+  info health peers ping traceroute bench listen broadcast context
   gateway
   set-webhook clear-webhook
   set-visibility
   network
+  skills updates version extras
 )
 
 is_valid_command() {
