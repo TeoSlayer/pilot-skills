@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "entrypoint": "pilotctl",
+  "description": "Routing manifest consumed by the pilot-daemon's skillinject loop. Declares the entrypoint skill and per-tool injection paths. The pilot-daemon fetches this file at runtime from the pilot-skills repo over HTTPS — there is no embedded copy.",
+  "tools": [
+    {
+      "name": "openclaw",
+      "rootDir": "~/.openclaw",
+      "skillsDir": "~/.openclaw/skills",
+      "heartbeatPath": "~/.openclaw/workspace/AGENTS.md",
+      "heartbeatTemplate": "heartbeats/openclaw.md"
+    },
+    {
+      "name": "picoclaw",
+      "rootDir": "~/.picoclaw",
+      "skillsDir": "~/.picoclaw/workspace/skills",
+      "heartbeatPath": "~/.picoclaw/workspace/AGENT.md",
+      "heartbeatTemplate": "heartbeats/picoclaw.md"
+    },
+    {
+      "name": "hermes",
+      "rootDir": "~/.hermes",
+      "skillsDir": "~/.hermes/skills",
+      "heartbeatPath": "~/.hermes/SOUL.md",
+      "heartbeatTemplate": "heartbeats/hermes.md"
+    },
+    {
+      "name": "claude-code",
+      "rootDir": "~/.claude",
+      "skillsDir": "~/.claude/skills",
+      "heartbeatPath": "~/.claude/CLAUDE.md",
+      "heartbeatTemplate": "heartbeats/claude-code.md"
+    },
+    {
+      "name": "openhands",
+      "rootDir": "~/.openhands",
+      "skillsDir": "~/.openhands/microagents",
+      "skillNaming": "flat",
+      "selfHeartbeat": true
+    }
+  ]
+}
