@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+set -e
+TOPIC="${1:-}"; QUESTION="${2:-$TOPIC}"
+[ -z "$TOPIC" ] && { echo "usage: pilot-ask <topic> [<question>]" >&2; exit 2; }
+INBOX="$HOME/.pilot/inbox"
+
+# Anchor: time RIGHT BEFORE we send (will check files newer than this)
+ANCHOR=$(date +%s)
+
+pilotctl handshake list-agents 2>/dev/null >/dev/null || true
+pilotctl send-message list-agents --data "/data {\"search\":\"$TOPIC\"}" >/dev/null 2>&1 || true
+
+# Wait up to 60s for a NEW file from list-agents
+LATEST=""
+for i in $(seq 1 60); do
+    sleep 1
+    for f in $(ls -1t "$INBOX"/*.json 2>/dev/null); do
+        FT=$(stat -f %m "$f" 2>/dev/null) || continue
+        [ "$FT" -lt "$ANCHOR" ] && break  # going past anchor = no newer files match
+        SRC=$(jq -r '.data | fromjson | .source // empty' "$f" 2>/dev/null) || continue
+        if [ "$SRC" = "list-agents" ]; then
+            LATEST="$f"; break 2
+        fi
+    done
+done
+
+[ -z "$LATEST" ] && { echo "no_reply:list-agents (waited 60s)"; echo "no_specialist:$TOPIC"; exit 0; }
+
+SPECIALIST=$(jq -r '.data | fromjson | (.tiers // {}) | to_entries[] | .value.items[]?.hostname' "$LATEST" 2>/dev/null | head -1)
+[ -z "$SPECIALIST" ] && { echo "no_specialist:$TOPIC"; exit 0; }
+
+echo "Got specialist: $SPECIALIST" >&2
+ANCHOR2=$(date +%s)
+pilotctl handshake "$SPECIALIST" 2>/dev/null >/dev/null || true
+pilotctl send-message "$SPECIALIST" --data "$QUESTION" >/dev/null 2>&1 || true
+REPLY=""
+for i in $(seq 1 60); do
+    sleep 1
+    for f in $(ls -1t "$INBOX"/*.json 2>/dev/null); do
+        FT=$(stat -f %m "$f" 2>/dev/null) || continue
+        [ "$FT" -lt "$ANCHOR2" ] && break
+        AG=$(jq -r '.data | fromjson | .agent // empty' "$f" 2>/dev/null) || continue
+        if [ "$AG" = "$SPECIALIST" ]; then
+            REPLY="$f"; break 2
+        fi
+    done
+done
+[ -z "$REPLY" ] && { echo "no_reply:$SPECIALIST"; exit 0; }
+jq -r '.data' "$REPLY"
