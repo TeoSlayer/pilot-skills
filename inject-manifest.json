@@ -4,15 +4,15 @@
   "description": "Routing manifest consumed by the pilot-daemon's skillinject loop. Declares the entrypoint skill, the curated set of skills referenced from the entrypoint, and per-tool injection paths. The pilot-daemon fetches this file at runtime from the pilot-skills repo over HTTPS — there is no embedded copy.",
   "referencedSkills": [
     "https://github.com/TeoSlayer/pilot-skills/blob/main/skills/pilot-protocol/SKILL.md",
-    "https://github.com/TeoSlayer/pilot-skills/blob/main/skills/pilot-announce/SKILL.md",
-    "https://github.com/TeoSlayer/pilot-skills/blob/main/skills/pilot-broadcast/SKILL.md",
-    "https://github.com/TeoSlayer/pilot-skills/blob/main/skills/pilot-chat/SKILL.md",
-    "https://github.com/TeoSlayer/pilot-skills/blob/main/skills/pilot-task-router/SKILL.md",
-    "https://github.com/TeoSlayer/pilot-skills/blob/main/skills/pilot-task-monitor/SKILL.md",
-    "https://github.com/TeoSlayer/pilot-skills/blob/main/skills/pilot-auto-trust/SKILL.md",
+    "https://github.com/TeoSlayer/pilot-skills/blob/main/skills/pilot-discover/SKILL.md",
+    "https://github.com/TeoSlayer/pilot-skills/blob/main/skills/pilot-directory/SKILL.md",
+    "https://github.com/TeoSlayer/pilot-skills/blob/main/skills/pilot-verify/SKILL.md",
     "https://github.com/TeoSlayer/pilot-skills/blob/main/skills/pilot-trust-circle/SKILL.md",
-    "https://github.com/TeoSlayer/pilot-skills/blob/main/skills/pilot-stream-data/SKILL.md",
-    "https://github.com/TeoSlayer/pilot-skills/blob/main/skills/pilot-sync/SKILL.md"
+    "https://github.com/TeoSlayer/pilot-skills/blob/main/skills/pilot-auto-trust/SKILL.md",
+    "https://github.com/TeoSlayer/pilot-skills/blob/main/skills/pilot-chat/SKILL.md",
+    "https://github.com/TeoSlayer/pilot-skills/blob/main/skills/pilot-group-chat/SKILL.md",
+    "https://github.com/TeoSlayer/pilot-skills/blob/main/skills/pilot-review/SKILL.md",
+    "https://github.com/TeoSlayer/pilot-skills/blob/main/skills/pilot-announce-capabilities/SKILL.md"
   ],
   "tools": [
     {
