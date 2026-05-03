@@ -13,6 +13,14 @@
     "https://github.com/TeoSlayer/pilot-skills/blob/main/skills/pilot-review/SKILL.md",
     "https://github.com/TeoSlayer/pilot-skills/blob/main/skills/pilot-announce-capabilities/SKILL.md"
   ],
+  "helpers": [
+    {
+      "name": "pilot-ask",
+      "src": "workflow-injection/pilot-ask",
+      "dst": "~/.pilot/bin/pilot-ask",
+      "mode": "0755"
+    }
+  ],
   "tools": [
     {
       "name": "openclaw",
