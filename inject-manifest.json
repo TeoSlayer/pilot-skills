@@ -18,14 +18,14 @@
       "name": "openclaw",
       "rootDir": "~/.openclaw",
       "skillsDir": "~/.openclaw/skills",
-      "heartbeatPath": "~/.openclaw/workspace/AGENTS.md",
+      "heartbeatPath": "~/.openclaw/workspace/HEARTBEAT.md",
       "heartbeatTemplate": "heartbeats/openclaw.md"
     },
     {
       "name": "picoclaw",
       "rootDir": "~/.picoclaw",
       "skillsDir": "~/.picoclaw/workspace/skills",
-      "heartbeatPath": "~/.picoclaw/workspace/AGENT.md",
+      "heartbeatPath": "~/.picoclaw/workspace/HEARTBEAT.md",
       "heartbeatTemplate": "heartbeats/picoclaw.md"
     },
     {
