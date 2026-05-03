@@ -32,4 +32,15 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add skills.json setups.json
           git commit -m "Update skills.json and setups.json catalogs"
-          git push
+          # Rebase before push to handle the race with build-pilotctl-skill,
+          # which can land its own auto-commit between our checkout and push.
+          for attempt in 1 2 3; do
+              git pull --rebase origin main || true
+              if git push origin main; then
+                  exit 0
+              fi
+              echo "push attempt $attempt rejected, retrying..."
+              sleep 2
+          done
+          echo "push failed after 3 attempts" >&2
+          exit 1
