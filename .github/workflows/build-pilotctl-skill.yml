@@ -139,6 +139,8 @@ jobs:
               "  specific sub-skill when the task narrows.\n"
               "tags: [pilot-protocol, networking, agents, p2p, entrypoint]\n"
               "license: AGPL-3.0\n"
+              "allowed-tools:\n"
+              "  - Bash\n"
               "compatibility: >\n"
               "  Requires `pilotctl` on PATH and the daemon running. The\n"
               "  pilot-daemon auto-installs and refreshes this file every\n"

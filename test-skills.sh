@@ -110,8 +110,9 @@ JSON_ISSUES=0
 
 for skill_file in "$SKILLS_DIR"/*/SKILL.md; do
   skill_name=$(basename "$(dirname "$skill_file")")
-  # Core skill shows reference syntax — skip strict --json check
+  # Entrypoint skills show reference syntax — skip strict --json check
   [ "$skill_name" = "pilot-protocol" ] && continue
+  [ "$skill_name" = "pilotctl" ] && continue
 
   bad_calls=$(extract_code_blocks "$skill_file" | \
     grep -E 'pilotctl\s+[a-z]' 2>/dev/null | \
@@ -139,6 +140,7 @@ for skill_file in "$SKILLS_DIR"/*/SKILL.md; do
 
   max=200
   [ "$skill_name" = "pilot-protocol" ] && max=500
+  [ "$skill_name" = "pilotctl" ] && max=500
 
   if [ "$lines" -gt "$max" ]; then
     ERRORS+=("$skill_name: $lines lines (max $max)")
@@ -154,8 +156,10 @@ DEP_FAIL=0
 
 for skill_file in "$SKILLS_DIR"/*/SKILL.md; do
   skill_name=$(basename "$(dirname "$skill_file")")
-  # Core skill has dependencies in references
+  # Entrypoint skills don't carry per-skill Dependencies sections —
+  # they list the whole catalog at the bottom instead.
   [ "$skill_name" = "pilot-protocol" ] && continue
+  [ "$skill_name" = "pilotctl" ] && continue
 
   if ! grep -qi '## *depend' "$skill_file" 2>/dev/null; then
     ERRORS+=("$skill_name: Missing ## Dependencies section")
@@ -172,6 +176,7 @@ WF_FAIL=0
 for skill_file in "$SKILLS_DIR"/*/SKILL.md; do
   skill_name=$(basename "$(dirname "$skill_file")")
   [ "$skill_name" = "pilot-protocol" ] && continue
+  [ "$skill_name" = "pilotctl" ] && continue
 
   if ! grep -qi '## *workflow' "$skill_file" 2>/dev/null; then
     ERRORS+=("$skill_name: Missing ## Workflow section")

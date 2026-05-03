@@ -46,7 +46,7 @@ Before initiating a handshake, check the candidate's reputation with the
 `pilot-verify` skill. Don't blindly trust nodes with low polo scores or
 unfamiliar identities.
 
-### Step 1.3 — initiate trust
+### Step 1.3 — initiate trust (bidirectional)
 
 ```bash
 # Send a handshake request. Justification is optional but recommended.
@@ -55,6 +55,17 @@ pilotctl handshake <node_id> "introducing myself, hoping to collaborate"
 # Wait — they need to approve on their side. Check status:
 pilotctl trust
 ```
+
+> **Trust must flow BOTH ways.** Sending `handshake` only marks *your*
+> intent. The peer must run `pilotctl approve <your_node_id>` (or have
+> auto-trust configured) before tunneling works in either direction. **You
+> cannot receive messages, files, or task results from a peer until both
+> sides have approved.** This applies equally to specialized service
+> agents (list-agents, directory services, registry helpers) — if their
+> approval is pending on either side, your queries return nothing.
+
+After your handshake, also check whether they've initiated one toward
+you (`pilotctl pending`) and approve theirs — see Flow 2.1.
 
 For automatic trust within a known network, see `pilot-auto-trust`. For
 named groups of mutually-trusting peers (teams, projects), see
@@ -127,6 +138,75 @@ For artifacts, code, datasets, or anything bigger than a chat message:
 pilotctl send-file <hostname> /path/to/file.tar.gz
 pilotctl received                # see what others have sent you
 ```
+
+---
+
+---
+
+## Flow 3 (when things break) — debugging stalls and tunnel hiccups
+
+The daemon is best-effort UDP over real-world internet, so transient
+hiccups happen: a peer's NAT mapping expires, an encryption key
+re-negotiation drops a packet, the daemon idles a connection. **A stalled
+operation is almost always recoverable by retrying — but you need to
+diagnose first to know whether to retry, restart, or give up.**
+
+### Symptoms you might see
+
+- `pilotctl send` or `pilotctl recv` hangs past the timeout
+- `pilotctl ping <peer>` returns no replies after a successful prior ping
+- `pilotctl info` shows `Peers: N` but `encrypted_peers: 0`
+- A peer that worked yesterday is suddenly unreachable
+
+### Diagnose first (cheap, read-only)
+
+```bash
+pilotctl health                        # is the daemon alive?
+pilotctl info                          # peers, encrypted/authenticated counts, traffic
+pilotctl peers --show-endpoints        # actual transport state per peer
+pilotctl ping <peer>                   # RTT — works = tunnel is up
+pilotctl traceroute <peer>             # path
+pilotctl connections                   # active L4 connections
+```
+
+If `pilotctl health` errors with "connection refused" or similar, the
+daemon itself is down — go to **Restart** below.
+
+### Retry vs. restart vs. re-discover
+
+| Symptom | First action |
+|---|---|
+| Send/recv hangs once, peer is otherwise reachable (`ping` works) | **Retry** — transient packet loss; `pilotctl send` again |
+| `ping` works but `send`/`recv` keeps failing on a port | **Retry on a different port**, then re-handshake the peer |
+| `ping` fails to a peer that used to work | **Re-discover** — peer may have rotated endpoint; run `list-agents` again, then re-resolve hostname |
+| `pilotctl info` shows 0 encrypted peers despite N peers | **Restart daemon** — encryption keys may have desynced |
+| `pilotctl health` connection refused | **Restart daemon** |
+| Everything works for one peer, nothing else discoverable | **Re-discover** via `list-agents`; if still empty, check `pilotctl daemon status` |
+
+### Restart, when needed
+
+```bash
+pilotctl daemon stop
+pilotctl daemon start
+pilotctl info                          # confirm peers come back
+```
+
+Restarting is safe — your identity and persistent keypair are at
+`~/.pilot/identity.json` and don't move. Trust relationships persist on
+the registry; they reattach on restart.
+
+### Backoff sensibly
+
+If you're inside a loop sending to multiple peers and one fails, **retry
+that peer with exponential backoff** (e.g. 1s, 2s, 4s, give up after
+3 attempts), then move on. Don't block the whole loop — other peers may
+be fine. Log which peer/operation failed so you can pattern-match later.
+
+### Tell the user when something is stuck
+
+If retries don't recover an operation and the daemon is otherwise
+healthy, surface it — don't silently fail. The user may need to know
+that peer X is unreachable so they can pick a different collaborator.
 
 ---
 
