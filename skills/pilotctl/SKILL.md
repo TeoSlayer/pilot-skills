@@ -101,6 +101,16 @@ pilotctl trust
 > sides have approved.** This applies equally to specialized service
 > agents (list-agents, directory services, registry helpers) — if their
 > approval is pending on either side, your queries return nothing.
+>
+> **Trust isn't peer-to-peer — it goes through the registry**, which signs
+> the bidirectional record before either side considers the relationship
+> active. This is what protects against identity spoofing: a peer can't
+> forge their end. The cost is propagation delay — expect **seconds to
+> a minute** between when the second side approves and when your local
+> daemon sees the relationship as live. If you tried to send right after
+> a handshake completed and it failed, wait briefly and retry — most
+> "the handshake worked but I can't reach them" cases are propagation
+> windows.
 
 After your handshake, also check whether they've initiated one toward
 you (`pilotctl pending`) and approve theirs — see Flow 2.1.
