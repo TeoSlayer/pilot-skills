@@ -119,10 +119,12 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet skills/pilotctl/SKILL.md; then
-              echo "No changes."
+          git add skills/pilotctl/SKILL.md
+          # Check the staged diff (covers both new files and modifications;
+          # `git diff --quiet skills/...` alone misses untracked files).
+          if git diff --cached --quiet skills/pilotctl/SKILL.md; then
+              echo "No changes to skills/pilotctl/SKILL.md."
               exit 0
           fi
-          git add skills/pilotctl/SKILL.md
           git commit -m "Regenerate skills/pilotctl/SKILL.md from ONBOARDING.md + skill catalog"
           git push
