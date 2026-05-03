@@ -13,7 +13,6 @@
 # (refreshed by pilot-daemon every 15 min). Falls back to live query
 # on cache miss.
 
-set -e
 TOPIC="${1:-}"
 QUESTION="${2:-$TOPIC}"
 [ -z "$TOPIC" ] && { echo "usage: pilot-ask <topic> [<question>]" >&2; exit 2; }
@@ -77,15 +76,34 @@ TOKENS_JSON=$(printf '%s' "$TOPIC_LC" | tr ' -_' '\n' | jq -R . | jq -s '. + ["'
 SPECIALIST=$(echo "$CATALOG_JSON" | jq -r --argjson tokens "$TOKENS_JSON" '
     # For a token, generate probe variants:
     #   - the full token
-    #   - first 5 chars (if token >= 6 chars)  e.g. "hackernews" -> "hacker"
-    #   - first 6 chars (if token >= 7 chars)  e.g. "hackernews" -> "hacker"
-    # We require >= 4-char minimum and skip 4-char prefixes of 5-char words
-    # ("haik" of "haiku") which produced false positives.
+    #   - 6-char prefix (if token >= 7 chars)   e.g. "hackernews" -> "hacker"
+    #   - 7-char prefix (if token >= 8 chars)   e.g. "currencies" -> "currenc"
+    # 4- and 5-char prefixes were too noisy (e.g. "haik" of "haiku").
     def probes($t):
         [$t]
         + (if ($t | length) >= 7 then [$t[:6]] else [] end)
         + (if ($t | length) >= 8 then [$t[:7]] else [] end)
         | unique;
+
+    # Start-of-word match. The probe must begin at a word boundary
+    # (start of string, or preceded by a non-alnum character) — but it
+    # can extend into the middle of a longer word. This prevents short
+    # tokens from latching onto interior substrings ("the" inside
+    # "weather", "news" inside "newsapi") while still allowing prefix
+    # probes like "curren" to match "currencies". Special regex chars
+    # in $p are escaped before testing.
+    def wb($hay; $p):
+        ($p | length) as $L
+        | if $L == 0 then false
+          else $hay | test("(^|[^a-z0-9])" + ($p | gsub("([.+*?^$()\\[\\]{}\\\\|])"; "\\\\\\1")))
+          end;
+
+    # The full topic phrase (last element of $tokens). Multi-word
+    # matches deserve more weight than the per-token sum because they
+    # confirm the specialist actually addresses the specific query
+    # (e.g. "hacker news" -> hn-top rather than newsapi-headlines).
+    ($tokens[-1] // "" | ascii_downcase) as $phrase |
+    ($phrase | length) as $phrase_len |
 
     [(.tiers // {}) | to_entries[] | .value.items[]?] + [.items[]?] |
     # Dedup by hostname while preserving original order
@@ -98,18 +116,28 @@ SPECIALIST=$(echo "$CATALOG_JSON" | jq -r --argjson tokens "$TOKENS_JSON" '
         ($row.description // "" | ascii_downcase) as $desc |
         $row + {
             score: (
-                [ $tokens[]
+                ([ $tokens[]
                   | select(type == "string" and length >= 3)
                   | ascii_downcase
                   | . as $tok
                   | probes($tok)
                   | map(. as $p |
-                        if   $host | contains($p) then 50
-                        elif $cat  | contains($p) then 20
-                        elif $desc | contains($p) then 10
+                        if   wb($host; $p) then 50
+                        elif wb($cat;  $p) then 20
+                        elif wb($desc; $p) then 10
                         else 0 end)
                   | max
-                ] | add // 0
+                ] | add // 0)
+                +
+                # Phrase bonus: for multi-word topics, reward fields that
+                # contain the full phrase (not just individual tokens).
+                (if ($phrase_len > 0) and ($phrase | contains(" "))
+                 then
+                     if   wb($host; $phrase) then 100
+                     elif wb($cat;  $phrase) then 50
+                     elif wb($desc; $phrase) then 30
+                     else 0 end
+                 else 0 end)
             )
         }
     ) |
