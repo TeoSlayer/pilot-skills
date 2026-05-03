@@ -4,7 +4,6 @@
   "description": "Routing manifest consumed by the pilot-daemon's skillinject loop. Declares the entrypoint skill, the curated set of skills referenced from the entrypoint, and per-tool injection paths. The pilot-daemon fetches this file at runtime from the pilot-skills repo over HTTPS — there is no embedded copy.",
   "referencedSkills": [
     "https://github.com/TeoSlayer/pilot-skills/blob/main/skills/pilot-protocol/SKILL.md",
-    "https://github.com/TeoSlayer/pilot-skills/blob/main/skills/pilot-discover/SKILL.md",
     "https://github.com/TeoSlayer/pilot-skills/blob/main/skills/pilot-directory/SKILL.md",
     "https://github.com/TeoSlayer/pilot-skills/blob/main/skills/pilot-verify/SKILL.md",
     "https://github.com/TeoSlayer/pilot-skills/blob/main/skills/pilot-trust-circle/SKILL.md",
