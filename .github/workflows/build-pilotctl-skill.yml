@@ -29,26 +29,63 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build skills/pilotctl/SKILL.md from ONBOARDING.md + auto refs
+      - name: Build skills/pilotctl/SKILL.md from ONBOARDING.md + curated refs
         run: |
           set -euo pipefail
           mkdir -p skills/pilotctl
 
-          # The auto-references block: one row per skill (excluding pilotctl
-          # itself), pulling description from each SKILL.md frontmatter.
-          REFS_FILE=$(mktemp)
-          {
-            echo "## Available skills"
-            echo
-            echo "Each row below is a published Pilot Protocol skill. Load the"
-            echo "specific one when the user's task matches its description."
-            echo
-            echo "| Skill | Description |"
-            echo "|---|---|"
+          # Resolve the curated list of skills from inject-manifest.json.
+          # Each entry is a GitHub URL like
+          #   https://github.com/<owner>/<repo>/blob/<branch>/<path>
+          # The workflow only resolves URLs pointing back at THIS repo
+          # (TeoSlayer/pilot-skills); cross-repo references would need a
+          # checkout step. Empty/missing field falls back to "all skills/*".
+          PATHS_FILE=$(mktemp)
+          if jq -e '.referencedSkills | type == "array" and length > 0' inject-manifest.json >/dev/null; then
+            jq -r '.referencedSkills[]' inject-manifest.json | while read -r url; do
+              # Extract repo path from github.com/<owner>/<repo>/blob/<branch>/<path>
+              # We accept any branch name; the workflow runs with the repo
+              # checked out at the right ref already.
+              path=$(echo "$url" | sed -nE 's|^https?://github\.com/[^/]+/[^/]+/blob/[^/]+/(.+)$|\1|p')
+              if [ -z "$path" ]; then
+                echo "ERROR: cannot parse URL: $url" >&2
+                exit 1
+              fi
+              if [ ! -f "$path" ]; then
+                echo "ERROR: $url → $path not found in repo" >&2
+                exit 1
+              fi
+              echo "$path"
+            done > "$PATHS_FILE"
+            echo "Curated list ($(wc -l < "$PATHS_FILE") skills):"
+            cat "$PATHS_FILE"
+          else
+            # Backwards-compat: no curated list → include every skill on disk.
             for d in skills/*/; do
               slug=$(basename "$d")
               [ "$slug" = "pilotctl" ] && continue
               [ -f "$d/SKILL.md" ] || continue
+              echo "$d/SKILL.md"
+            done > "$PATHS_FILE"
+            echo "No referencedSkills field → including all $(wc -l < "$PATHS_FILE") skills"
+          fi
+
+          # The auto-references block: one row per curated path, pulling
+          # description from each SKILL.md frontmatter.
+          REFS_FILE=$(mktemp)
+          {
+            echo "## Available skills"
+            echo
+            echo "Each row below is a Pilot Protocol skill curated for the"
+            echo "entrypoint. Load the specific one when the user's task"
+            echo "matches its description."
+            echo
+            echo "| Skill | Description |"
+            echo "|---|---|"
+            while IFS= read -r p; do
+              [ -z "$p" ] && continue
+              slug=$(basename "$(dirname "$p")")
+              [ "$slug" = "pilotctl" ] && continue
               # Pull `description:` from frontmatter. Handles both single-line
               # and `description: >` block-scalar forms.
               desc=$(awk '
@@ -62,10 +99,10 @@ jobs:
                   exit
                 }
                 END { if (buf) print buf }
-              ' "$d/SKILL.md" | sed 's/[[:space:]]*$//' | head -c 200)
+              ' "$p" | sed 's/[[:space:]]*$//' | head -c 200)
               [ -z "$desc" ] && desc="(no description)"
               echo "| \`$slug\` | $desc |"
-            done
+            done < "$PATHS_FILE"
           } > "$REFS_FILE"
 
           # Splice ONBOARDING.md → replace the marker block with the
@@ -74,9 +111,10 @@ jobs:
           import sys, re, pathlib
           refs = pathlib.Path(sys.argv[1]).read_text()
           src = pathlib.Path("ONBOARDING.md").read_text()
-          # Strip the editor warning at the top (everything between the first
-          # blockquote and the next blank line) — agents shouldn't see it.
-          src = re.sub(r"^> \*\*This is the source.*?\n(?:>.*\n)*\n", "", src, count=1, flags=re.S)
+          # Strip the editor-warning blockquote at the top — agents
+          # shouldn't see this. Match every consecutive `> ...` line plus
+          # the trailing blank.
+          src = re.sub(r"(?m)\A(?:> .*\n)+\n", "", src, count=1)
           marker_re = re.compile(
               r"<!-- BEGIN AUTO-GENERATED REFERENCES -->.*?<!-- END AUTO-GENERATED REFERENCES -->",
               re.S,
