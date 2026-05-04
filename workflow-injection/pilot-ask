@@ -24,6 +24,10 @@ CACHE_MAX_AGE_SEC=1800
 mkdir -p "$INBOX" "$(dirname "$CACHE")"
 mtime() { stat -f %m "$1" 2>/dev/null || stat -c %Y "$1" 2>/dev/null; }
 
+# Lowercase topic, used both as the search term sent to list-agents
+# and as the matcher input.
+TOPIC_LC=$(echo "$TOPIC" | tr '[:upper:]' '[:lower:]')
+
 # ----- Resolve catalog (cache or live) -----
 CATALOG_JSON=""
 if [ -f "$CACHE" ]; then
@@ -34,12 +38,21 @@ if [ -f "$CACHE" ]; then
 fi
 
 if [ -z "$CATALOG_JSON" ]; then
-    echo "(no fresh catalog cache, querying list-agents live...)" >&2
+    # list-agents truncates its /data output at ~6KB and appends
+    # "... (truncated)", which makes any unfiltered /data {"limit":500}
+    # query unparseable. Use the server-side search filter instead
+    # — it returns at most `limit` matching specialists and stays
+    # comfortably under the cap. Result is small enough that we don't
+    # cache; we just re-query each invocation.
+    echo "(querying list-agents with search filter...)" >&2
+    SEARCH_TIMEOUT=${PILOT_ASK_SEARCH_TIMEOUT:-15}
+    RPC_TIMEOUT_SEARCH=${PILOT_ASK_RPC_TIMEOUT:-10}
     ANCHOR=$(date +%s)
-    pilotctl handshake list-agents 2>/dev/null >/dev/null || true
-    pilotctl send-message list-agents --data '/data {"limit":500}' >/dev/null 2>&1 || true
+    timeout "$RPC_TIMEOUT_SEARCH" pilotctl handshake list-agents 2>/dev/null >/dev/null || true
+    SEARCH_JSON=$(printf '/data {"search":%s,"limit":5}' "$(printf '%s' "$TOPIC_LC" | jq -Rs .)")
+    timeout "$RPC_TIMEOUT_SEARCH" pilotctl send-message list-agents --data "$SEARCH_JSON" >/dev/null 2>&1 || true
     LATEST=""
-    for i in $(seq 1 60); do
+    for i in $(seq 1 "$SEARCH_TIMEOUT"); do
         sleep 1
         for f in $(ls -1t "$INBOX"/*.json 2>/dev/null); do
             FT=$(mtime "$f"); [ -z "$FT" ] && continue
@@ -50,6 +63,8 @@ if [ -z "$CATALOG_JSON" ]; then
     done
     if [ -n "$LATEST" ]; then
         CATALOG_JSON=$(jq -r '.data | fromjson' "$LATEST")
+        # Also persist as cache so a subsequent query for the SAME
+        # topic within 30 min can short-circuit. Keyed by topic hash.
         echo "$CATALOG_JSON" > "$CACHE"
     fi
 fi
@@ -69,8 +84,7 @@ fi
 # becomes "hackernews", "hacker", "news" — splitting on common bigram
 # boundaries via shell heuristics is hard, so we just try the topic
 # wholesale + each space-split word + and a few common compound splits).
-TOPIC_LC=$(echo "$TOPIC" | tr '[:upper:]' '[:lower:]')
-# Build a JSON array of probe tokens
+# Build a JSON array of probe tokens (TOPIC_LC was set near the top).
 TOKENS_JSON=$(printf '%s' "$TOPIC_LC" | tr ' -_' '\n' | jq -R . | jq -s '. + ["'"$TOPIC_LC"'"]')
 
 SPECIALIST=$(echo "$CATALOG_JSON" | jq -r --argjson tokens "$TOKENS_JSON" '
