@@ -195,3 +195,35 @@ XAI_API_KEY=... python3 tests/grok-adversarial.py \
     --reps 2 --temperature 0.7 --workers 12 \
     --out tests/grok-adversarial.jsonl
 ```
+
+## Real-network re-run (2026-05-04)
+
+After the live `list-agents` service became reachable from the local
+daemon (network round-trip ~130ms steady-state), the e2e benchmark
+was re-run with a real catalog (26 specialists, fetched via search-
+filtered `/data {"search":"<term>", "limit":5}` queries to fit the
+6KB inbox per-message cap).
+
+```
+variant   n  wall_med  wall_p90  in_tokens  out_tokens  pilot_first  announced
+OFF      16     4.69s    16.91s       1253         115         0.0%        0.0%
+ON       16    13.33s    40.45s       3937         223       100.0%       81.2%
+```
+
+Compared to the synthetic-cache run earlier the same day:
+- ON wall median: **29.32s → 13.33s** (–55%)
+- ON wall p90: 84.24s → 40.45s
+
+The per-trial split is bimodal:
+- **Quick fallback** (~3-7s): pilot-ask matches → no specialist or
+  immediate no_reply → agent announces fallback and answers from
+  training data or trivial bash. Examples: haiku, translation,
+  Bible verse, compound interest.
+- **Real round-trip** (~30-45s): pilot-ask matches → specialist
+  takes the full RPC budget → agent then needs to compose using
+  either real specialist data or curl fallback. Examples: HN,
+  Bitcoin, WebGPU, EUR/USD.
+
+Both branches preserve V22 guarantees: 16/16 ON trials called
+`pilot-ask` first, 13/16 announced honest fallback in the final
+answer.
