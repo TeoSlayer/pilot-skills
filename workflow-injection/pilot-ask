@@ -18,15 +18,23 @@ QUESTION="${2:-$TOPIC}"
 [ -z "$TOPIC" ] && { echo "usage: pilot-ask <topic> [<question>]" >&2; exit 2; }
 
 INBOX="$HOME/.pilot/inbox"
-CACHE="$HOME/.pilot/skills-cache/catalog.json"
+CACHE_DIR="$HOME/.pilot/skills-cache"
 CACHE_MAX_AGE_SEC=1800
 
-mkdir -p "$INBOX" "$(dirname "$CACHE")"
+mkdir -p "$INBOX" "$CACHE_DIR"
 mtime() { stat -f %m "$1" 2>/dev/null || stat -c %Y "$1" 2>/dev/null; }
 
 # Lowercase topic, used both as the search term sent to list-agents
 # and as the matcher input.
 TOPIC_LC=$(echo "$TOPIC" | tr '[:upper:]' '[:lower:]')
+
+# Per-topic cache key (sha-256 of the topic). list-agents server-side
+# search is keyword-based, so different topics return disjoint specialist
+# sets — caching them under one global path would cause stale-catalog
+# misses on the next topic. Key by topic instead.
+TOPIC_HASH=$(printf '%s' "$TOPIC_LC" | shasum -a 256 2>/dev/null | head -c 16)
+[ -z "$TOPIC_HASH" ] && TOPIC_HASH=$(printf '%s' "$TOPIC_LC" | tr -cs 'a-z0-9' '_' | head -c 32)
+CACHE="$CACHE_DIR/topic-$TOPIC_HASH.json"
 
 # ----- Resolve catalog (cache or live) -----
 CATALOG_JSON=""
@@ -40,33 +48,60 @@ fi
 if [ -z "$CATALOG_JSON" ]; then
     # list-agents truncates its /data output at ~6KB and appends
     # "... (truncated)", which makes any unfiltered /data {"limit":500}
-    # query unparseable. Use the server-side search filter instead
-    # — it returns at most `limit` matching specialists and stays
-    # comfortably under the cap. Result is small enough that we don't
-    # cache; we just re-query each invocation.
+    # query unparseable. Use the server-side search filter instead.
+    # The server-side search is keyword-based, not semantic, so a
+    # multi-word phrase like "EUR exchange rate" returns 0 items —
+    # we have to try individual tokens. Strategy: try the full phrase
+    # first; on empty, retry with each significant token (length >= 4)
+    # in descending length order until we get matches or exhaust them.
     echo "(querying list-agents with search filter...)" >&2
     SEARCH_TIMEOUT=${PILOT_ASK_SEARCH_TIMEOUT:-15}
     RPC_TIMEOUT_SEARCH=${PILOT_ASK_RPC_TIMEOUT:-10}
-    ANCHOR=$(date +%s)
-    timeout "$RPC_TIMEOUT_SEARCH" pilotctl handshake list-agents 2>/dev/null >/dev/null || true
-    SEARCH_JSON=$(printf '/data {"search":%s,"limit":5}' "$(printf '%s' "$TOPIC_LC" | jq -Rs .)")
-    timeout "$RPC_TIMEOUT_SEARCH" pilotctl send-message list-agents --data "$SEARCH_JSON" >/dev/null 2>&1 || true
+
+    # Build the candidate query list: full phrase, then tokens by
+    # descending length. Skip stopwords / very short tokens.
+    candidates=()
+    candidates+=("$TOPIC_LC")
+    while IFS= read -r tok; do
+        [ "${#tok}" -ge 4 ] && candidates+=("$tok")
+    done < <(printf '%s\n' "$TOPIC_LC" | tr ' -_/' '\n' | awk '{print length, $0}' | sort -rn | awk '{print $2}')
+
+    seen_query=""
     LATEST=""
-    for i in $(seq 1 "$SEARCH_TIMEOUT"); do
-        sleep 1
-        for f in $(ls -1t "$INBOX"/*.json 2>/dev/null); do
-            FT=$(mtime "$f"); [ -z "$FT" ] && continue
-            [ "$FT" -lt "$ANCHOR" ] && break
-            SRC=$(jq -r '.data | fromjson | .source // empty' "$f" 2>/dev/null) || continue
-            if [ "$SRC" = "list-agents" ]; then LATEST="$f"; break 2; fi
+    for q in "${candidates[@]}"; do
+        # Dedup
+        case ":$seen_query:" in *":$q:"*) continue;; esac
+        seen_query="$seen_query:$q"
+
+        ANCHOR=$(date +%s)
+        timeout "$RPC_TIMEOUT_SEARCH" pilotctl handshake list-agents 2>/dev/null >/dev/null || true
+        SEARCH_JSON=$(printf '/data {"search":%s,"limit":5}' "$(printf '%s' "$q" | jq -Rs .)")
+        timeout "$RPC_TIMEOUT_SEARCH" pilotctl send-message list-agents --data "$SEARCH_JSON" >/dev/null 2>&1 || true
+
+        LATEST=""
+        for i in $(seq 1 "$SEARCH_TIMEOUT"); do
+            sleep 1
+            for f in $(ls -1t "$INBOX"/*.json 2>/dev/null); do
+                FT=$(mtime "$f"); [ -z "$FT" ] && continue
+                [ "$FT" -lt "$ANCHOR" ] && break
+                SRC=$(jq -r '.data | fromjson | .source // empty' "$f" 2>/dev/null) || continue
+                if [ "$SRC" = "list-agents" ]; then LATEST="$f"; break 2; fi
+            done
         done
+
+        if [ -n "$LATEST" ]; then
+            CATALOG_JSON=$(jq -r '.data | fromjson' "$LATEST")
+            # Did we get any items? If yes, stop searching.
+            item_count=$(echo "$CATALOG_JSON" | jq '[.tiers.free.items[]?, .tiers.premium.items[]?] | length' 2>/dev/null || echo 0)
+            if [ "$item_count" -gt 0 ]; then
+                echo "(matched on search='$q', $item_count items)" >&2
+                echo "$CATALOG_JSON" > "$CACHE"
+                break
+            fi
+            # Empty result, try next candidate
+            CATALOG_JSON=""
+        fi
     done
-    if [ -n "$LATEST" ]; then
-        CATALOG_JSON=$(jq -r '.data | fromjson' "$LATEST")
-        # Also persist as cache so a subsequent query for the SAME
-        # topic within 30 min can short-circuit. Keyed by topic hash.
-        echo "$CATALOG_JSON" > "$CACHE"
-    fi
 fi
 
 if [ -z "$CATALOG_JSON" ]; then
