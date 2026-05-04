@@ -201,37 +201,85 @@ if [ -z "$SPECIALIST" ] || [ "$SPECIALIST" = "null" ]; then
 fi
 
 echo "specialist=$SPECIALIST" >&2
-ANCHOR2=$(date +%s)
-# RPC_TIMEOUT bounds the underlying pilotctl call; PILOT_ASK_TIMEOUT
-# bounds the inbox poll. Both default to 30s. Benchmarks override to
-# small values so honest fallback fires quickly when the network is
-# unreachable instead of blocking the agent's turn for 30s.
 RPC_TIMEOUT=${PILOT_ASK_RPC_TIMEOUT:-30}
-timeout "$RPC_TIMEOUT" pilotctl handshake "$SPECIALIST" 2>/dev/null >/dev/null || true
-timeout "$RPC_TIMEOUT" pilotctl send-message "$SPECIALIST" --data "$QUESTION" >/dev/null 2>&1 || true
-
-REPLY=""
 TIMEOUT=${PILOT_ASK_TIMEOUT:-30}
-# Match the specialist by regex on the head of .data instead of
-# parsing the full JSON. Specialists may truncate responses bigger
-# than ~6KB and append "... (truncated)", so fromjson would fail
-# even though the reply is recognizable. The agent name is always
-# the first JSON key — match it cheaply with grep.
-SPECIALIST_RE='"agent"[[:space:]]*:[[:space:]]*"'$(echo "$SPECIALIST" | sed 's/[][\\.*^$/]/\\&/g')'"'
-for i in $(seq 1 "$TIMEOUT"); do
-    sleep 1
-    for f in $(ls -1t "$INBOX"/*.json 2>/dev/null); do
-        FT=$(mtime "$f"); [ -z "$FT" ] && continue
-        [ "$FT" -lt "$ANCHOR2" ] && break
-        head=$(jq -r '.data' "$f" 2>/dev/null | head -c 200)
-        if echo "$head" | grep -qE "$SPECIALIST_RE"; then REPLY="$f"; break 2; fi
-    done
-done
 
-if [ -z "$REPLY" ]; then
-    echo "no_reply:$SPECIALIST"
-    exit 0
-fi
-# Print the .data field. Caller may need to handle the
-# "... (truncated)" tail when responses exceed ~6KB.
-jq -r '.data' "$REPLY"
+# Match the specialist by regex on the head of .data, not full JSON
+# parse — specialists truncate >6KB replies with "... (truncated)" so
+# fromjson fails even though the reply is recognizable. Agent name is
+# the first JSON key.
+SPECIALIST_RE='"agent"[[:space:]]*:[[:space:]]*"'$(echo "$SPECIALIST" | sed 's/[][\\.*^$/]/\\&/g')'"'
+
+# Helper: send DATA to the matched specialist, poll inbox, return path
+# of the first reply that names this specialist (or empty on timeout).
+send_and_wait() {
+    local payload="$1"
+    local anchor=$(date +%s)
+    timeout "$RPC_TIMEOUT" pilotctl handshake "$SPECIALIST" 2>/dev/null >/dev/null || true
+    timeout "$RPC_TIMEOUT" pilotctl send-message "$SPECIALIST" --data "$payload" >/dev/null 2>&1 || true
+    for i in $(seq 1 "$TIMEOUT"); do
+        sleep 1
+        for f in $(ls -1t "$INBOX"/*.json 2>/dev/null); do
+            local ft=$(mtime "$f"); [ -z "$ft" ] && continue
+            [ "$ft" -lt "$anchor" ] && break
+            local head=$(jq -r '.data' "$f" 2>/dev/null | head -c 200)
+            if echo "$head" | grep -qE "$SPECIALIST_RE"; then echo "$f"; return; fi
+        done
+    done
+}
+
+# --- Option 1 (schema-aware) two-step protocol ---
+#
+# Specialists are typed APIs. /data {filters} skips upstream Gemini
+# routing and returns in 2-5s. Free-text triggers Gemini routing on
+# the specialist (10-30s+, often timing out). pilot-ask now drives
+# the agent toward /data calls:
+#
+#   1. If QUESTION starts with '/' (any slash command — /help, /data,
+#      /summary), pass it through and return the response.
+#
+#   2. Otherwise (free text), do NOT send free text to the specialist.
+#      Fetch /help to get the schema (cached), and return the schema
+#      to the caller so the agent can format a proper /data call on
+#      its next turn. The caller sees:
+#        specialist=<host>
+#        next_step=schema
+#        <help body with required_filters and example>
+
+case "$QUESTION" in
+    /*)
+        # Slash-command path: forward as-is
+        REPLY=$(send_and_wait "$QUESTION")
+        if [ -z "$REPLY" ]; then echo "no_reply:$SPECIALIST"; exit 0; fi
+        jq -r '.data' "$REPLY"
+        ;;
+    *)
+        # Free-text path: return schema instead of routing through
+        # specialist's slow Gemini path. Cache /help per specialist
+        # for 24h since specialist schemas don't change often.
+        HELP_CACHE="$CACHE_DIR/help-$SPECIALIST.json"
+        HELP_BODY=""
+        if [ -f "$HELP_CACHE" ]; then
+            HELP_AGE=$(( $(date +%s) - $(mtime "$HELP_CACHE") ))
+            if [ "$HELP_AGE" -lt 86400 ]; then
+                HELP_BODY=$(cat "$HELP_CACHE")
+            fi
+        fi
+        if [ -z "$HELP_BODY" ]; then
+            REPLY=$(send_and_wait "/help")
+            if [ -n "$REPLY" ]; then
+                HELP_BODY=$(jq -r '.data' "$REPLY")
+                echo "$HELP_BODY" > "$HELP_CACHE"
+            fi
+        fi
+        if [ -z "$HELP_BODY" ]; then
+            echo "no_reply:$SPECIALIST"
+            exit 0
+        fi
+        echo "specialist=$SPECIALIST"
+        echo "next_step=format /data call from schema below, then re-run:"
+        echo "  pilot-ask \"$TOPIC\" '/data {<filters>}'"
+        echo "schema:"
+        echo "$HELP_BODY"
+        ;;
+esac
