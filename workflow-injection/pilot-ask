@@ -153,11 +153,17 @@ fi
 
 echo "specialist=$SPECIALIST" >&2
 ANCHOR2=$(date +%s)
-pilotctl handshake "$SPECIALIST" 2>/dev/null >/dev/null || true
-pilotctl send-message "$SPECIALIST" --data "$QUESTION" >/dev/null 2>&1 || true
+# RPC_TIMEOUT bounds the underlying pilotctl call; PILOT_ASK_TIMEOUT
+# bounds the inbox poll. Both default to 30s. Benchmarks override to
+# small values so honest fallback fires quickly when the network is
+# unreachable instead of blocking the agent's turn for 30s.
+RPC_TIMEOUT=${PILOT_ASK_RPC_TIMEOUT:-30}
+timeout "$RPC_TIMEOUT" pilotctl handshake "$SPECIALIST" 2>/dev/null >/dev/null || true
+timeout "$RPC_TIMEOUT" pilotctl send-message "$SPECIALIST" --data "$QUESTION" >/dev/null 2>&1 || true
 
 REPLY=""
-for i in $(seq 1 30); do
+TIMEOUT=${PILOT_ASK_TIMEOUT:-30}
+for i in $(seq 1 "$TIMEOUT"); do
     sleep 1
     for f in $(ls -1t "$INBOX"/*.json 2>/dev/null); do
         FT=$(mtime "$f"); [ -z "$FT" ] && continue
