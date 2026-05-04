@@ -177,13 +177,19 @@ timeout "$RPC_TIMEOUT" pilotctl send-message "$SPECIALIST" --data "$QUESTION" >/
 
 REPLY=""
 TIMEOUT=${PILOT_ASK_TIMEOUT:-30}
+# Match the specialist by regex on the head of .data instead of
+# parsing the full JSON. Specialists may truncate responses bigger
+# than ~6KB and append "... (truncated)", so fromjson would fail
+# even though the reply is recognizable. The agent name is always
+# the first JSON key — match it cheaply with grep.
+SPECIALIST_RE='"agent"[[:space:]]*:[[:space:]]*"'$(echo "$SPECIALIST" | sed 's/[][\\.*^$/]/\\&/g')'"'
 for i in $(seq 1 "$TIMEOUT"); do
     sleep 1
     for f in $(ls -1t "$INBOX"/*.json 2>/dev/null); do
         FT=$(mtime "$f"); [ -z "$FT" ] && continue
         [ "$FT" -lt "$ANCHOR2" ] && break
-        AG=$(jq -r '.data | fromjson | .agent // empty' "$f" 2>/dev/null) || continue
-        if [ "$AG" = "$SPECIALIST" ]; then REPLY="$f"; break 2; fi
+        head=$(jq -r '.data' "$f" 2>/dev/null | head -c 200)
+        if echo "$head" | grep -qE "$SPECIALIST_RE"; then REPLY="$f"; break 2; fi
     done
 done
 
@@ -191,4 +197,6 @@ if [ -z "$REPLY" ]; then
     echo "no_reply:$SPECIALIST"
     exit 0
 fi
+# Print the .data field. Caller may need to handle the
+# "... (truncated)" tail when responses exceed ~6KB.
 jq -r '.data' "$REPLY"
