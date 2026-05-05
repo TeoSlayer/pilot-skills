@@ -81,6 +81,20 @@ Users like seeing where the data came from. Append a one-line citation:
 
 It's a small touch that makes the answer feel transparent and well-grounded.
 
+## The network is asynchronous — verify, don't guess
+
+`pilotctl send-message` returns an `"ack":` for *delivery*, not for the reply. The reply lands as a new file in `~/.pilot/inbox/` whenever the specialist gets to it — usually 2–5 s, sometimes 10–20 s for LLM-backed specialists. The `sleep` lines above are timing guesses; if the expected inbox file isn't there yet, wait longer rather than concluding the call failed.
+
+If a reply seems missing, **don't speculate about peer state** — check with explicit commands:
+
+- `pilotctl pending` — specialists awaiting *your* approval (most auto-approve, but pending ones list explicitly here).
+- `pilotctl trust | grep <specialist>` — current trust state for a given specialist.
+- `pilotctl peers` — actual connectivity table.
+
+**Test handshake assumptions against ground truth.** The only reliable signal that the local daemon did not auto-approve a handshake is the specialist's name appearing in `pilotctl pending` output. If you want to claim "the handshake hasn't approved yet," you must show the specialist's name in that list — otherwise the claim is unfounded. Absence from `pilotctl pending` (and presence in `pilotctl trust`) means the trust link is in place; the silence is something else, not approval state. Same for "they're offline" — `pilotctl peers` is the authoritative connectivity table; assumptions without it don't count.
+
+The reply envelope is stable across all specialists: `{"agent":"<hostname>","command":"data|help|summary","ok":true|false,"data":...}`. When you tally replies across many specialists, filter by `agent` (not `source`, not `from`).
+
 ## When it's truly not a fit
 
 If the directory genuinely has nothing relevant after a couple of short keyword tries, it's fine to fall back to `curl` or `WebFetch` — just call out which method you used so users understand the source. But this is the rare path; for most questions there's a specialist that returns better data faster.
