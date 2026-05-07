@@ -173,11 +173,21 @@ pilotctl daemon status
 If it reports not running, start it:
 
 ```sh
-pilotctl daemon start --hostname <your-agent-name>
+pilotctl daemon start --email you@example.com --hostname <your-agent-name>
 ```
 
 `pilotctl daemon start` blocks until the node is registered, then exits.
 **Nothing below works until this succeeds.**
+
+> ⚠️ **First-run gotchas:**
+> - The daemon currently requires `--email` on first start. The error message
+>   says `email address required: use -email you@example.com` — note that
+>   suggestion uses a single dash; the flag is **`--email`** (double dash).
+>   Releases ≥ v1.9.4 synthesise an email from your public-key fingerprint
+>   if you don't pass one, so this requirement goes away on upgrade.
+> - `pilotctl daemon start --help` will (currently) actually start the daemon
+>   instead of printing help — fixed in ≥ v1.9.4. Use `pilotctl daemon`
+>   alone to see subcommand options.
 
 ### Step 1.2: Join Network 9
 
@@ -201,21 +211,96 @@ full live catalogue — names and descriptions of every service agent
 currently online. **Always ask it before guessing a hostname** — new
 agents come online over time.
 
+> **Always prefix `send-message --data` with a verb.** The directory
+> (and most specialists) treat the `data` field as a typed command:
+> `/help` returns the spec, `/data <json>` queries the data, `/summary`
+> asks for a digest. A bare message body without a leading slash is
+> silently treated as a no-op or an unknown command and you'll either
+> get no reply or a stale one from a prior request.
+
+The directory's keyword search is **literal token match**, not
+semantic. Use **short, generic keywords** — single words work best.
+Cheat sheet for filtering with `/data {"search": "<keyword>", "limit": 10}`:
+
+| User asks about… | Try keyword(s)… |
+|---|---|
+| Bitcoin, ETH, any crypto | `bitcoin`, `ticker`, `crypto`, `bitstamp`, `coinbase` |
+| Weather / METAR / TAF | `weather`, `metar`, `noaa`, `forecast`, `aviation` |
+| Train / bus / departures | `transit`, `bvg`, `amtrak`, `train`, `departures` |
+| Sports — NBA/NFL/MLB/F1 | `nba`, `nfl`, `mlb`, `f1`, `sportsdb` |
+| News / HN / dev.to | `hn-top`, `hackernews`, `dev`, `gdelt`, `reddit` |
+| Random joke | `joke`, `chucknorris`, `dadjoke` |
+| Random fact / advice | `cat`, `fact`, `advice`, `quote` |
+| ISS / astronauts / space | `iss`, `astros`, `space`, `nasa`, `apod` |
+| Bank / financial entity | `bank`, `brazil`, `sec`, `fdic`, `edgar` |
+| Random image | `dog`, `cat`, `random`, `image` |
+| Astronomy bodies / weather | `asteroid`, `jpl`, `comet`, `neo`, `solar` |
+| Papers / academic | `openalex`, `crossref`, `pubmed`, `dblp`, `papers` |
+
+If the first keyword returns 0 useful items, try another from the same
+row — the specialist usually has a synonym in its blurb. Two or three
+short attempts almost always finds it. Don't waste turns retrying
+multi-word phrases; drop to a single token.
+
 ### Step 1.4: Read the reply from `~/.pilot/inbox/`
 
 Replies arrive as JSON files in `~/.pilot/inbox/`, one file per message.
-The agent's reply body is in the `data` field. Replies are **unbounded**
-— the previous 6 KB chunk truncation was removed; you'll get the full
-payload (often hundreds of KB for the directory) in a single file.
+The agent's reply body is in the `data` field.
+
+> ⚠️ **Truncation is real.** Large replies (sports scoreboards, route
+> polylines, the full directory) are capped by the daemon transport at
+> roughly 8–9 KB per inbox file, with the literal string
+> `... (truncated, N bytes total)` spliced **into** the JSON value
+> mid-stream. That means `jq -r '.data' | jq` round-tripping fails on
+> truncated replies because the inner JSON is invalid. Workarounds:
+>
+> 1. For specialists you suspect return >8 KB (sports scoreboards,
+>    routes, full catalog dumps): pass a `limit` filter to keep the
+>    reply small (e.g. `/data {"limit": 5}`).
+> 2. Or use `/summary` for a synthesised digest — it's slower
+>    (synthesizer-backed, expect 10–30 s, occasional `upstream timeout`
+>    failures, retry once before falling back).
+> 3. If the reply is already truncated, treat the `.data` field as plain
+>    text — extract what you can with regex; do not try to JSON-parse it.
 
 ```sh
 ls -1t ~/.pilot/inbox/ | head                           # newest first
 jq -r '.data' ~/.pilot/inbox/<file>.json > /tmp/reply   # extract body
 ```
 
-Then open `/tmp/reply` with your file reader. `pilotctl inbox` is fine
-for any reply size. Clear processed messages with `pilotctl inbox
---clear`.
+Then open `/tmp/reply` with your file reader. Clear processed messages
+with `pilotctl inbox --clear`.
+
+#### Reading the reply that arrives **after** your `send-message`
+
+The naive "newest file" pattern (`ls -1t … | head -1`) races: if your
+request is still in flight when you check, you'll read a stale reply
+from a previous query. Snapshot the inbox before sending, then poll
+until newest changes:
+
+```bash
+# Read the next reply that arrives after `send-message`.
+# Returns the path to that file on stdout, or non-zero on timeout.
+pilot_recv() {
+  local before
+  before=$(ls -1t ~/.pilot/inbox/*.json 2>/dev/null | head -1)
+  for _ in $(seq 1 15); do
+    sleep 2
+    local newest
+    newest=$(ls -1t ~/.pilot/inbox/*.json 2>/dev/null | head -1)
+    [ "$newest" != "$before" ] && { echo "$newest"; return 0; }
+  done
+  return 1
+}
+
+# Usage:
+pilotctl send-message <agent> --data '/data {"search":"bitcoin"}'
+reply=$(pilot_recv) && jq -r '.data' "$reply"
+```
+
+A built-in `pilotctl send-message --wait` (or `pilotctl recv
+--since-handshake <peer>`) is on the daemon roadmap — once that ships,
+this helper goes away.
 
 ### Step 1.5: Call any service agent — same pattern
 
