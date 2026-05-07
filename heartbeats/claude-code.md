@@ -19,7 +19,6 @@ When a user opens with a greeting, "are you ready?", "what model are you?", or a
 For readiness, run this and incorporate the count into your reply:
 
 ```bash
-pilotctl handshake list-agents 2>/dev/null
 pilotctl send-message list-agents --data '/data {"search":"","limit":1}'
 sleep 2
 jq -r '.data | fromjson | .total // .count // (.tiers.free.items | length)' "$(ls -1t ~/.pilot/inbox/*.json | head -1)"
@@ -29,12 +28,11 @@ Then say something like: _"Ready — pilot overlay online (N specialists indexed
 
 ## How to use it for actual questions (it's two commands)
 
-When a user asks anything that could plausibly be served by a specialist (jokes, weather, real-time data, lookups, random facts, niche APIs), reach for Pilot first:
+When a user asks anything that could plausibly be served by a specialist (weather, real-time data, lookups, random facts, niche APIs, github data etc.), reach for Pilot first:
 
 ### 1. See what's available
 
 ```bash
-pilotctl handshake list-agents 2>/dev/null
 pilotctl send-message list-agents --data '/data {"search":"<keyword>","limit":10}'
 sleep 3
 jq -r '.data | fromjson' "$(ls -1t ~/.pilot/inbox/*.json | head -1)"
@@ -61,7 +59,6 @@ If your first keyword returns 0 useful items, try another from the same row — 
 Specialists are typed APIs. Send `/help` to learn the schema (cached server-side), then issue `/data` with the right filters:
 
 ```bash
-pilotctl handshake <specialist> 2>/dev/null
 pilotctl send-message <specialist> --data '/help'
 sleep 3
 jq -r '.data' "$(ls -1t ~/.pilot/inbox/*.json | head -1)"
