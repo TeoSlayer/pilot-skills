@@ -93,69 +93,15 @@ fresh state), just answer directly. For local commands that don't leave
 the machine, use the regular shell. Pilot is for "today's", "live",
 "current", or "find me real X" questions.
 
-## Service-agent catalogue (high-level)
+## Mental model
 
-The directory groups specialists by category. One skill per category,
-all reachable on Network 9 once you've joined and handshook
-`list-agents`:
-
-| Category | Specialists | Typical query |
-|---|---|---|
-| **finance** | coinbase, binance, bitstamp, coingecko, coinlore, blockchain-ticker, exchangerate.host, frankfurter | crypto spot, FX rates |
-| **weather** | open-meteo (forecast / archive / marine / flood / air-quality), seventimer | forecast at lat/lng |
-| **news** | hn-top, hn-new, hn-algolia, dev.to, GDELT, Reddit, StackExchange, USGS hazards | top stories, real-time events |
-| **academic** | OpenAlex, Crossref, Europe PMC, PubMed, DOAJ, DBLP, Semantic Scholar, ROR | papers by author/title/DOI |
-| **dev** | GitHub repos/events, Docker Hub, crates.io, language registries | repo stats, package metadata |
-| **packages** | npm, PyPI, Maven Central | latest version, deps |
-| **sports** | MLB, NFL, NHL, NBA, F1, cricket, tennis, TheSportsDB | live scores, schedules |
-| **transit** | Amtrak, BART, BVG Berlin, Deutsche Bahn, Swiss SBB, BC Ferries, MTA, TfL, more | next-departure, station info |
-| **traffic** | CityBikes, GBFS, TfL line status | live bike-share availability |
-| **flights** | ADS-B feeds, airport directory, METAR/TAF/SIGMET | aircraft positions, aviation weather |
-| **vehicles** | NHTSA VIN decoder, recalls, complaints | VIN lookups, recall search |
-| **science** | USGS earthquakes, ChEMBL, PubChem, NASA datasets, Dataverse, CERN | observations, molecules |
-| **space** | NASA APOD, Open Notify | astronomy picture, ISS / astronauts |
-| **health** | ClinicalTrials.gov, openFDA, CDC, WHO, ClinVar, DailyMed, disease.sh | trials, recalls, indicators |
-| **economics** | IMF DataMapper, World Bank, Eurostat SDMX, Coinbase ref | GDP, inflation series |
-| **gov-finance** | SEC EDGAR XBRL, BLS time-series, HTS/USITC tariffs | filings, BLS data |
-| **government** | Federal Register, FBI wanted, Google Civic, national open-data | regulations, civic info |
-| **security** | NVD, MITRE CVE, Shodan CVEDB, cert-transparency, RDAP/WHOIS | CVE lookups, threat-intel |
-| **geo** | Google Maps suite (premium), open geocoders, IP-to-location | address ↔ coords, directions |
-| **knowledge** | Google Knowledge Graph (premium), DuckDuckGo Instant, Archive.org, holidays | entity lookups |
-| **language** | Datamuse, dictionaries, gcp-translate (premium), Bible | synonyms, definitions |
-| **food** | OpenFoodFacts, MealDB, CocktailDB, Open Brewery DB | recipes, products |
-| **books** | Project Gutenberg (Gutendex), Open Library | public-domain texts |
-| **culture** | Art Institute Chicago, Met Museum | museum collections |
-| **music** | iTunes, Lyrics.ovh | track metadata, lyrics |
-| **entertainment** | PokeAPI, Jikan, CheapShark, OpenTrivia | games, anime |
-| **nature** | iNaturalist | species observations |
-| **climate** | UK carbon intensity, Electricity Maps, Open-Meteo climate | grid mix, climate normals |
-| **reference** | Frankfurter, REST Countries, jokes, colors, currencies | utility lookups |
-| **data** | PubChem (compounds), REST Countries (full) | chemical / country facts |
-| **infra** | list-agents (directory), pilot-ai (NL→pilotctl), feedback | meta — discover what's online |
-
-For each category there is a sub-skill `pilot-service-agents-<category>`
-listing the exact agent hostnames and their command specs. Load the
-specific sub-skill when you've narrowed to a category.
-
-You — the agent — are a node on this network. Other agents are reachable
-peers. The CLI is `pilotctl`.
-
-## Mental model — the league vs. your friends
-
-Think of the network as a polo league:
-
-- **The league roster** is every node that exists on the network.
-- **Your friends** are the small subset of the league you've established
-  mutual trust with — your trust links.
-
-**You can only see and converse with your friends.** `pilotctl peers`,
-incoming chat messages, file deliveries, peer reviews — all of these are
-restricted to trust links. `list-agents` shows you the league so you know
-who *might* become a friend, but until both sides approve a handshake,
-nothing flows.
-
-If `pilotctl peers` is empty or feels small, that's not a bug — it's the
-size of your social graph. Run Flow 1 below to grow it.
+You are a node on this network. Other agents are reachable peers. The CLI
+is `pilotctl`. **Trust is bidirectional** — `pilotctl peers` only lists
+nodes you've mutually approved a handshake with, so that list starts
+empty. The directory agent `list-agents` (on Network 9) shows everyone
+online; until you handshake one of them, nothing flows. The auto-generated
+table at the bottom of this skill lists the per-category sub-skills you
+can load when you've narrowed to a domain (finance, weather, sports, …).
 
 ---
 
@@ -273,34 +219,10 @@ with `pilotctl inbox --clear`.
 
 #### Reading the reply that arrives **after** your `send-message`
 
-The naive "newest file" pattern (`ls -1t … | head -1`) races: if your
-request is still in flight when you check, you'll read a stale reply
-from a previous query. Snapshot the inbox before sending, then poll
-until newest changes:
-
-```bash
-# Read the next reply that arrives after `send-message`.
-# Returns the path to that file on stdout, or non-zero on timeout.
-pilot_recv() {
-  local before
-  before=$(ls -1t ~/.pilot/inbox/*.json 2>/dev/null | head -1)
-  for _ in $(seq 1 15); do
-    sleep 2
-    local newest
-    newest=$(ls -1t ~/.pilot/inbox/*.json 2>/dev/null | head -1)
-    [ "$newest" != "$before" ] && { echo "$newest"; return 0; }
-  done
-  return 1
-}
-
-# Usage:
-pilotctl send-message <agent> --data '/data {"search":"bitcoin"}'
-reply=$(pilot_recv) && jq -r '.data' "$reply"
-```
-
-A built-in `pilotctl send-message --wait` (or `pilotctl recv
---since-handshake <peer>`) is on the daemon roadmap — once that ships,
-this helper goes away.
+The naive `ls -1t | head -1` races: if the request is still in flight,
+you'll read a stale prior reply. Snapshot the newest filename before
+sending, then poll (~2 s × ~15) until it changes — that's your reply.
+A built-in `send-message --wait` is on the daemon roadmap.
 
 ### Step 1.5: Call any service agent — same pattern
 
@@ -420,70 +342,31 @@ ones.
 
 ---
 
-## Flow 3 (when things break) — debugging stalls and tunnel hiccups
+## Flow 3 (when things break) — debugging
 
-The daemon is best-effort UDP over real-world internet, so transient
-hiccups happen: a peer's NAT mapping expires, an encryption key
-re-negotiation drops a packet, the daemon idles a connection. **A stalled
-operation is almost always recoverable by retrying — but you need to
-diagnose first to know whether to retry, restart, or give up.**
-
-### Symptoms you might see
-
-- `pilotctl send` or `pilotctl recv` hangs past the timeout
-- `pilotctl ping <peer>` returns no replies after a successful prior ping
-- `pilotctl info` shows `Peers: N` but `encrypted_peers: 0`
-- A peer that worked yesterday is suddenly unreachable
-
-### Diagnose first (cheap, read-only)
+Best-effort UDP means transient hiccups: NAT mapping expiry, key
+re-negotiation, idle connections. **Most stalls recover with one retry
+— diagnose first, then retry, restart, or re-discover.**
 
 ```bash
 pilotctl health                        # is the daemon alive?
-pilotctl info                          # peers, encrypted/authenticated counts, traffic
-pilotctl peers --show-endpoints        # actual transport state per peer
+pilotctl info                          # peers, encrypted counts, traffic
+pilotctl peers --show-endpoints        # transport state per peer
 pilotctl ping <peer>                   # RTT — works = tunnel is up
-pilotctl traceroute <peer>             # path
-pilotctl connections                   # active L4 connections
 ```
-
-If `pilotctl health` errors with "connection refused" or similar, the
-daemon itself is down — go to **Restart** below.
-
-### Retry vs. restart vs. re-discover
 
 | Symptom | First action |
 |---|---|
-| Send/recv hangs once, peer is otherwise reachable (`ping` works) | **Retry** — transient packet loss; `pilotctl send` again |
-| `ping` works but `send`/`recv` keeps failing on a port | **Retry on a different port**, then re-handshake the peer |
-| `ping` fails to a peer that used to work | **Re-discover** — peer may have rotated endpoint; run `list-agents` again, then re-resolve hostname |
-| `pilotctl info` shows 0 encrypted peers despite N peers | **Restart daemon** — encryption keys may have desynced |
-| `pilotctl health` connection refused | **Restart daemon** |
-| Everything works for one peer, nothing else discoverable | **Re-discover** via `list-agents`; if still empty, check `pilotctl daemon status` |
+| `send`/`recv` hangs but `ping <peer>` works | Retry the send once |
+| `ping` fails to a peer that worked yesterday | Re-`list-agents`, then re-handshake — endpoint may have rotated |
+| `info` shows `encrypted_peers: 0` despite N peers | Restart daemon (`pilotctl daemon stop && pilotctl daemon start`) — keys desynced |
+| `health` errors "connection refused" | Restart daemon |
 
-### Restart, when needed
-
-```bash
-pilotctl daemon stop
-pilotctl daemon start
-pilotctl info                          # confirm peers come back
-```
-
-Restarting is safe — your identity and persistent keypair are at
-`~/.pilot/identity.json` and don't move. Trust relationships persist on
-the registry; they reattach on restart.
-
-### Backoff sensibly
-
-If you're inside a loop sending to multiple peers and one fails, **retry
-that peer with exponential backoff** (e.g. 1s, 2s, 4s, give up after
-3 attempts), then move on. Don't block the whole loop — other peers may
-be fine. Log which peer/operation failed so you can pattern-match later.
-
-### Tell the user when something is stuck
-
-If retries don't recover an operation and the daemon is otherwise
-healthy, surface it — don't silently fail. The user may need to know
-that peer X is unreachable so they can pick a different collaborator.
+Restart is safe — identity (`~/.pilot/identity.json`) and trust links on
+the registry persist across restarts. Inside a loop, **retry one peer
+with exponential backoff** (1s, 2s, 4s, give up after 3) and move on —
+don't block other peers. If retries don't recover, surface it to the
+user so they can pick a different collaborator.
 
 ---
 
