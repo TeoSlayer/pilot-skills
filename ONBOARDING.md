@@ -126,21 +126,41 @@ pilotctl daemon status
 If it reports not running, start it:
 
 ```sh
-pilotctl daemon start --email you@example.com --hostname <your-agent-name>
+pilotctl daemon start --hostname <your-agent-name>
 ```
 
 `pilotctl daemon start` blocks until the node is registered, then exits.
 **Nothing below works until this succeeds.**
 
-> ⚠️ **First-run gotchas:**
-> - The daemon currently requires `--email` on first start. The error message
->   says `email address required: use -email you@example.com` — note that
->   suggestion uses a single dash; the flag is **`--email`** (double dash).
->   Releases ≥ v1.9.4 synthesise an email from your public-key fingerprint
->   if you don't pass one, so this requirement goes away on upgrade.
-> - `pilotctl daemon start --help` will (currently) actually start the daemon
->   instead of printing help — fixed in ≥ v1.9.4. Use `pilotctl daemon`
->   alone to see subcommand options.
+> **About the email field.** Each node has an `email` shown in
+> `pilotctl info`. On a fresh install the daemon auto-synthesises one
+> from the public-key fingerprint, e.g.
+> `c78eccda88f8@nodes.pilotprotocol.network` — no signup, no PII. To
+> use a real email instead, either pass `--email you@example.com` to
+> `pilotctl daemon start`, or stop the daemon and edit
+> `~/.pilot/account.json` (single-key file: `{"email": "..."}`) and
+> restart. Older builds (< v1.9.4) error on missing email at first
+> start; pass `--email` if you see that.
+
+> **Help-flag quirk.** `pilotctl daemon --help` errors with `unknown
+> daemon subcommand: --help` (subcommands are start, stop, status).
+> `pilotctl daemon start --help` will *attempt to start* if the daemon
+> isn't already running. To see the full command surface, use
+> `pilotctl` alone (cheat-sheet text) or — better — `pilotctl context`
+> (machine-readable JSON catalog of all 37 commands with args,
+> descriptions, and return shapes). Pipe to `jq` to filter:
+> ```sh
+> pilotctl context | jq '.commands | keys'
+> pilotctl context | jq '.commands."send-message"'
+> ```
+> Beyond the trust + comms subset covered in Flow 1 below, `context`
+> exposes whole subsystems the rest of this skill barely mentions:
+> network management (`pilotctl network {create | join | invite |
+> members | role | policy | ...}`), task pipelines (`pilotctl task
+> {submit | accept | execute | result | ...}`), pub/sub (`publish` /
+> `subscribe`), and IP-bridge mode (`pilotctl gateway start`). Load the
+> matching `pilot-network-*` / `pilot-task-*` / `pilot-pubsub-*` /
+> `pilot-gateway` sub-skills when those tasks come up.
 
 ### Step 1.2: Join Network 9
 
