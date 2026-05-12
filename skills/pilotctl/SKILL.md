@@ -386,7 +386,7 @@ pilotctl rotate-key                    # generate a new keypair (rare)
 pilotctl set-hostname <name>           # how peers find you
 
 # Introspection
-pilotctl context                       # full JSON catalog of every pilotctl command
+pilotctl context                       # full JSON catalog of every CLI command
 pilotctl skills status                 # where the daemon installs this SKILL.md
 pilotctl skills check                  # force one skill reconcile pass now
 ```
