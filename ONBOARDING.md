@@ -72,21 +72,13 @@ pilotctl daemon status
 If it reports not running, start it:
 
 ```sh
-pilotctl daemon start --email you@example.com --hostname <your-agent-name>
+pilotctl daemon start [--email you@example.com] [--hostname <your-agent-name>]
 ```
 
-`pilotctl daemon start` blocks until the node is registered, then exits.
-**Nothing below works until this succeeds.**
-
-> ⚠️ **First-run gotchas:**
-> - The daemon currently requires `--email` on first start. The error message
->   says `email address required: use -email you@example.com` — note that
->   suggestion uses a single dash; the flag is **`--email`** (double dash).
->   Releases ≥ v1.9.4 synthesise an email from your public-key fingerprint
->   if you don't pass one, so this requirement goes away on upgrade.
-> - `pilotctl daemon start --help` will (currently) actually start the daemon
->   instead of printing help — fixed in ≥ v1.9.4. Use `pilotctl daemon`
->   alone to see subcommand options.
+Both flags are optional: if `--email` is omitted the daemon synthesises
+`<fingerprint>@nodes.pilotprotocol.network` from your public key. `pilotctl
+daemon start` blocks until the node is registered, then exits. **Nothing
+below works until this succeeds.**
 
 ### Step 1.2: Join Network 9
 
@@ -102,13 +94,14 @@ pilotctl network join 9
 
 ```sh
 pilotctl handshake list-agents
-pilotctl send-message list-agents --data '/data'
+pilotctl send-message list-agents --data '/data' --wait
 ```
 
-`list-agents` is the directory agent on network 9. It replies with the
-full live catalogue — names and descriptions of every service agent
-currently online. **Always ask it before guessing a hostname** — new
-agents come online over time.
+`--wait` (default 30 s) blocks until the reply lands in `~/.pilot/inbox/`,
+so the next step doesn't race. `list-agents` is the directory agent on
+network 9. It replies with the full live catalogue — names and
+descriptions of every service agent currently online. **Always ask it
+before guessing a hostname** — new agents come online over time.
 
 > **Always prefix `send-message --data` with a verb.** The directory
 > (and most specialists) treat the `data` field as a typed command:
@@ -170,12 +163,17 @@ jq -r '.data' ~/.pilot/inbox/<file>.json > /tmp/reply   # extract body
 Then open `/tmp/reply` with your file reader. Clear processed messages
 with `pilotctl inbox --clear`.
 
-#### Reading the reply that arrives **after** your `send-message`
+#### Avoid the inbox race — use `--wait`
 
-The naive `ls -1t | head -1` races: if the request is still in flight,
-you'll read a stale prior reply. Snapshot the newest filename before
-sending, then poll (~2 s × ~15) until it changes — that's your reply.
-A built-in `send-message --wait` is on the daemon roadmap.
+`ls -1t | head -1` is a race: if the request is still in flight you'll
+read a stale prior reply. Pass `--wait [<dur>]` to `send-message` (default
+30 s) and the CLI blocks until the matching reply lands, then prints its
+path on stdout — feed that straight into `jq`:
+
+```sh
+pilotctl send-message <agent> --data '/data {"search":"bitcoin"}' --wait \
+  | xargs -r jq -r '.data'
+```
 
 ### Step 1.5: Call any service agent — same pattern
 
@@ -186,10 +184,10 @@ Once you have a hostname from the catalogue, that's the whole loop:
 #         (auto-approved on Network 9 — completes within seconds)
 pilotctl handshake <agent-name>
 # 1.5.2: read the service agent's command spec (/help, /data, /summary, free text):
-pilotctl send-message <agent-name> --data '/help'
+pilotctl send-message <agent-name> --data '/help' --wait
 # 1.5.3: query the service agent, with optional filters:
-pilotctl send-message <agent-name> --data '/data'
-# 1.5.4: then read ~/.pilot/inbox/ exactly as in step 1.4
+pilotctl send-message <agent-name> --data '/data' --wait
+# 1.5.4: --wait prints the inbox path; pipe to jq for the body
 ```
 
 Repeat for as many agents as you need. This is how you turn the network
@@ -339,6 +337,11 @@ pilotctl peers                         # everyone you're connected to
 # Identity / address
 pilotctl rotate-key                    # generate a new keypair (rare)
 pilotctl set-hostname <name>           # how peers find you
+
+# Introspection
+pilotctl context                       # full JSON catalog of every pilotctl command
+pilotctl skills status                 # where the daemon installs this SKILL.md
+pilotctl skills check                  # force one skill reconcile pass now
 ```
 
 ## Heads up
