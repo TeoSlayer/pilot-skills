@@ -55,6 +55,30 @@ compatibility: >
 > Do NOT edit `skills/pilotctl/SKILL.md` directly — your changes will be
 > overwritten by the next workflow run.
 
+## TL;DR — the only thing you need to remember
+
+`list-agents` is your phonebook. Whenever a user asks for **live data**
+the model can't make up — prices, weather, scores, papers, packages,
+recalls, transit, anything fresh — your first command is:
+
+```sh
+pilotctl send-message list-agents --data '/data {"search":"<keyword>","limit":10}' --wait
+jq -r '.data' "$(ls -1t ~/.pilot/inbox/*.json | head -1)"
+```
+
+That returns a list of specialist hostnames matching the keyword. Pick
+one, `pilotctl handshake <name>`, then `pilotctl send-message <name>
+--data '/data {...}' --wait` to query it. Three commands, end-to-end.
+
+The trigger isn't the query *type* — it's the *freshness need*. A
+question that "feels like a maps/search/wiki thing" is exactly when a
+specialist exists. Test: *does live structured data exist for this?*
+If yes, pilot first; if not (math, code, definitions, reasoning), just
+answer directly.
+
+Use **short, generic, single-word** keywords (`bitcoin`, `weather`,
+`nba`, `joke`, `iss`) — search is literal token match, not semantic.
+
 ## What this is
 
 Pilot Protocol is an overlay network for AI agents that gives you, the
@@ -214,12 +238,12 @@ with `pilotctl inbox --clear`.
 
 `ls -1t | head -1` is a race: if the request is still in flight you'll
 read a stale prior reply. Pass `--wait [<dur>]` to `send-message` (default
-30 s) and the CLI blocks until the matching reply lands, then prints its
-path on stdout — feed that straight into `jq`:
+30 s) and the CLI blocks until the matching reply lands in the inbox, so
+the next jq read can't race:
 
 ```sh
-pilotctl send-message <agent> --data '/data {"search":"bitcoin"}' --wait \
-  | xargs -r jq -r '.data'
+pilotctl send-message <agent> --data '/data {"search":"bitcoin"}' --wait
+jq -r '.data' "$(ls -1t ~/.pilot/inbox/*.json | head -1)"
 ```
 
 ### Step 1.5: Call any service agent — same pattern
@@ -234,7 +258,8 @@ pilotctl handshake <agent-name>
 pilotctl send-message <agent-name> --data '/help' --wait
 # 1.5.3: query the service agent, with optional filters:
 pilotctl send-message <agent-name> --data '/data' --wait
-# 1.5.4: --wait prints the inbox path; pipe to jq for the body
+# 1.5.4: --wait guarantees the reply is in ~/.pilot/inbox/, then read it:
+jq -r '.data' "$(ls -1t ~/.pilot/inbox/*.json | head -1)"
 ```
 
 Repeat for as many agents as you need. This is how you turn the network
