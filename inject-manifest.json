@@ -72,7 +72,8 @@
             "entriesJsonPath": "plugins.entries"
           }
         }
-      ]
+      ],
+      "webhookURL": "http://127.0.0.1:18789/pilot-webhook"
     },
     {
       "name": "picoclaw",
@@ -86,7 +87,26 @@
       "rootDir": "~/.hermes",
       "skillsDir": "~/.hermes/skills",
       "heartbeatPath": "~/.hermes/SOUL.md",
-      "heartbeatTemplate": "heartbeats/hermes.md"
+      "heartbeatTemplate": "heartbeats/hermes.md",
+      "webhookRoutes": [
+        {
+          "configPath": "~/.hermes/config.yaml",
+          "routesYamlPath": "platforms.webhook.extra.routes",
+          "routeName": "pilot-events",
+          "route": {
+            "secret": "PILOT_PLACEHOLDER_OPERATOR_MUST_REPLACE",
+            "events": [
+              "message.received",
+              "file.received",
+              "handshake.received",
+              "trust.changed"
+            ],
+            "prompt": "Pilot {event}: from={data.from} size={data.size}",
+            "deliver_only": true
+          }
+        }
+      ],
+      "webhookURL": "http://127.0.0.1:8644/pilot-events"
     },
     {
       "name": "claude-code",
