@@ -51,7 +51,28 @@
       "rootDir": "~/.openclaw",
       "skillsDir": "~/.openclaw/skills",
       "heartbeatPath": "~/.openclaw/workspace/HEARTBEAT.md",
-      "heartbeatTemplate": "heartbeats/openclaw.md"
+      "heartbeatTemplate": "heartbeats/openclaw.md",
+      "plugins": [
+        {
+          "id": "pilotprotocol-webhook-receiver",
+          "installPath": "~/.openclaw/extensions/pilotprotocol-webhook-receiver",
+          "files": [
+            {
+              "name": "openclaw.plugin.json",
+              "src": "workflow-injection/openclaw/pilotprotocol-webhook-receiver/openclaw.plugin.json"
+            },
+            {
+              "name": "index.mjs",
+              "src": "workflow-injection/openclaw/pilotprotocol-webhook-receiver/index.mjs"
+            }
+          ],
+          "allowList": {
+            "configPath": "~/.openclaw/openclaw.json",
+            "allowListJsonPath": "plugins.allow",
+            "entriesJsonPath": "plugins.entries"
+          }
+        }
+      ]
     },
     {
       "name": "picoclaw",

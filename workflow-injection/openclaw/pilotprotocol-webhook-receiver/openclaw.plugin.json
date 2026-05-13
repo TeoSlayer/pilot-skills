@@ -1,0 +1,40 @@
+{
+  "id": "pilotprotocol-webhook-receiver",
+  "name": "Pilot Protocol Webhook Receiver",
+  "description": "Registers POST /pilot-webhook on openclaw's gateway HTTP server so pilot-daemon can deliver inbox/file/trust events as JSON. Each event is appended to ~/.openclaw/workspace/pilot-events.log so the agent loop / heartbeat can surface it the next time it reads workspace.",
+  "version": "0.1.0",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "enabled": {
+        "type": "boolean",
+        "description": "Set to false to disable receiving without uninstalling the plugin.",
+        "default": true
+      },
+      "path": {
+        "type": "string",
+        "description": "URL path the route binds. Default is /pilot-webhook.",
+        "default": "/pilot-webhook"
+      },
+      "auth": {
+        "type": "string",
+        "description": "Route auth mode passed to registerPluginHttpRoute. Default 'none' is acceptable for loopback-bound gateways; switch to 'bearer' when binding to a non-loopback interface.",
+        "enum": ["none", "bearer"],
+        "default": "none"
+      },
+      "logPath": {
+        "type": "string",
+        "description": "Path the plugin appends each received event to. Defaults to ~/.openclaw/workspace/pilot-events.log.",
+        "default": ""
+      },
+      "maxBodyBytes": {
+        "type": "integer",
+        "description": "Reject any POST body larger than this (defense-in-depth).",
+        "default": 65536,
+        "minimum": 1024,
+        "maximum": 1048576
+      }
+    }
+  }
+}
