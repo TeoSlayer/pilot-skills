@@ -327,7 +327,7 @@ re-negotiation, idle connections. **Most stalls recover with one retry
 ```bash
 pilotctl health                        # is the daemon alive?
 pilotctl info                          # peers, encrypted counts, traffic
-pilotctl peers --show-endpoints        # transport state per peer
+pilotctl peers                         # transport state per peer (PATH=direct|relay)
 pilotctl ping <peer>                   # RTT — works = tunnel is up
 ```
 

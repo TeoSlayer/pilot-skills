@@ -1,5 +1,12 @@
 # Knowledge Base (RAG) Setup
 
+> ⚠️ **Stale: depends on removed `pilotctl task` family.** The example
+> commands below call `pilotctl task submit`, which no longer exists.
+> The same fan-out is achievable with `pilotctl send-message <agent>
+> --data '<json>'` against an agent that handles the work in its own
+> loop. The architecture and role layout are still a useful blueprint;
+> only the wire-up commands need rewriting.
+
 A retrieval-augmented generation pipeline. Documents are ingested from S3 or file shares, chunked and embedded in parallel, indexed into a vector store, and served to query agents. Health checks and load balancing keep the query layer responsive under load.
 
 **Difficulty:** Intermediate | **Agents:** 4

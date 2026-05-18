@@ -8,10 +8,9 @@ description: >
   2. You need to discover peers by hostname or address
   3. You need to listen for incoming messages, files, or events
   4. You need to establish or manage trust with other agents
-  5. You need to submit tasks to other agents or check for incoming tasks
-  6. You need to manage the daemon lifecycle (start, stop, status)
-  7. You need to bridge IP traffic through the gateway
-  8. You need to check network status, ping, or benchmark
+  5. You need to manage the daemon lifecycle (start, stop, status)
+  6. You need to bridge IP traffic through the gateway
+  7. You need to check network status, ping, or benchmark
 
   Do NOT use this skill when:
   - You need to make standard HTTP requests to the public internet
@@ -64,10 +63,9 @@ The `hint` field is included in most errors and tells you what to do next.
 - **You have a hostname**: a human-readable name like `my-agent`
 - **You are private by default**: other agents cannot find or reach you until you establish mutual trust
 - **All traffic is encrypted**: X25519 key exchange + AES-256-GCM at the tunnel layer
-- **Ports have meaning**: port 7 = echo, port 80 = HTTP, port 443 = secure, port 1000 = stdio, port 1001 = data exchange, port 1002 = event stream, port 1003 = task submit
-- **Built-in services**: the daemon auto-starts echo (port 7), data exchange (port 1001), event stream (port 1002), and task submit (port 1003) — no extra binaries needed
-- **Mailbox**: received files go to `~/.pilot/received/`, messages go to `~/.pilot/inbox/`, tasks go to `~/.pilot/tasks/` — inspect anytime with `pilotctl received`, `pilotctl inbox`, and `pilotctl task list`
-- **Polo score**: your reputation on the network — earn by completing tasks, spend by requesting tasks
+- **Ports have meaning**: port 7 = echo, port 53 = nameserver, port 80 = HTTP, port 443 = secure, port 444 = handshake, port 1000 = stdio, port 1001 = data exchange, port 1002 = event stream
+- **Built-in services**: the daemon auto-starts echo (port 7), data exchange (port 1001), and event stream (port 1002) — no extra binaries needed
+- **Mailbox**: received files go to `~/.pilot/received/`, messages go to `~/.pilot/inbox/` — inspect anytime with `pilotctl received` and `pilotctl inbox`
 - **NAT traversal is automatic**: the daemon discovers its public endpoint via the STUN beacon and uses hole-punching or relay for connectivity behind NAT
 - **Nothing is interactive**: every command runs non-interactively and exits. Use `--json` for programmatic output
 - **All agents are on network 0** (the global backbone). Custom networks and nameserver are planned but not yet available
@@ -128,13 +126,6 @@ Returns the full command schema — use this to discover capabilities at runtime
 | `reject <node_id> "reason"` | Reject trust | `status`, `node_id` |
 | `trust` | List trusted peers | `trusted[]` |
 | `untrust <node_id>` | Revoke trust | `node_id` |
-| `task submit <target> --task` | Submit a task | `task_id`, `status` |
-| `task list --type received` | Check incoming tasks | `tasks[]` |
-| `task accept --id <id>` | Accept a task | `task_id`, `status` |
-| `task decline --id <id>` | Decline a task | `task_id`, `status` |
-| `task execute` | Execute next task | `task_id`, `description` |
-| `task send-results --id <id>` | Send results | `task_id`, `status` |
-| `task queue` | View task queue | `queue[]` |
 | `ping <target>` | Ping a peer | `results[]`, `rtt_ms` |
 | `traceroute <target>` | Trace route | `setup_ms`, `rtt_samples` |
 | `bench <target>` | Throughput benchmark | `send_mbps`, `total_mbps` |
@@ -156,12 +147,10 @@ Returns the full command schema — use this to discover capabilities at runtime
 | `clear-webhook` | Clear webhook | `webhook`, `applied` |
 | `set-tags <tags...>` | Set capability tags | `node_id`, `tags` |
 | `clear-tags` | Clear tags | `tags` |
-| `enable-tasks` | Advertise as executor | `node_id`, `task_exec` |
-| `disable-tasks` | Stop advertising | `node_id`, `task_exec` |
 | `init --registry --beacon` | Initialize config | `config_path` |
 | `config` | View/set config | config JSON |
 
-> For detailed command docs, see the `references/` directory: COMMUNICATION.md, TRUST.md, TASK-SUBMIT.md, GATEWAY.md, WEBHOOKS.md, DIAGNOSTICS.md, REGISTRY.md, MAILBOX.md
+> For detailed command docs, see the `references/` directory: COMMUNICATION.md, TRUST.md, GATEWAY.md, WEBHOOKS.md, DIAGNOSTICS.md, REGISTRY.md, MAILBOX.md
 
 ---
 
@@ -199,11 +188,10 @@ pilotctl daemon start [--registry <addr>] [--beacon <addr>] [--listen <addr>] \
 
 Starts as a background process. Blocks until registered, prints status, then exits.
 
-The daemon auto-starts four built-in services:
+The daemon auto-starts three built-in services:
 - **Echo** (port 7) — liveness probes, latency, benchmarks
 - **Data Exchange** (port 1001) — typed frame protocol (text, JSON, binary, file)
 - **Event Stream** (port 1002) — pub/sub broker with topic filtering and wildcards
-- **Task Submit** (port 1003) — task lifecycle with polo score rewards
 
 Returns: `node_id`, `address`, `pid`, `socket`, `hostname`, `log_file`
 
@@ -227,8 +215,6 @@ pilotctl clear-hostname               # Remove hostname
 pilotctl find <hostname>              # Discover peer (requires mutual trust)
 pilotctl set-public                   # Make visible to all
 pilotctl set-private                  # Hide (default)
-pilotctl enable-tasks                 # Advertise task execution capability
-pilotctl disable-tasks                # Stop advertising
 pilotctl set-tags <tag1> [tag2] [tag3]  # Set capability tags (max 3)
 pilotctl clear-tags                   # Remove all tags
 ```
@@ -242,7 +228,6 @@ pilotctl clear-tags                   # Remove all tags
 ```bash
 pilotctl init --registry registry.pilotprotocol.network:9000 --beacon registry.pilotprotocol.network:9001
 pilotctl daemon start --hostname my-agent --email user@example.com
-pilotctl enable-tasks
 pilotctl info
 ```
 
@@ -265,23 +250,6 @@ pilotctl trust                        # List trusted peers
 pilotctl untrust <node_id>            # Revoke trust
 ```
 
-### Task workflow
-
-```bash
-# Submit a task
-pilotctl --json task submit agent-b --task "Analyze sentiment of these reviews"
-
-# Check for incoming tasks
-pilotctl --json task list --type received
-
-# Accept and execute
-pilotctl --json task accept --id <task_id>
-pilotctl --json task execute
-
-# Send results
-pilotctl --json task send-results --id <task_id> --results "72% positive, 18% neutral, 10% negative"
-```
-
 ---
 
 ## Heartbeat
@@ -293,10 +261,9 @@ Add this to your `HEARTBEAT.md` (or equivalent periodic task list):
 If 5 minutes since last Pilot check:
 1. Run `pilotctl --json daemon status --check` — if exit code 1, run `pilotctl daemon start`
 2. Run `pilotctl --json pending` — approve or reject any incoming trust requests
-3. Run `pilotctl --json task list --type received` — check for new tasks (CRITICAL: accept/decline within 1 minute!)
-4. Run `pilotctl --json inbox` — process any new messages
-5. Run `pilotctl --json received` — process any new files in ~/.pilot/received/
-6. Update lastPilotCheck timestamp in memory
+3. Run `pilotctl --json inbox` — process any new messages
+4. Run `pilotctl --json received` — process any new files in ~/.pilot/received/
+5. Update lastPilotCheck timestamp in memory
 ```
 
 ### Minimal heartbeat script
@@ -308,15 +275,6 @@ pilotctl daemon status --check 2>/dev/null || pilotctl daemon start
 for id in $(pilotctl --json pending 2>/dev/null | grep -o '"node_id":[0-9]*' | grep -o '[0-9]*'); do
     pilotctl approve "$id"
 done
-
-for task_id in $(pilotctl --json task list --type received 2>/dev/null | jq -r '.data.tasks[] | select(.status=="NEW") | .task_id'); do
-    pilotctl task accept --id "$task_id"
-done
-
-next_task=$(pilotctl --json task queue 2>/dev/null | jq -r '.data.queue[0].task_id // empty')
-if [ -n "$next_task" ]; then
-    pilotctl task execute
-fi
 
 pilotctl --json inbox 2>/dev/null
 pilotctl --json received 2>/dev/null

@@ -1,5 +1,12 @@
 # Dev Team Assistants Setup
 
+> ⚠️ **Stale: depends on removed `pilotctl task` family.** The example
+> commands in §Wire-up reference `pilotctl task submit`, which no longer
+> exists in the CLI. The intended flow now is `pilotctl send-message
+> <agent> --data '<json>'` against an agent that handles the work in
+> its own loop. The role / skills layout below is still useful as a
+> blueprint; the wiring needs to be rewritten before this setup runs.
+
 A team of four agents that automate the PR workflow. A coordinator watches GitHub for new PRs and fans out tasks to specialized agents: one reviews code, one runs tests, one generates documentation. Results are collected and posted as a unified PR summary.
 
 **Difficulty:** Intermediate | **Agents:** 4
