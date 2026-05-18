@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-18T20:54:56Z",
+  "generated_at": "2026-05-18T22:03:32Z",
   "version": "1.0.0",
   "total": 167,
   "categories": [
@@ -119,7 +119,7 @@
         {
           "slug": "pilot-inbox",
           "name": "pilot-inbox",
-          "description": "Unified inbox for all incoming items — messages, files, tasks, and trust requests in one view.",
+          "description": "Unified inbox for all incoming items \u2014 messages, files, tasks, and trust requests in one view.",
           "tags": [
             "pilot-protocol",
             "communication",
@@ -791,7 +791,7 @@
         {
           "slug": "pilot-mesh-status",
           "name": "pilot-mesh-status",
-          "description": "Comprehensive mesh status — peers, encryption, relay, bandwidth.",
+          "description": "Comprehensive mesh status \u2014 peers, encryption, relay, bandwidth.",
           "tags": [
             "pilot-protocol",
             "status",
@@ -1338,7 +1338,7 @@
         {
           "slug": "pilot-service-agents-academic",
           "name": "pilot-service-agents-academic",
-          "description": "Scholarly literature and bibliographic databases — OpenAlex, Crossref, Europe PMC, PubMed, DOAJ, DBLP, Semantic Scholar.",
+          "description": "Scholarly literature and bibliographic databases \u2014 OpenAlex, Crossref, Europe PMC, PubMed, DOAJ, DBLP, Semantic Scholar.",
           "tags": [
             "pilot-protocol",
             "service-agents",
@@ -1355,7 +1355,7 @@
         {
           "slug": "pilot-service-agents-books",
           "name": "pilot-service-agents-books",
-          "description": "Book search and catalogs — Project Gutenberg (Gutendex) and Open Library.",
+          "description": "Book search and catalogs \u2014 Project Gutenberg (Gutendex) and Open Library.",
           "tags": [
             "pilot-protocol",
             "service-agents",
@@ -1372,7 +1372,7 @@
         {
           "slug": "pilot-service-agents-climate",
           "name": "pilot-service-agents-climate",
-          "description": "Climate and energy-grid data — UK carbon intensity, Electricity Maps zones, Open-Meteo climate.",
+          "description": "Climate and energy-grid data \u2014 UK carbon intensity, Electricity Maps zones, Open-Meteo climate.",
           "tags": [
             "pilot-protocol",
             "service-agents",
@@ -1389,7 +1389,7 @@
         {
           "slug": "pilot-service-agents-culture",
           "name": "pilot-service-agents-culture",
-          "description": "Museum and cultural collections — Art Institute of Chicago, Metropolitan Museum of Art.",
+          "description": "Museum and cultural collections \u2014 Art Institute of Chicago, Metropolitan Museum of Art.",
           "tags": [
             "pilot-protocol",
             "service-agents",
@@ -1406,7 +1406,7 @@
         {
           "slug": "pilot-service-agents-data",
           "name": "pilot-service-agents-data",
-          "description": "General open-data APIs that didn't fit a narrower category — PubChem compounds/substances, REST Countries full catalog.",
+          "description": "General open-data APIs that didn't fit a narrower category \u2014 PubChem compounds/substances, REST Countries full catalog.",
           "tags": [
             "pilot-protocol",
             "service-agents",
@@ -1423,7 +1423,7 @@
         {
           "slug": "pilot-service-agents-dev",
           "name": "pilot-service-agents-dev",
-          "description": "Developer-platform metadata — GitHub, Docker Hub, crates.io, and other ecosystem registries.",
+          "description": "Developer-platform metadata \u2014 GitHub, Docker Hub, crates.io, and other ecosystem registries.",
           "tags": [
             "pilot-protocol",
             "service-agents",
@@ -1440,7 +1440,7 @@
         {
           "slug": "pilot-service-agents-economics",
           "name": "pilot-service-agents-economics",
-          "description": "Macroeconomic indicators — IMF DataMapper, World Bank, Eurostat SDMX, Coinbase reference prices.",
+          "description": "Macroeconomic indicators \u2014 IMF DataMapper, World Bank, Eurostat SDMX, Coinbase reference prices.",
           "tags": [
             "pilot-protocol",
             "service-agents",
@@ -1457,7 +1457,7 @@
         {
           "slug": "pilot-service-agents-entertainment",
           "name": "pilot-service-agents-entertainment",
-          "description": "Games, manga/anime, trivia, and fandom APIs — PokeAPI, Jikan, CheapShark, misc.",
+          "description": "Games, manga/anime, trivia, and fandom APIs \u2014 PokeAPI, Jikan, CheapShark, misc.",
           "tags": [
             "pilot-protocol",
             "service-agents",
@@ -1474,7 +1474,7 @@
         {
           "slug": "pilot-service-agents-finance",
           "name": "pilot-service-agents-finance",
-          "description": "Public market data — crypto spot prices, FX rates, order books, and macro indicators.",
+          "description": "Public market data \u2014 crypto spot prices, FX rates, order books, and macro indicators.",
           "tags": [
             "pilot-protocol",
             "service-agents",
@@ -1491,7 +1491,7 @@
         {
           "slug": "pilot-service-agents-flights",
           "name": "pilot-service-agents-flights",
-          "description": "Aircraft tracking and aviation weather — ADS-B feeds (ICAO + bbox), airport directory, METAR/TAF/SIGMET.",
+          "description": "Aircraft tracking and aviation weather \u2014 ADS-B feeds (ICAO + bbox), airport directory, METAR/TAF/SIGMET.",
           "tags": [
             "pilot-protocol",
             "service-agents",
@@ -1508,7 +1508,7 @@
         {
           "slug": "pilot-service-agents-food",
           "name": "pilot-service-agents-food",
-          "description": "Food, recipes, and nutrition — OpenFoodFacts, TheCocktailDB, TheMealDB, Fruityvice, Open Brewery DB.",
+          "description": "Food, recipes, and nutrition \u2014 OpenFoodFacts, TheCocktailDB, TheMealDB, Fruityvice, Open Brewery DB.",
           "tags": [
             "pilot-protocol",
             "service-agents",
@@ -1525,7 +1525,7 @@
         {
           "slug": "pilot-service-agents-geo",
           "name": "pilot-service-agents-geo",
-          "description": "Geographic and geolocation APIs — Google Maps suite (premium) plus open geocoders and IP-to-location lookups.",
+          "description": "Geographic and geolocation APIs \u2014 Google Maps suite (premium) plus open geocoders and IP-to-location lookups.",
           "tags": [
             "pilot-protocol",
             "service-agents",
@@ -1542,7 +1542,7 @@
         {
           "slug": "pilot-service-agents-gov-finance",
           "name": "pilot-service-agents-gov-finance",
-          "description": "Government economic and financial records — SEC EDGAR, BLS time series, HTS/USITC tariffs, US Dept of Ed.",
+          "description": "Government economic and financial records \u2014 SEC EDGAR, BLS time series, HTS/USITC tariffs, US Dept of Ed.",
           "tags": [
             "pilot-protocol",
             "service-agents",
@@ -1559,7 +1559,7 @@
         {
           "slug": "pilot-service-agents-government",
           "name": "pilot-service-agents-government",
-          "description": "Government and civic data — federal register, FBI wanted, elections info, national open-data portals.",
+          "description": "Government and civic data \u2014 federal register, FBI wanted, elections info, national open-data portals.",
           "tags": [
             "pilot-protocol",
             "service-agents",
@@ -1576,7 +1576,7 @@
         {
           "slug": "pilot-service-agents-health",
           "name": "pilot-service-agents-health",
-          "description": "Public-health and biomedical APIs — ClinicalTrials.gov, openFDA, CDC, WHO, ClinVar, DailyMed, disease.sh.",
+          "description": "Public-health and biomedical APIs \u2014 ClinicalTrials.gov, openFDA, CDC, WHO, ClinVar, DailyMed, disease.sh.",
           "tags": [
             "pilot-protocol",
             "service-agents",
@@ -1593,7 +1593,7 @@
         {
           "slug": "pilot-service-agents-infra",
           "name": "pilot-service-agents-infra",
-          "description": "Pilot Protocol network infrastructure agents — the directory (list-agents), command assistant (pilot-ai), feedback (feedback).",
+          "description": "Pilot Protocol network infrastructure agents \u2014 the directory (list-agents), command assistant (pilot-ai), feedback (feedback).",
           "tags": [
             "pilot-protocol",
             "service-agents",
@@ -1610,7 +1610,7 @@
         {
           "slug": "pilot-service-agents-knowledge",
           "name": "pilot-service-agents-knowledge",
-          "description": "Structured-knowledge and factual lookups — Google Knowledge Graph (premium), DuckDuckGo Instant, Archive.org, holidays, geocoders.",
+          "description": "Structured-knowledge and factual lookups \u2014 Google Knowledge Graph (premium), DuckDuckGo Instant, Archive.org, holidays, geocoders.",
           "tags": [
             "pilot-protocol",
             "service-agents",
@@ -1627,7 +1627,7 @@
         {
           "slug": "pilot-service-agents-language",
           "name": "pilot-service-agents-language",
-          "description": "Language and NLP services — translation, text-to-speech, dictionaries, word tools, Bible text, linguistic corpora.",
+          "description": "Language and NLP services \u2014 translation, text-to-speech, dictionaries, word tools, Bible text, linguistic corpora.",
           "tags": [
             "pilot-protocol",
             "service-agents",
@@ -1644,7 +1644,7 @@
         {
           "slug": "pilot-service-agents-music",
           "name": "pilot-service-agents-music",
-          "description": "Music metadata and lyrics — iTunes search and Lyrics.ovh.",
+          "description": "Music metadata and lyrics \u2014 iTunes search and Lyrics.ovh.",
           "tags": [
             "pilot-protocol",
             "service-agents",
@@ -1661,7 +1661,7 @@
         {
           "slug": "pilot-service-agents-nature",
           "name": "pilot-service-agents-nature",
-          "description": "Biodiversity observations — iNaturalist species sightings.",
+          "description": "Biodiversity observations \u2014 iNaturalist species sightings.",
           "tags": [
             "pilot-protocol",
             "service-agents",
@@ -1678,7 +1678,7 @@
         {
           "slug": "pilot-service-agents-news",
           "name": "pilot-service-agents-news",
-          "description": "News feeds, forum aggregators, and current-events streams — Hacker News, dev.to, GDELT, Reddit, Stack Exchange, USGS hazards.",
+          "description": "News feeds, forum aggregators, and current-events streams \u2014 Hacker News, dev.to, GDELT, Reddit, Stack Exchange, USGS hazards.",
           "tags": [
             "pilot-protocol",
             "service-agents",
@@ -1695,7 +1695,7 @@
         {
           "slug": "pilot-service-agents-packages",
           "name": "pilot-service-agents-packages",
-          "description": "Package-registry metadata — npm, PyPI, Maven Central (Solr-backed).",
+          "description": "Package-registry metadata \u2014 npm, PyPI, Maven Central (Solr-backed).",
           "tags": [
             "pilot-protocol",
             "service-agents",
@@ -1712,7 +1712,7 @@
         {
           "slug": "pilot-service-agents-reference",
           "name": "pilot-service-agents-reference",
-          "description": "Lightweight utility lookups — dictionaries, jokes, colors, currencies, random facts, D&D data, etc.",
+          "description": "Lightweight utility lookups \u2014 dictionaries, jokes, colors, currencies, random facts, D&D data, etc.",
           "tags": [
             "pilot-protocol",
             "service-agents",
@@ -1729,7 +1729,7 @@
         {
           "slug": "pilot-service-agents-science",
           "name": "pilot-service-agents-science",
-          "description": "Primary-source scientific and research APIs — earthquakes, molecules, space weather, particle physics, volcanoes.",
+          "description": "Primary-source scientific and research APIs \u2014 earthquakes, molecules, space weather, particle physics, volcanoes.",
           "tags": [
             "pilot-protocol",
             "service-agents",
@@ -1746,7 +1746,7 @@
         {
           "slug": "pilot-service-agents-security",
           "name": "pilot-service-agents-security",
-          "description": "Security and threat-intel lookups — CVEs, certificate transparency, URL/IP threat checks, DNS, WHOIS.",
+          "description": "Security and threat-intel lookups \u2014 CVEs, certificate transparency, URL/IP threat checks, DNS, WHOIS.",
           "tags": [
             "pilot-protocol",
             "service-agents",
@@ -1763,7 +1763,7 @@
         {
           "slug": "pilot-service-agents-space",
           "name": "pilot-service-agents-space",
-          "description": "Space and astronomy — NASA Astronomy Picture of the Day, Open Notify astronauts.",
+          "description": "Space and astronomy \u2014 NASA Astronomy Picture of the Day, Open Notify astronauts.",
           "tags": [
             "pilot-protocol",
             "service-agents",
@@ -1780,7 +1780,7 @@
         {
           "slug": "pilot-service-agents-sports",
           "name": "pilot-service-agents-sports",
-          "description": "Live sports scores, fixtures, and historical stats — MLB, NFL, NHL, NBA, Formula 1, cricket, and generic TheSportsDB.",
+          "description": "Live sports scores, fixtures, and historical stats \u2014 MLB, NFL, NHL, NBA, Formula 1, cricket, and generic TheSportsDB.",
           "tags": [
             "pilot-protocol",
             "service-agents",
@@ -1797,7 +1797,7 @@
         {
           "slug": "pilot-service-agents-traffic",
           "name": "pilot-service-agents-traffic",
-          "description": "Urban transport and bike-share — CityBikes index, GBFS feeds, Transport for London lines/arrivals.",
+          "description": "Urban transport and bike-share \u2014 CityBikes index, GBFS feeds, Transport for London lines/arrivals.",
           "tags": [
             "pilot-protocol",
             "service-agents",
@@ -1814,7 +1814,7 @@
         {
           "slug": "pilot-service-agents-transit",
           "name": "pilot-service-agents-transit",
-          "description": "Public-transit schedules and live data — Amtrak, BART, Deutsche Bahn, Swiss SBB, BC Ferries, BVG Berlin, and more.",
+          "description": "Public-transit schedules and live data \u2014 Amtrak, BART, Deutsche Bahn, Swiss SBB, BC Ferries, BVG Berlin, and more.",
           "tags": [
             "pilot-protocol",
             "service-agents",
@@ -1831,7 +1831,7 @@
         {
           "slug": "pilot-service-agents-vehicles",
           "name": "pilot-service-agents-vehicles",
-          "description": "NHTSA vehicle records — VIN decoder, makes, models, recalls, consumer complaints.",
+          "description": "NHTSA vehicle records \u2014 VIN decoder, makes, models, recalls, consumer complaints.",
           "tags": [
             "pilot-protocol",
             "service-agents",
@@ -1848,7 +1848,7 @@
         {
           "slug": "pilot-service-agents-weather",
           "name": "pilot-service-agents-weather",
-          "description": "Weather forecasts and historical climate — Open-Meteo (forecast, archive, air quality, marine, flood), Seven Timer astronomy.",
+          "description": "Weather forecasts and historical climate \u2014 Open-Meteo (forecast, archive, air quality, marine, flood), Seven Timer astronomy.",
           "tags": [
             "pilot-protocol",
             "service-agents",
@@ -1865,7 +1865,7 @@
         {
           "slug": "pilot-service-agents",
           "name": "pilot-service-agents",
-          "description": "Discover and query the pilot-service-agents catalogue — ~370 always-on data agents reachable over Pilot Protocol that wrap real-world APIs (Google Maps, OpenAlex, NHTSA, USGS, CoinGecko, NASA, aviation weather, and many more) so callers don't need their own API keys, rate limits, or HTTP plumbing.",
+          "description": "Discover and query the pilot-service-agents catalogue \u2014 ~370 always-on data agents reachable over Pilot Protocol that wrap real-world APIs (Google Maps, OpenAlex, NHTSA, USGS, CoinGecko, NASA, aviation weather, and many more) so callers don't need their own API keys, rate limits, or HTTP plumbing.",
           "tags": [
             "pilot-protocol",
             "service-agents",
@@ -2868,23 +2868,6 @@
           "clawhub_url": "https://clawhub.ai/teoslayer/pilot-supply-chain-orchestrator-setup",
           "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-supply-chain-orchestrator-setup",
           "install": "clawhub install pilot-supply-chain-orchestrator-setup"
-        },
-        {
-          "slug": "pilot-swarm-task-farm-setup",
-          "name": "pilot-swarm-task-farm-setup",
-          "description": "Deploy a self-organizing compute swarm with 5 agents.",
-          "tags": [
-            "pilot-protocol",
-            "setup",
-            "swarm",
-            "distributed-compute"
-          ],
-          "version": "1.0",
-          "license": "AGPL-3.0",
-          "clawhub_slug": "pilot-swarm-task-farm-setup",
-          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-swarm-task-farm-setup",
-          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-swarm-task-farm-setup",
-          "install": "clawhub install pilot-swarm-task-farm-setup"
         },
         {
           "slug": "pilot-threat-intelligence-setup",
