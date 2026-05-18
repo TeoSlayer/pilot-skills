@@ -29,6 +29,18 @@ creator  --> analyst  : Published post metadata for performance tracking (port 1
 analyst  --> planner  : Performance insights and optimization recommendations (port 1002)
 ```
 
+## Optional X/Twitter Signals
+
+When the planner or analyst runs inside OpenClaw and needs public X/Twitter context, install TweetClaw separately:
+
+```bash
+openclaw plugins install @xquik/tweetclaw
+```
+
+Use TweetClaw for scrape tweets, search tweets, search tweet replies, follower export, user lookup, monitor tweets, webhooks, and giveaway draws around the campaign topic. Keep Pilot Protocol responsible for the multi-agent handoff, and pass only reviewed findings through the Pilot data flow: query terms, capture dates, tweet IDs or URLs, author handles, aggregate counts, and planner or analyst decisions.
+
+For writes, use TweetClaw only after human review for post tweets or post tweet replies. The creator should send the approved post metadata to the analyst through the existing `post-published` topic.
+
 ## Setup
 
 Replace `<your-prefix>` with a unique name for your deployment (e.g. `acme`).
@@ -51,7 +63,7 @@ pilotctl set-hostname <your-prefix>-analyst
 
 ### 2. Establish trust
 
-Agents are private by default. Each pair that communicates must exchange handshakes. When both sides send a handshake, trust is auto-approved -- no manual step needed.
+Agents are private by default. Each pair that communicates must exchange handshakes. When both sides send a handshake, trust is auto-approved - no manual step needed.
 
 ```bash
 # planner <-> creator
@@ -84,21 +96,21 @@ pilotctl trust
 After setup is complete, run these commands to see data flowing between your agents:
 
 ```bash
-# On <your-prefix>-creator -- subscribe to content briefs:
+# On <your-prefix>-creator - subscribe to content briefs:
 pilotctl subscribe <your-prefix>-planner content-brief
 
-# On <your-prefix>-analyst -- subscribe to published posts:
+# On <your-prefix>-analyst - subscribe to published posts:
 pilotctl subscribe <your-prefix>-creator post-published
 
-# On <your-prefix>-planner -- subscribe to performance insights:
+# On <your-prefix>-planner - subscribe to performance insights:
 pilotctl subscribe <your-prefix>-analyst performance-insight
 
-# On <your-prefix>-planner -- publish a content brief:
+# On <your-prefix>-planner - publish a content brief:
 pilotctl publish <your-prefix>-creator content-brief '{"platforms":["linkedin","x"],"topic":"AI in DevOps","angle":"practical tips","tone":"professional","post_time":"2026-04-10T09:00:00Z","hashtags":["#AIDevOps","#Automation"]}'
 
-# On <your-prefix>-creator -- publish post metadata after posting:
+# On <your-prefix>-creator - publish post metadata after posting:
 pilotctl publish <your-prefix>-analyst post-published '{"post_id":"li-92841","platform":"linkedin","topic":"AI in DevOps","posted_at":"2026-04-10T09:00:00Z","char_count":1200,"hashtags":["#AIDevOps","#Automation"]}'
 
-# On <your-prefix>-analyst -- publish insights back to planner:
+# On <your-prefix>-analyst - publish insights back to planner:
 pilotctl publish <your-prefix>-planner performance-insight '{"period":"2026-W15","top_platform":"linkedin","top_topic":"AI in DevOps","impressions":12400,"engagement_rate":4.2,"recommendation":"Increase LinkedIn frequency, morning posts outperform afternoon by 35%"}'
 ```
