@@ -2924,8 +2924,8 @@
     {
       "slug": "dev-team-assistants",
       "name": "Dev Team Assistants",
-      "tagline": "A team of four agents that automate the PR workflow.",
-      "description": "A team of four agents that automate the PR workflow. A coordinator watches GitHub for new PRs and fans out tasks to specialized agents: one reviews code, one runs tests, one generates documentation. Results are collected and posted as a unified PR summary.",
+      "tagline": "> \u26a0\ufe0f **Stale: depends on removed `pilotctl task` family.** The example > commands in \u00a7Wire-up r",
+      "description": "> \u26a0\ufe0f **Stale: depends on removed `pilotctl task` family.** The example > commands in \u00a7Wire-up reference `pilotctl task submit`, which no longer > exists in the CLI. The intended flow now is `pilotctl send-message > <agent> --data '<json>'` against an agent that handles the work in > its own loop. The role / skills layout below is still useful as a > blueprint; the wiring needs to be rewritten before this setup runs. A team of four agents that automate the PR workflow. A coordinator watches GitHub for new PRs and fans out tasks to specialized agents: one reviews code, one runs tests, one generates documentation. Results are collected and posted as a unified PR summary.",
       "difficulty": "intermediate",
       "agent_count": 4,
       "skills_used": [
@@ -5657,8 +5657,8 @@
     {
       "slug": "knowledge-base-rag",
       "name": "Knowledge Base (RAG)",
-      "tagline": "A retrieval-augmented generation pipeline.",
-      "description": "A retrieval-augmented generation pipeline. Documents are ingested from S3 or file shares, chunked and embedded in parallel, indexed into a vector store, and served to query agents. Health checks and load balancing keep the query layer responsive under load.",
+      "tagline": "> \u26a0\ufe0f **Stale: depends on removed `pilotctl task` family.** The example > commands below call `pi",
+      "description": "> \u26a0\ufe0f **Stale: depends on removed `pilotctl task` family.** The example > commands below call `pilotctl task submit`, which no longer exists. > The same fan-out is achievable with `pilotctl send-message <agent> > --data '<json>'` against an agent that handles the work in its own > loop. The architecture and role layout are still a useful blueprint; > only the wire-up commands need rewriting. A retrieval-augmented generation pipeline. Documents are ingested from S3 or file shares, chunked and embedded in parallel, indexed into a vector store, and served to query agents. Health checks and load balancing keep the query layer responsive under load.",
       "difficulty": "intermediate",
       "agent_count": 4,
       "skills_used": [
