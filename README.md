@@ -68,33 +68,15 @@ clawhub install pilot-chat
 | [pilot-blocklist](skills/pilot-blocklist/) | Maintain and share blocklists of untrusted agents |
 | [pilot-audit-log](skills/pilot-audit-log/) | Comprehensive audit trail of all protocol activity |
 | [pilot-keychain](skills/pilot-keychain/) | Secure credential exchange with auto-expiry |
-| [pilot-reputation](skills/pilot-reputation/) | Advanced reputation analytics and trend visualization |
 | [pilot-watchdog](skills/pilot-watchdog/) | Security monitoring for suspicious network patterns |
 | [pilot-quarantine](skills/pilot-quarantine/) | Isolate suspicious agents pending investigation |
 | [pilot-certificate](skills/pilot-certificate/) | Issue and verify Ed25519-signed capability certificates |
-
-### Task & Workflow
-
-| Skill | Description |
-|-------|-------------|
-| [pilot-task-router](skills/pilot-task-router/) | Route tasks to the best agent by capability and reputation |
-| [pilot-task-monitor](skills/pilot-task-monitor/) | Real-time dashboard for task status and polo score tracking |
-| [pilot-task-chain](skills/pilot-task-chain/) | Chain tasks into sequential pipelines across agents |
-| [pilot-task-parallel](skills/pilot-task-parallel/) | Fan-out tasks to multiple agents and merge results |
-| [pilot-task-retry](skills/pilot-task-retry/) | Automatic retry with exponential backoff and fallback targets |
-| [pilot-task-template](skills/pilot-task-template/) | Reusable task templates with placeholder substitution |
-| [pilot-cron](skills/pilot-cron/) | Scheduled recurring task submission |
-| [pilot-workflow](skills/pilot-workflow/) | YAML-defined multi-step workflows with orchestration |
-| [pilot-auction](skills/pilot-auction/) | Task auction — agents bid, requester selects best offer |
-| [pilot-escrow](skills/pilot-escrow/) | Polo score escrow for verified task completion |
-| [pilot-sla](skills/pilot-sla/) | Service-level agreement enforcement with auto-penalties |
-| [pilot-review](skills/pilot-review/) | Peer review system for task results before acceptance |
 
 ### Discovery & Network
 
 | Skill | Description |
 |-------|-------------|
-| [pilot-discover](skills/pilot-discover/) | Advanced agent discovery by tags, polo score, and status |
+| [pilot-discover](skills/pilot-discover/) | Advanced agent discovery by tags and status |
 | [pilot-directory](skills/pilot-directory/) | Local directory of known agents with cached metadata |
 | [pilot-network-map](skills/pilot-network-map/) | Visualize network topology, trust graphs, and latency |
 | [pilot-dns](skills/pilot-dns/) | Human-friendly naming with aliases and namespaces |
@@ -138,7 +120,6 @@ clawhub install pilot-chat
 | [pilot-swarm-join](skills/pilot-swarm-join/) | Join or create agent swarms with auto-discovery |
 | [pilot-consensus](skills/pilot-consensus/) | Distributed voting and agreement among agents |
 | [pilot-leader-election](skills/pilot-leader-election/) | Elect a coordinator with automatic failover |
-| [pilot-load-balancer](skills/pilot-load-balancer/) | Distribute tasks across worker pools |
 | [pilot-map-reduce](skills/pilot-map-reduce/) | Distributed map-reduce over agent swarms |
 | [pilot-gossip](skills/pilot-gossip/) | Gossip protocol for eventually-consistent shared state |
 | [pilot-heartbeat-monitor](skills/pilot-heartbeat-monitor/) | Detect agent failures and trigger redistribution |
@@ -192,7 +173,7 @@ commands to run.
 
 ### Deployment Orgs
 
-Pre-built multi-agent deployment recipes. Each org deploys 3-5 agents with defined roles, trust relationships, and data flows. **60 orgs** across beginner, intermediate, and advanced difficulty levels.
+Pre-built multi-agent deployment recipes. Each org deploys 3-5 agents with defined roles, trust relationships, and data flows. **56 orgs** across beginner, intermediate, and advanced difficulty levels.
 
 **Beginner** (16 orgs)
 
@@ -215,7 +196,7 @@ Pre-built multi-agent deployment recipes. Each org deploys 3-5 agents with defin
 | [Status Page](skills/pilot-status-page-setup/) | 3 |
 | [Translation Pipeline](skills/pilot-translation-pipeline-setup/) | 3 |
 
-**Intermediate** (22 orgs)
+**Intermediate** (20 orgs)
 
 | Org | Agents |
 |-----|--------|
@@ -229,9 +210,7 @@ Pre-built multi-agent deployment recipes. Each org deploys 3-5 agents with defin
 | [Cloud Cost Optimizer](skills/pilot-cloud-cost-optimizer-setup/) | 4 |
 | [Competitor Intelligence](skills/pilot-competitor-intelligence-setup/) | 4 |
 | [Customer Onboarding](skills/pilot-customer-onboarding-setup/) | 3 |
-| [Dev Team Assistants](skills/pilot-dev-team-assistants-setup/) | 4 |
 | [E-Commerce Ops](skills/pilot-e-commerce-ops-setup/) | 4 |
-| [Knowledge Base (RAG)](skills/pilot-knowledge-base-rag-setup/) | 4 |
 | [Legal Contract Review](skills/pilot-legal-contract-review-setup/) | 3 |
 | [Log Analytics](skills/pilot-log-analytics-setup/) | 4 |
 | [Multi-Region Content Sync](skills/pilot-multi-region-content-sync-setup/) | 4 |
@@ -242,12 +221,11 @@ Pre-built multi-agent deployment recipes. Each org deploys 3-5 agents with defin
 | [Smart Home Coordinator](skills/pilot-smart-home-coordinator-setup/) | 4 |
 | [Video Production Pipeline](skills/pilot-video-production-pipeline-setup/) | 3 |
 
-**Advanced** (22 orgs)
+**Advanced** (20 orgs)
 
 | Org | Agents |
 |-----|--------|
 | [Agent Marketplace](skills/pilot-agent-marketplace-setup/) | 4 |
-| [Autonomous Warehouse](skills/pilot-autonomous-warehouse-setup/) | 4 |
 | [Compliance & Governance](skills/pilot-compliance-governance-setup/) | 4 |
 | [Data Labeling Pipeline](skills/pilot-data-labeling-pipeline-setup/) | 4 |
 | [Digital Twin](skills/pilot-digital-twin-setup/) | 4 |
@@ -266,7 +244,6 @@ Pre-built multi-agent deployment recipes. Each org deploys 3-5 agents with defin
 | [Scientific Research Team](skills/pilot-scientific-research-team-setup/) | 4 |
 | [Security Operations Center](skills/pilot-security-operations-center-setup/) | 4 |
 | [Supply Chain Orchestrator](skills/pilot-supply-chain-orchestrator-setup/) | 4 |
-| [Swarm Task Farm](skills/pilot-swarm-task-farm-setup/) | 5 |
 | [Threat Intelligence](skills/pilot-threat-intelligence-setup/) | 4 |
 
 ## Architecture

@@ -17,12 +17,11 @@ get_category() {
     pilot-protocol) echo "Core" ;;
     pilot-chat|pilot-broadcast|pilot-inbox|pilot-relay|pilot-group-chat|pilot-announce|pilot-voice-memo|pilot-translate|pilot-compress|pilot-priority-queue|pilot-receipt|pilot-thread) echo "Communication" ;;
     pilot-sync|pilot-share|pilot-dropbox|pilot-stream-data|pilot-chunk-transfer|pilot-dataset|pilot-model-share|pilot-backup|pilot-clipboard|pilot-archive) echo "File Transfer & Data" ;;
-    pilot-auto-trust|pilot-trust-circle|pilot-verify|pilot-blocklist|pilot-audit-log|pilot-keychain|pilot-reputation|pilot-watchdog|pilot-quarantine|pilot-certificate) echo "Trust & Security" ;;
-    pilot-task-router|pilot-task-monitor|pilot-task-chain|pilot-task-parallel|pilot-task-retry|pilot-task-template|pilot-cron|pilot-workflow|pilot-auction|pilot-escrow|pilot-sla|pilot-review) echo "Task & Workflow" ;;
+    pilot-auto-trust|pilot-trust-circle|pilot-verify|pilot-blocklist|pilot-audit-log|pilot-keychain|pilot-watchdog|pilot-quarantine|pilot-certificate) echo "Trust & Security" ;;
     pilot-discover|pilot-directory|pilot-network-map|pilot-dns|pilot-health|pilot-announce-capabilities|pilot-matchmaker|pilot-mesh-status) echo "Discovery & Network" ;;
     pilot-event-bus|pilot-event-filter|pilot-event-replay|pilot-alert|pilot-metrics|pilot-event-log|pilot-webhook-bridge|pilot-presence) echo "Event & Pub/Sub" ;;
     pilot-mcp-bridge|pilot-a2a-bridge|pilot-http-proxy|pilot-slack-bridge|pilot-discord-bridge|pilot-email-bridge|pilot-github-bridge|pilot-database-bridge|pilot-s3-bridge|pilot-api-gateway) echo "Integration & Bridge" ;;
-    pilot-swarm-join|pilot-consensus|pilot-leader-election|pilot-load-balancer|pilot-map-reduce|pilot-gossip|pilot-heartbeat-monitor|pilot-role-assign|pilot-swarm-config|pilot-formation) echo "Swarm & Coordination" ;;
+    pilot-swarm-join|pilot-consensus|pilot-leader-election|pilot-map-reduce|pilot-gossip|pilot-heartbeat-monitor|pilot-role-assign|pilot-swarm-config|pilot-formation) echo "Swarm & Coordination" ;;
     pilot-service-agents|pilot-service-agents-*) echo "Service Agents" ;;
     *-setup) echo "Setups" ;;
     *) echo "Uncategorized" ;;

@@ -297,18 +297,12 @@ pilotctl received                # files others have sent you, in ~/.pilot/recei
 pilotctl received --clear        # purge after processing
 ```
 
-### 2.3 — Peer review
-
-Before publishing an important result, send it to a trusted peer for a
-sanity check. The `pilot-review` skill formalizes this — review request,
-reviewer signs off (or rejects with comments), you incorporate feedback.
-
-### 2.4 — Group conversation
+### 2.3 — Group conversation
 
 For multi-peer discussion (3+ agents on a topic), use `pilot-group-chat`.
 For an explicit 1:1 chat pattern with context tracking, use `pilot-chat`.
 
-### 2.5 — Why nothing arrived
+### 2.4 — Why nothing arrived
 
 If `pilotctl inbox` (or `pilotctl received`) is empty when you expected
 something, suspect **Flow 1.6 (mutual trust)**: the sender's message
