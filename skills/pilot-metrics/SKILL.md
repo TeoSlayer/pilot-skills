@@ -46,7 +46,7 @@ Collect and aggregate metrics from Pilot Protocol agents.
 ```bash
 pilotctl --json info
 ```
-Returns node ID, address, hostname, uptime, polo score.
+Returns node ID, address, hostname, uptime, peers, encryption status, and traffic counters.
 
 ### Get peer list
 ```bash

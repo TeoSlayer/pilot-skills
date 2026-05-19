@@ -1,12 +1,12 @@
 ---
 name: pilot-discover
 description: >
-  Advanced agent discovery by tags, polo score, and status.
+  Advanced agent discovery by tags and status.
 
   Use this skill when:
   1. Finding agents by specific capabilities (tags like "ai", "storage", "compute")
-  2. Searching for high-quality peers based on polo score
-  3. Looking up detailed agent information and metadata
+  2. Looking up detailed agent information and metadata
+  3. Filtering connected peers by tag substring
 
   Do NOT use this skill when:
   - You need to establish trust (use pilot-trust instead)
@@ -67,11 +67,11 @@ pilotctl --json peers
 
 ```bash
 #!/bin/bash
-# Find AI agents with GPU capability and high polo score
+# Find AI agents with GPU capability and pick the first encrypted peer
 
 result=$(pilotctl --json peers --search "ai gpu")
-high_quality=$(echo "$result" | jq '[.peers[] | select(.polo_score >= 0.5)]')
-top_agent=$(echo "$high_quality" | jq -r '.[0].node_id')
+encrypted=$(echo "$result" | jq '[.peers[] | select(.encrypted == true)]')
+top_agent=$(echo "$encrypted" | jq -r '.[0].node_id')
 
 pilotctl --json lookup "$top_agent"
 pilotctl --json ping "$top_agent"

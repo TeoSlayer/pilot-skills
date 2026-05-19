@@ -1,12 +1,12 @@
 ---
 name: pilot-verify
 description: >
-  Verify agent identity and reputation before interacting with Pilot Protocol nodes.
+  Verify agent identity and reachability before interacting with Pilot Protocol nodes.
 
   Use this skill when:
   1. You need to verify an agent's identity before trusting or connecting
-  2. You want to check polo reputation scores before interaction
-  3. You need to validate agent availability and network reachability
+  2. You want to validate hostname-to-address mapping in the registry
+  3. You need to test network reachability before establishing a session
 
   Do NOT use this skill when:
   - You've already established trust with the agent
@@ -22,7 +22,7 @@ compatibility: >
   The daemon must be running (pilotctl daemon start).
 metadata:
   author: vulture-labs
-  version: "1.0"
+  version: "1.1"
   openclaw:
     requires:
       bins:
@@ -34,7 +34,7 @@ allowed-tools:
 
 # Pilot Verify
 
-Comprehensive identity and reputation verification for Pilot Protocol agents. Validates authenticity, checks reputation scores, and tests network reachability before establishing trust.
+Identity and reachability verification for Pilot Protocol agents. Validates authenticity, confirms hostname-to-address mapping, and tests network reachability before establishing trust.
 
 ## Essential Commands
 
@@ -44,7 +44,7 @@ Comprehensive identity and reputation verification for Pilot Protocol agents. Va
 pilotctl --json find agent.pilot
 
 # Extract specific fields
-pilotctl --json find agent.pilot | jq '.[0] | {hostname, address, node_id, polo_score, public_key}'
+pilotctl --json find agent.pilot | jq '.[0] | {hostname, address, node_id, public, public_key}'
 ```
 
 ### Search agents
@@ -67,19 +67,19 @@ timeout 5s pilotctl --json ping agent.pilot || echo "Agent unreachable"
 
 ### Get local info
 ```bash
-pilotctl --json info | jq '{hostname, address, polo_score, trusted_count, connection_count}'
+pilotctl --json info | jq '{hostname, address, peers, encrypted_peers, authenticated_peers}'
 ```
 
-### Verify reputation
+### Verify identity matches expected fingerprint
 ```bash
 AGENT="agent.pilot"
-MIN_SCORE=50
+EXPECTED_PUBKEY="abc123..."
 
-POLO_SCORE=$(pilotctl --json find "$AGENT" | jq -r '.[0].polo_score')
-if [ "$POLO_SCORE" -ge "$MIN_SCORE" ]; then
-  echo "Agent verified: polo score $POLO_SCORE >= $MIN_SCORE"
+ACTUAL=$(pilotctl --json find "$AGENT" | jq -r '.[0].public_key')
+if [ "$ACTUAL" = "$EXPECTED_PUBKEY" ]; then
+  echo "Identity verified: public key matches"
 else
-  echo "Agent verification failed: polo score $POLO_SCORE < $MIN_SCORE"
+  echo "Identity verification FAILED: pubkey mismatch (expected $EXPECTED_PUBKEY, got $ACTUAL)"
   exit 1
 fi
 ```
@@ -93,7 +93,7 @@ Comprehensive verification before trust:
 set -e
 
 AGENT="$1"
-MIN_POLO=50
+EXPECTED_PUBKEY="${2:-}"
 
 echo "=== Verifying Agent: $AGENT ==="
 
@@ -105,16 +105,22 @@ if [ -z "$IDENTITY" ] || [ "$IDENTITY" = "null" ]; then
   exit 1
 fi
 
-POLO=$(echo "$IDENTITY" | jq -r '.polo_score')
-echo "  Polo Score: $POLO"
+NODE_ID=$(echo "$IDENTITY" | jq -r '.node_id')
+ADDRESS=$(echo "$IDENTITY" | jq -r '.address')
+PUBKEY=$(echo "$IDENTITY" | jq -r '.public_key')
+echo "  Node ID:    $NODE_ID"
+echo "  Address:    $ADDRESS"
+echo "  Public key: ${PUBKEY:0:16}..."
 
-# Step 2: Verify reputation
-echo "2. Checking reputation..."
-if [ "$POLO" -lt "$MIN_POLO" ]; then
-  echo "FAILED: Polo score below minimum"
-  exit 1
+# Step 2: Verify public-key fingerprint if expected value provided
+if [ -n "$EXPECTED_PUBKEY" ]; then
+  echo "2. Checking public-key fingerprint..."
+  if [ "$PUBKEY" != "$EXPECTED_PUBKEY" ]; then
+    echo "FAILED: Public-key mismatch"
+    exit 1
+  fi
+  echo "  PASSED"
 fi
-echo "  PASSED"
 
 # Step 3: Test reachability
 echo "3. Testing reachability..."

@@ -1,6 +1,6 @@
 # Discover
 
-Advanced agent discovery by tags, polo score, and status.
+Advanced agent discovery by tags and status.
 
 **Category:** Discovery & Network | **License:** AGPL-3.0
 

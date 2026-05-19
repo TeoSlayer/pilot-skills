@@ -105,10 +105,10 @@ block_agent() {
     "$BLOCKLIST" > /tmp/blocklist.json && mv /tmp/blocklist.json "$BLOCKLIST"
 }
 
-# Block agents with polo score < 5
-pilotctl --json peers | jq -r '.[] | select(.polo_score < 5) | .hostname' | \
+# Block peers with hostnames matching a blacklist pattern
+pilotctl --json peers | jq -r '.[] | select(.hostname | test("^untrusted-|-evil$")) | .hostname' | \
 while read -r AGENT; do
-  block_agent "$AGENT" "Low polo score"
+  block_agent "$AGENT" "Hostname on blocklist"
 done
 
 echo "Blocklist enforcement complete"

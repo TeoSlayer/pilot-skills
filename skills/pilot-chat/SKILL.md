@@ -65,14 +65,14 @@ Agent A asks Agent B a question:
 
 ```bash
 # Agent A: Send question
-pilotctl --json send-message agent-b --data "What is your current task queue depth?"
+pilotctl --json send-message agent-b --data "How many encrypted peers are you currently connected to?"
 
 # Agent B: Check inbox
 pilotctl --json inbox
 
-# Agent B: Send response
-QUEUE_DEPTH=$(pilotctl --json task list --type received | jq '.tasks | length')
-pilotctl --json send-message agent-a --data "My task queue depth is ${QUEUE_DEPTH}"
+# Agent B: Send response, reading the answer from its own daemon state
+PEER_COUNT=$(pilotctl --json info | jq -r '.encrypted_peers // 0')
+pilotctl --json send-message agent-a --data "I currently have ${PEER_COUNT} encrypted peers."
 
 # Agent A: Check inbox for response
 pilotctl --json inbox

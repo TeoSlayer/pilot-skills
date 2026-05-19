@@ -5,7 +5,7 @@ description: >
 
   Use this skill when:
   1. You need to auto-approve handshake requests from known agents or networks
-  2. You want policy-based trust decisions (e.g., auto-trust high polo scores)
+  2. You want policy-based trust decisions (by network membership, hostname pattern, or tag)
   3. You need to batch-process pending trust requests
 
   Do NOT use this skill when:
@@ -43,12 +43,6 @@ Automated trust management for Pilot Protocol with policy-based decision making.
 pilotctl --json pending
 ```
 
-### Auto-Approve by Polo Score
-```bash
-pilotctl --json pending | jq -r '.[] | select(.polo_score >= 50) | .node_id' | \
-  xargs -I {} pilotctl --json approve {}
-```
-
 ### Auto-Approve by Network
 ```bash
 pilotctl --json pending | jq -r '.[] | select(.address | startswith("1:")) | .node_id' | \
@@ -61,30 +55,30 @@ pilotctl --json pending | jq -r '.[] | select(.hostname | test("^agent-prod-")) 
   xargs -I {} pilotctl --json approve {}
 ```
 
-### Batch Reject Low-Reputation
+### Batch Reject by Hostname Pattern
 ```bash
-pilotctl --json pending | jq -r '.[] | select(.polo_score < 20) | .node_id' | \
-  xargs -I {} pilotctl --json reject {} "Low reputation score"
+pilotctl --json pending | jq -r '.[] | select(.hostname | test("^untrusted-")) | .node_id' | \
+  xargs -I {} pilotctl --json reject {} "Untrusted source"
 ```
 
 ## Workflow Example
 
 ```bash
 #!/bin/bash
-# Auto-approve production agents with high reputation
+# Auto-approve production agents from a known network
 
 PENDING=$(pilotctl --json pending)
 
-# Approve if polo >= 50 AND hostname matches prod pattern
-echo "$PENDING" | jq -r '.[] | select(.polo_score >= 50 and (.hostname | test("^agent-prod-"))) | .node_id' | \
+# Approve if address is on network 1 (prod) AND hostname matches prod pattern
+echo "$PENDING" | jq -r '.[] | select((.address | startswith("1:")) and (.hostname | test("^agent-prod-"))) | .node_id' | \
 while read -r NODE_ID; do
   pilotctl --json approve "$NODE_ID"
 done
 
-# Reject if polo < 20
-echo "$PENDING" | jq -r '.[] | select(.polo_score < 20) | .node_id' | \
+# Reject anything not on a known network (e.g. unrecognised remote address)
+echo "$PENDING" | jq -r '.[] | select(.address | startswith("1:") | not) | .node_id' | \
 while read -r NODE_ID; do
-  pilotctl --json reject "$NODE_ID" "Low polo score"
+  pilotctl --json reject "$NODE_ID" "Unknown network"
 done
 ```
 

@@ -1,7 +1,7 @@
 {
   "generated_at": "2026-05-18T22:03:32Z",
   "version": "1.0.0",
-  "total": 167,
+  "total": 155,
   "categories": [
     {
       "name": "Core",
@@ -515,22 +515,6 @@
           "install": "clawhub install pilot-quarantine"
         },
         {
-          "slug": "pilot-reputation",
-          "name": "pilot-reputation",
-          "description": "Advanced reputation analytics and trend visualization for Pilot Protocol agents.",
-          "tags": [
-            "pilot-protocol",
-            "trust-security",
-            "analytics"
-          ],
-          "version": "1.0",
-          "license": "AGPL-3.0",
-          "clawhub_slug": "pilot-reputation",
-          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-reputation",
-          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-reputation",
-          "install": "clawhub install pilot-reputation"
-        },
-        {
           "slug": "pilot-trust-circle",
           "name": "pilot-trust-circle",
           "description": "Named trust groups with automatic mutual handshakes for Pilot Protocol agents.",
@@ -577,114 +561,6 @@
           "clawhub_url": "https://clawhub.ai/teoslayer/pilot-watchdog",
           "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-watchdog",
           "install": "clawhub install pilot-watchdog"
-        }
-      ]
-    },
-    {
-      "name": "Task & Workflow",
-      "slug": "task-workflow",
-      "skills": [
-        {
-          "slug": "pilot-auction",
-          "name": "pilot-auction",
-          "description": "Task auction system where agents bid and requester selects best offer.",
-          "tags": [
-            "pilot-protocol",
-            "task-workflow",
-            "auction",
-            "marketplace"
-          ],
-          "version": "1.0",
-          "license": "AGPL-3.0",
-          "clawhub_slug": "pilot-auction",
-          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-auction",
-          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-auction",
-          "install": "clawhub install pilot-auction"
-        },
-        {
-          "slug": "pilot-cron",
-          "name": "pilot-cron",
-          "description": "Scheduled recurring task submission.",
-          "tags": [
-            "pilot-protocol",
-            "task-workflow",
-            "scheduling",
-            "automation"
-          ],
-          "version": "1.0",
-          "license": "AGPL-3.0",
-          "clawhub_slug": "pilot-cron",
-          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-cron",
-          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-cron",
-          "install": "clawhub install pilot-cron"
-        },
-        {
-          "slug": "pilot-escrow",
-          "name": "pilot-escrow",
-          "description": "Polo score escrow for verified task completion.",
-          "tags": [
-            "pilot-protocol",
-            "task-workflow",
-            "escrow",
-            "trust"
-          ],
-          "version": "1.0",
-          "license": "AGPL-3.0",
-          "clawhub_slug": "pilot-escrow",
-          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-escrow",
-          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-escrow",
-          "install": "clawhub install pilot-escrow"
-        },
-        {
-          "slug": "pilot-review",
-          "name": "pilot-review",
-          "description": "Peer review system for task results before acceptance.",
-          "tags": [
-            "pilot-protocol",
-            "task-workflow",
-            "review",
-            "quality-control"
-          ],
-          "version": "1.0",
-          "license": "AGPL-3.0",
-          "clawhub_slug": "pilot-review",
-          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-review",
-          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-review",
-          "install": "clawhub install pilot-review"
-        },
-        {
-          "slug": "pilot-sla",
-          "name": "pilot-sla",
-          "description": "Service-level agreement enforcement with automatic penalties.",
-          "tags": [
-            "pilot-protocol",
-            "task-workflow",
-            "sla",
-            "compliance"
-          ],
-          "version": "1.0",
-          "license": "AGPL-3.0",
-          "clawhub_slug": "pilot-sla",
-          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-sla",
-          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-sla",
-          "install": "clawhub install pilot-sla"
-        },
-        {
-          "slug": "pilot-workflow",
-          "name": "pilot-workflow",
-          "description": "YAML-defined multi-step workflows with orchestration.",
-          "tags": [
-            "pilot-protocol",
-            "task-workflow",
-            "orchestration",
-            "yaml"
-          ],
-          "version": "1.0",
-          "license": "AGPL-3.0",
-          "clawhub_slug": "pilot-workflow",
-          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-workflow",
-          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-workflow",
-          "install": "clawhub install pilot-workflow"
         }
       ]
     },
@@ -1243,23 +1119,6 @@
           "clawhub_url": "https://clawhub.ai/teoslayer/pilot-leader-election",
           "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-leader-election",
           "install": "clawhub install pilot-leader-election"
-        },
-        {
-          "slug": "pilot-load-balancer",
-          "name": "pilot-load-balancer",
-          "description": "Distribute tasks across worker pools with health-aware load balancing.",
-          "tags": [
-            "pilot-protocol",
-            "load-balancing",
-            "task-distribution",
-            "coordination"
-          ],
-          "version": "1.0",
-          "license": "AGPL-3.0",
-          "clawhub_slug": "pilot-load-balancer",
-          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-load-balancer",
-          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-load-balancer",
-          "install": "clawhub install pilot-load-balancer"
         },
         {
           "slug": "pilot-map-reduce",
@@ -1958,24 +1817,6 @@
           "install": "clawhub install pilot-api-gateway-manager-setup"
         },
         {
-          "slug": "pilot-autonomous-warehouse-setup",
-          "name": "pilot-autonomous-warehouse-setup",
-          "description": "Deploy an autonomous warehouse orchestration system with 4 agents.",
-          "tags": [
-            "pilot-protocol",
-            "setup",
-            "warehouse",
-            "logistics",
-            "robotics"
-          ],
-          "version": "1.0",
-          "license": "AGPL-3.0",
-          "clawhub_slug": "pilot-autonomous-warehouse-setup",
-          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-autonomous-warehouse-setup",
-          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-autonomous-warehouse-setup",
-          "install": "clawhub install pilot-autonomous-warehouse-setup"
-        },
-        {
           "slug": "pilot-backup-disaster-recovery-setup",
           "name": "pilot-backup-disaster-recovery-setup",
           "description": "Deploy a backup and disaster recovery system with 4 agents.",
@@ -2183,23 +2024,6 @@
           "clawhub_url": "https://clawhub.ai/teoslayer/pilot-data-labeling-pipeline-setup",
           "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-data-labeling-pipeline-setup",
           "install": "clawhub install pilot-data-labeling-pipeline-setup"
-        },
-        {
-          "slug": "pilot-dev-team-assistants-setup",
-          "name": "pilot-dev-team-assistants-setup",
-          "description": "Deploy a dev team assistant system with 4 agents.",
-          "tags": [
-            "pilot-protocol",
-            "setup",
-            "dev-team",
-            "code-review"
-          ],
-          "version": "1.0",
-          "license": "AGPL-3.0",
-          "clawhub_slug": "pilot-dev-team-assistants-setup",
-          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-dev-team-assistants-setup",
-          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-dev-team-assistants-setup",
-          "install": "clawhub install pilot-dev-team-assistants-setup"
         },
         {
           "slug": "pilot-digital-twin-setup",
@@ -2465,23 +2289,6 @@
           "clawhub_url": "https://clawhub.ai/teoslayer/pilot-inventory-management-setup",
           "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-inventory-management-setup",
           "install": "clawhub install pilot-inventory-management-setup"
-        },
-        {
-          "slug": "pilot-knowledge-base-rag-setup",
-          "name": "pilot-knowledge-base-rag-setup",
-          "description": "Deploy a knowledge base RAG pipeline with 4 agents.",
-          "tags": [
-            "pilot-protocol",
-            "setup",
-            "rag",
-            "knowledge-base"
-          ],
-          "version": "1.0",
-          "license": "AGPL-3.0",
-          "clawhub_slug": "pilot-knowledge-base-rag-setup",
-          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-knowledge-base-rag-setup",
-          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-knowledge-base-rag-setup",
-          "install": "clawhub install pilot-knowledge-base-rag-setup"
         },
         {
           "slug": "pilot-legal-contract-review-setup",

@@ -1,7 +1,7 @@
 ---
 name: pilot-inbox
 description: >
-  Unified inbox for all incoming items — messages, files, tasks, and trust requests in one view.
+  Unified inbox for all incoming items — messages, files, and trust requests in one view.
 
   Use this skill when:
   1. You need to check all incoming items at once
@@ -10,7 +10,6 @@ description: >
 
   Do NOT use this skill when:
   - You need to send messages (use pilot-chat)
-  - You want detailed task management (use pilot-task-list)
   - You need to filter by specific criteria (use specialized skills)
 tags:
   - pilot-protocol
@@ -23,7 +22,7 @@ compatibility: >
   The daemon must be running (pilotctl daemon start).
 metadata:
   author: vulture-labs
-  version: "1.0"
+  version: "1.1"
   openclaw:
     requires:
       bins:
@@ -35,7 +34,7 @@ allowed-tools:
 
 # pilot-inbox
 
-Unified inbox for all incoming items across the Pilot Protocol network. This skill provides a single view of messages, files, tasks, and trust requests, enabling efficient triage and prioritization.
+Unified inbox for all incoming items across the Pilot Protocol network. This skill provides a single view of messages, received files, and pending trust requests, enabling efficient triage and prioritization.
 
 ## Essential Commands
 
@@ -51,9 +50,6 @@ pilotctl --json inbox
 
 # Files received
 pilotctl --json received
-
-# Tasks received
-pilotctl --json task list --type received
 
 # Trust requests pending
 pilotctl --json pending
@@ -78,29 +74,25 @@ Morning inbox triage:
 
 echo "=== PILOT INBOX TRIAGE ==="
 
-# Check inbox
+# Check inbox messages
 INBOX=$(pilotctl --json inbox)
-echo "Inbox:"
-echo "$INBOX" | jq -r '.items[]? | "  [\(.timestamp)] \(.type): \(.content)"' | head -5
+MSG_COUNT=$(echo "$INBOX" | jq '.messages | length // 0')
+echo "Messages: $MSG_COUNT"
+echo "$INBOX" | jq -r '.messages[]? | "  [\(.received_at)] \(.type) from \(.from)"' | head -5
 
 # Check received files
 FILES=$(pilotctl --json received)
 FILE_COUNT=$(echo "$FILES" | jq '.files | length // 0')
 echo "Files: $FILE_COUNT"
 
-# Check tasks
-TASKS=$(pilotctl --json task list --type received)
-TASK_COUNT=$(echo "$TASKS" | jq '.tasks | length // 0')
-echo "Tasks: $TASK_COUNT"
-
 # Check trust requests
 TRUST=$(pilotctl --json pending)
-TRUST_COUNT=$(echo "$TRUST" | jq '.requests | length // 0')
+TRUST_COUNT=$(echo "$TRUST" | jq '.pending | length // 0')
 echo "Trust Requests: $TRUST_COUNT"
 
 if [ "$TRUST_COUNT" -gt 0 ]; then
   echo "Pending Trust Requests:"
-  echo "$TRUST" | jq -r '.requests[]? | "  - \(.node_id)"'
+  echo "$TRUST" | jq -r '.pending[]? | "  - \(.node_id): \(.justification // "(no reason)")"'
 fi
 ```
 

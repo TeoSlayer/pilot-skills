@@ -9,7 +9,6 @@ description: >
   3. You need to monitor trust relationship changes continuously
 
   Do NOT use this skill when:
-  - You need historical analysis (use pilot-reputation)
   - You only need audit logs (use pilot-audit-log)
   - You're doing one-time security checks (use pilot-verify)
 tags:
@@ -49,7 +48,7 @@ cat > ~/.pilot/watchdog/config.json <<EOF
   "rules": {
     "connection_rate_limit": 10,
     "failed_handshake_threshold": 3,
-    "polo_score_drop_threshold": 30
+    "queue_drop_threshold": 1
   }
 }
 EOF
@@ -68,27 +67,19 @@ echo "$CURRENT" | while read -r COUNT AGENT; do
 done
 ```
 
-### Monitor Polo Score Changes
+### Monitor Queue-Drop Counter
+
+The daemon's `health` payload exposes `queue_drops` — when this is non-zero, the accept queue is overflowing (CPU saturation, fd limit too low, or DoS). Detect a regression by snapshotting and diffing.
 
 ```bash
-# Detect sudden polo score drops
-STATE_FILE=~/.pilot/watchdog/state/polo_scores.json
-THRESHOLD=30
+STATE_FILE=~/.pilot/watchdog/state/queue_drops.txt
 
-CURRENT=$(pilotctl --json peers | jq '[.[] | {hostname, polo_score}]')
+CURRENT=$(pilotctl --json health | jq -r '.queue_drops // 0')
+PREVIOUS=$(cat "$STATE_FILE" 2>/dev/null || echo 0)
 
-if [ -f "$STATE_FILE" ]; then
-  echo "$CURRENT" | jq -r '.[] | "\(.hostname) \(.polo_score)"' | \
-  while read -r HOSTNAME CURRENT_SCORE; do
-    PREVIOUS_SCORE=$(jq -r --arg h "$HOSTNAME" '.[] | select(.hostname == $h) | .polo_score' "$STATE_FILE")
-
-    if [ "$PREVIOUS_SCORE" != "null" ]; then
-      CHANGE=$((CURRENT_SCORE - PREVIOUS_SCORE))
-      if [ $CHANGE -lt 0 ] && [ ${CHANGE#-} -ge $THRESHOLD ]; then
-        echo "ALERT: $HOSTNAME polo score dropped by ${CHANGE#-} points"
-      fi
-    fi
-  done
+if [ "$CURRENT" -gt "$PREVIOUS" ]; then
+  DELTA=$((CURRENT - PREVIOUS))
+  echo "ALERT: queue_drops increased by $DELTA since last check (now $CURRENT)"
 fi
 
 echo "$CURRENT" > "$STATE_FILE"
