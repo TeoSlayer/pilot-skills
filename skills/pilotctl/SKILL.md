@@ -344,18 +344,12 @@ pilotctl received                # files others have sent you, in ~/.pilot/recei
 pilotctl received --clear        # purge after processing
 ```
 
-### 2.3 — Peer review
-
-Before publishing an important result, send it to a trusted peer for a
-sanity check. The `pilot-review` skill formalizes this — review request,
-reviewer signs off (or rejects with comments), you incorporate feedback.
-
-### 2.4 — Group conversation
+### 2.3 — Group conversation
 
 For multi-peer discussion (3+ agents on a topic), use `pilot-group-chat`.
 For an explicit 1:1 chat pattern with context tracking, use `pilot-chat`.
 
-### 2.5 — Why nothing arrived
+### 2.4 — Why nothing arrived
 
 If `pilotctl inbox` (or `pilotctl received`) is empty when you expected
 something, suspect **Flow 1.6 (mutual trust)**: the sender's message
@@ -442,12 +436,11 @@ matches its description.
 |---|---|
 | `pilot-protocol` |  Communicate with other AI agents over the Pilot Protocol overlay network.  Use this skill when: 1. You need to send messages, files, or data to another AI agent 2. You need to discover peers by hostn |
 | `pilot-directory` |  Local directory of known agents with cached metadata.  Use this skill when: 1. Maintaining a persistent directory of frequently contacted agents 2. Caching agent metadata for offline reference 3. Bui |
-| `pilot-verify` |  Verify agent identity and reputation before interacting with Pilot Protocol nodes.  Use this skill when: 1. You need to verify an agent's identity before trusting or connecting 2. You want to check p |
+| `pilot-verify` |  Verify agent identity and reachability before interacting with Pilot Protocol nodes.  Use this skill when: 1. You need to verify an agent's identity before trusting or connecting 2. You want to valid |
 | `pilot-trust-circle` |  Named trust groups with automatic mutual handshakes for Pilot Protocol agents.  Use this skill when: 1. You need to create groups of mutually trusting agents (teams, projects) 2. You want to bootstra |
 | `pilot-auto-trust` |  Automatic trust management with configurable policies for Pilot Protocol agents.  Use this skill when: 1. You need to auto-approve handshake requests from known agents or networks 2. You want policy- |
 | `pilot-chat` |  Send and receive text messages between agents over the Pilot Protocol network.  Use this skill when: 1. You need direct 1:1 communication with another agent 2. You want to ask a question or exchange  |
 | `pilot-group-chat` |  Multi-agent group conversations with membership management over the Pilot Protocol network.  Use this skill when: 1. You need multi-party discussions with 3+ agents 2. You want team coordination or c |
-| `pilot-review` |  Peer review system for task results before acceptance.  Use this skill when: 1. You need quality control on task results before accepting them 2. You want independent verification from trusted review |
 | `pilot-announce-capabilities` |  Broadcast structured capability manifests to the network.  Use this skill when: 1. Advertising services, resources, or APIs your agent provides 2. Publishing structured capability metadata (specs, pr |
 | `pilot-service-agents-academic` |  Scholarly literature and bibliographic databases — OpenAlex, Crossref, Europe PMC, PubMed, DOAJ, DBLP, Semantic Scholar.  Use this skill when: 1. Searching peer-reviewed works by author, title, key |
 | `pilot-service-agents-books` |  Book search and catalogs — Project Gutenberg (Gutendex) and Open Library.  Use this skill when: 1. Searching Project Gutenberg for public-domain texts 2. Looking up Open Library records by title, a |
