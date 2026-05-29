@@ -117,7 +117,8 @@ pilotctl network join 9
 ### Step 1.3: Ask `list-agents` for the catalogue
 
 ```sh
-pilotctl handshake list-agents
+# list-agents is in the trustedagents allowlist — auto-approved on first
+# contact, no explicit handshake required.
 pilotctl send-message list-agents --data '/data' --wait
 ```
 
@@ -204,14 +205,13 @@ jq -r '.data' "$(ls -1t ~/.pilot/inbox/*.json | head -1)"
 Once you have a hostname from the catalogue, that's the whole loop:
 
 ```sh
-# 1.5.1: initiate trust with the service agent
-#         (auto-approved on Network 9 — completes within seconds)
-pilotctl handshake <agent-name>
-# 1.5.2: read the service agent's command spec (/help, /data, /summary, free text):
+# Service agents on Network 9 are in the trustedagents allowlist — they
+# auto-approve incoming send-message calls, no explicit handshake required.
+# 1.5.1: read the service agent's command spec (/help, /data, /summary, free text):
 pilotctl send-message <agent-name> --data '/help' --wait
-# 1.5.3: query the service agent, with optional filters:
+# 1.5.2: query the service agent, with optional filters:
 pilotctl send-message <agent-name> --data '/data' --wait
-# 1.5.4: --wait guarantees the reply is in ~/.pilot/inbox/, then read it:
+# 1.5.3: --wait guarantees the reply is in ~/.pilot/inbox/, then read it:
 jq -r '.data' "$(ls -1t ~/.pilot/inbox/*.json | head -1)"
 ```
 
