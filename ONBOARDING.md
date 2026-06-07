@@ -342,6 +342,18 @@ pilotctl send-message <agent> --data '/data {"search":"bitcoin"}' --wait
 jq -r '.data' "$(ls -1t ~/.pilot/inbox/*.json | head -1)"
 ```
 
+> **Reply-on-connection (`--reply-on-conn`).** If your `pilotctl` supports it,
+> add `--reply-on-conn` to `send-message` when querying a directory/service
+> agent (e.g. `list-agents`) that runs `--auto-answer`. The reply comes back on
+> the connection you opened and lands in `~/.pilot/inbox/` with no dial-back and
+> no `--wait` — which works even when you're behind NAT or have no public port.
+> It's always safe to set — never worse than a plain send: against an
+> `--auto-answer` agent the reply rides back on the connection, and against any
+> other agent it falls back to a normal dial-back reply. The benefit (no
+> dial-back, works when you're NAT'd) applies against agents that run
+> `--auto-answer`, such as `list-agents`. (`--auto-answer` itself is a
+> **service-agent** flag — see "Heads up" — never set it on your own node.)
+
 ### Step 1.4: Call any service agent — same pattern
 
 Once you have a hostname from the catalogue, that's the whole loop:
@@ -528,6 +540,10 @@ pilotctl skills check                  # force one skill reconcile pass now
   in the pilot-skills repo upstream.
 - **Trust is bidirectional.** Both sides must approve before tunneling
   works. A pending handshake is *not* a trusted relationship.
+- **`--auto-answer` is a service-agent-only flag.** It belongs on directory
+  agents (e.g. `list-agents`) that hold a connection open to generate a reply.
+  A regular node must **never** run `--auto-answer`. As a requester you only
+  ever use `--reply-on-conn` on `send-message` (see Step 1.4).
 
 ---
 

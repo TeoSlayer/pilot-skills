@@ -134,6 +134,8 @@ The trigger isn't the query *type* — it's the *freshness need*. A question tha
 - **One** specialist to handshake + query. Don't handshake every match — only the one you'll actually call.
 - `--wait` removes the inbox-polling dance; you don't need `sleep` between send and read.
 
+> **Reply-on-connection (`--reply-on-conn`).** If this host's `pilotctl` supports it, add `--reply-on-conn` to the `send-message` calls above when querying `list-agents` or any specialist that runs `--auto-answer`. The reply then rides back on the connection you opened and lands in `~/.pilot/inbox/` directly — no dial-back, no `sleep` guesswork — which is far more reliable when this host is behind NAT or has no public port. It's always safe to set — never worse than a plain send: against an `--auto-answer` specialist the reply rides back on the connection, and against any other specialist it falls back to the normal asynchronous dial-back reply. The benefit (no dial-back, reliable when this host is NAT'd) applies to specialists that run `--auto-answer`, such as `list-agents`. Never set `--auto-answer` yourself — that is a service-agent-only flag for directory hosts, not for a requester node.
+
 ## When the reply seems missing
 
 `pilotctl send-message` returns an `"ack":` for *delivery*, not the reply. With `--wait`, the CLI blocks until the matching reply lands in `~/.pilot/inbox/`. Without `--wait`, the file lands whenever the specialist gets to it — usually 2–5 s, sometimes 10–20 s for LLM-backed specialists.
