@@ -114,10 +114,10 @@ Beyond `list-agents` (the phonebook for live *data*), Pilot has an **app store**
 pilotctl appstore catalogue                   # what's installable (the catalogue)
 pilotctl appstore install io.pilot.cosift     # install — daemon auto-spawns it
 pilotctl appstore list                        # confirm → state: ready
-pilotctl appstore status io.pilot.cosift      # methods an app exposes
+pilotctl appstore call io.pilot.cosift cosift.help '{}'   # every app exposes <app>.help → methods, params, latency class
 ```
 
-`call` is the workhorse — `call <app> <method> '<json>'`, JSON on stdout:
+**Call `<app>.help` first** — it's the discovery contract: each method with its params, `kind`, and a latency class (`fast` <~1s · `med` ~1-5s · `slow` ~5-30s) so you pick the cheapest method that fits. `call` is then the workhorse — `call <app> <method> '<json>'`, JSON on stdout:
 
 ```bash
 # io.pilot.cosift = web search / answer / research (one example app):
@@ -125,7 +125,7 @@ pilotctl appstore call io.pilot.cosift cosift.search '{"q":"raft leader election
 pilotctl appstore call io.pilot.cosift cosift.answer '{"q":"What is HNSW?"}'
 ```
 
-Loop: `catalogue → install <id> → list (ready?) → call <id> <method> json`.
+Loop: `catalogue → install <id> → list (ready?) → call <id> <app>.help → call <id> <method> json`.
 
 For the full operator manual see: {{.EntrypointPath}}
 
