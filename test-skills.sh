@@ -23,6 +23,7 @@ VALID_COMMANDS=(
   set-visibility
   network
   skills updates version extras
+  appstore
 )
 
 is_valid_command() {
@@ -130,7 +131,8 @@ for skill_file in "$SKILLS_DIR"/*/SKILL.md; do
 done
 echo "  Issues: $JSON_ISSUES"
 
-# Test 4: Size check (pilot-protocol allowed up to 500)
+# Test 4: Size check (pilot-protocol allowed up to 500; pilotctl, the
+# entrypoint, up to 650 — it carries three pillars plus the curated catalog)
 echo ""
 echo "--- Test 4: Size Check ---"
 SIZE_WARN=0
@@ -141,7 +143,7 @@ for skill_file in "$SKILLS_DIR"/*/SKILL.md; do
 
   max=200
   [ "$skill_name" = "pilot-protocol" ] && max=500
-  [ "$skill_name" = "pilotctl" ] && max=500
+  [ "$skill_name" = "pilotctl" ] && max=650
 
   if [ "$lines" -gt "$max" ]; then
     ERRORS+=("$skill_name: $lines lines (max $max)")
