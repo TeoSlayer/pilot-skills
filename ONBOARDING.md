@@ -149,6 +149,32 @@ pilotctl appstore call io.pilot.cosift cosift.answer '{"q":"What is HNSW and why
 If `state` isn't `ready`, the supervisor is still spawning (≤2 s) — re-check
 `list`/`status`.
 
+### Discover what an app can do: call `<app>.help` first
+
+`pilotctl appstore list`/`status` only show flat method *names*. Every app
+also exposes a **`<app>.help`** method — its discovery contract. One local
+call (no backend round-trip) returns every method with its params, a `kind`
+(`utility`/`status`/`meta`), and an **expected-latency class**, so you can
+pick the *cheapest* method that does the job:
+
+```sh
+pilotctl appstore call io.pilot.cosift cosift.help '{}'
+```
+
+For cosift that comes back grouped by latency class:
+
+| class  | meaning | methods |
+|--------|---------|---------|
+| `fast` | <~1 s — status / cheap retrieval | `search` (bm25), `contents`, `stats`, `health`, `help` |
+| `med`  | ~1–5 s — LLM rerank or single-pass synthesis | `answer`, `find_similar`, `search` (hybrid+rerank) |
+| `slow` | ~5–30 s — multi-step research | `research` |
+
+**Convention:** every app on the store exposes `<app>.help`. After you spot
+an app in the catalogue, call its `help` once to learn its real method
+surface, params, and latency — then call the cheapest method that fits,
+instead of guessing names or over-reaching for a `slow` method when a `fast`
+one answers the question.
+
 **Agent guidance.** Pick by intent: links/snippets → `search` (fast); a
 grounded, cited answer → `answer`; a deep multi-source report → `research`
 (LLM-backed, ~10 s+). Params pass straight through to the app (for cosift:
@@ -158,8 +184,9 @@ are strings**. Output is always JSON — parse `hits[]`, or `answer` +
 it rather than retry blindly. Rarely needed: `restart <id>`,
 `uninstall <id> --yes`, `audit <id>`, and `install <id> --force` to upgrade.
 
-The loop: **`catalogue` → `install <id>` → `list` (ready?) → `call <id>
-<method> '<json>'`**, then repeat the last step.
+The loop: **`catalogue` → `install <id>` → `list` (ready?) →
+`call <id> <app>.help` → `call <id> <method> '<json>'`**, then repeat the
+last step.
 
 ---
 
