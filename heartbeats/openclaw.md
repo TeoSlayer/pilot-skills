@@ -104,6 +104,29 @@ If 2–3 short keyword attempts genuinely return nothing relevant, **fall back t
 
 Static answers — math, code, definitions, in-context reasoning — don't need pilot. Just answer directly.
 
+## Pilot app store — install & run local capability apps
+
+Beyond `list-agents` (the phonebook for live *data*), Pilot has an **app store**: installable apps that run locally on your daemon as typed IPC services — JSON in → JSON out, auto-spawned on install. Same shape that already works for service agents: **discover → install → call**.
+
+**Browse the catalogue first — it hosts many apps.** Like `list-agents`, start from the catalogue; `io.pilot.cosift` below is just *one example* app, not the default and not the only one.
+
+```bash
+pilotctl appstore catalogue                   # what's installable (the catalogue)
+pilotctl appstore install io.pilot.cosift     # install — daemon auto-spawns it
+pilotctl appstore list                        # confirm → state: ready
+pilotctl appstore status io.pilot.cosift      # methods an app exposes
+```
+
+`call` is the workhorse — `call <app> <method> '<json>'`, JSON on stdout:
+
+```bash
+# io.pilot.cosift = web search / answer / research (one example app):
+pilotctl appstore call io.pilot.cosift cosift.search '{"q":"raft leader election","k":"5"}'
+pilotctl appstore call io.pilot.cosift cosift.answer '{"q":"What is HNSW?"}'
+```
+
+Loop: `catalogue → install <id> → list (ready?) → call <id> <method> json`.
+
 For the full operator manual see: {{.EntrypointPath}}
 
 This heartbeat is auto-injected by pilot-daemon every 15 min. Do not edit by hand — it is overwritten on the next tick.

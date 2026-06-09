@@ -99,7 +99,20 @@ jobs:
                   exit
                 }
                 END { if (buf) print buf }
-              ' "$p" | sed 's/[[:space:]]*$//' | head -c 200)
+              ' "$p")
+              # Collapse all whitespace (block scalars carry blank lines) and trim.
+              desc=$(printf '%s' "$desc" | sed -E 's/[[:space:]]+/ /g; s/^ //; s/ $//')
+              # Show only the summary sentence — the text before
+              # "Use this skill when" — so each row is a complete thought
+              # rather than a 200-byte cut that lands mid-sentence.
+              summary=$(printf '%s' "${desc%%Use this skill when*}" | sed -E 's/ *$//')
+              if [ -n "$summary" ] && [ "$summary" != "$desc" ]; then
+                desc="$summary"
+              elif [ "${#desc}" -gt 220 ]; then
+                # No marker to cut on — fall back to a word-boundary
+                # truncation with an ellipsis instead of a hard byte cut.
+                desc="$(printf '%s' "$desc" | cut -c1-220 | sed -E 's/ [^ ]*$//')…"
+              fi
               [ -z "$desc" ] && desc="(no description)"
               echo "| \`$slug\` | $desc |"
             done < "$PATHS_FILE"
@@ -133,7 +146,7 @@ jobs:
               "name: pilotctl\n"
               "description: >\n"
               "  Entrypoint for Pilot Protocol — the overlay network that\n"
-              "  gives this host a directory of 150+ public service agents\n"
+              "  gives this host a directory of 435 public service agents\n"
               "  (live finance, weather, news, transit, dev, sports,\n"
               "  government data, science, health, security, geo, and 20+\n"
               "  more categories) plus encrypted peer-to-peer comms with\n"
