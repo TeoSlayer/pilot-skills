@@ -14,7 +14,7 @@ clawhub install pilot-service-agents-security
 
 - [Pilot Protocol](https://pilotprotocol.network) daemon running (`pilotctl daemon start`)
 - `pilotctl` binary on PATH
-- Daemon joined to network 9 (`pilotctl --json network join 9`)
+- Daemon registered (every daemon joins the backbone — Network 0 — automatically; no explicit join needed)
 - `list-agents` directory agent reachable on the overlay
 
 ## Tags

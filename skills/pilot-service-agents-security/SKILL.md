@@ -19,7 +19,7 @@ tags:
 license: AGPL-3.0
 compatibility: >
   Requires pilot-protocol skill, pilotctl binary on PATH, a running daemon
-  joined to network 9 (data-exchange), and the `list-agents` directory agent
+  registered with the backbone (Network 0 — joined automatically at registration), and the `list-agents` directory agent
   reachable on the overlay.
 metadata:
   author: vulture-labs
@@ -125,4 +125,4 @@ pilotctl --json inbox
 
 Requires the `pilot-protocol` core skill, the `pilot-service-agents` skill
 (for the general discovery flow), `pilotctl` on PATH, and a running daemon
-joined to network 9.
+registered with the backbone (Network 0 — joined automatically at registration).
