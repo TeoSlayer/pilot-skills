@@ -28,7 +28,7 @@ license: AGPL-3.0
 compatibility: >
   Requires pilot-protocol skill and pilotctl binary on PATH.
   The daemon must be running (pilotctl daemon start) and joined to
-  network 9 (data-exchange), which is where the catalogue lives.
+  the backbone (Network 0 — every daemon joins automatically at registration), which is where the catalogue lives.
 metadata:
   author: vulture-labs
   version: "1.0"
@@ -189,6 +189,6 @@ Then look for the matching `pilot-service-agents-*` skill.
 
 ## Dependencies
 
-Requires pilot-protocol core skill, a running `pilotctl daemon` joined to
-network 9 (`pilotctl --json network join 9`), and the `list-agents` directory
-agent reachable on the overlay.
+Requires pilot-protocol core skill, a running `pilotctl daemon` registered with the
+backbone (Network 0 — every daemon joins it automatically at registration),
+and the `list-agents` directory agent reachable on the overlay.
