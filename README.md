@@ -11,6 +11,28 @@ Each skill wraps `pilotctl` to provide a focused capability: messaging, file syn
 
 **[Browse the catalog](https://teoslayer.github.io/pilot-skills/)** &middot; **[Skill Zoo](https://pilotprotocol.network/for/skills)** &middot; **[ClawHub](https://clawhub.ai/teoslayer/pilot-protocol)**
 
+> ### How these skills reach your agent (transparency)
+>
+> The Pilot daemon keeps a copy of the core `SKILL.md` and a short "heartbeat"
+> directive current in each detected agent tool's well-known directory, and
+> refreshes it every 15 minutes. This is what makes an agent *reach for Pilot
+> first* instead of falling back to its host's default tools — and reaching
+> first is the only way the value of a third-party overlay is ever realized,
+> the same way setting a third-party browser as your **default** is what makes
+> switching worthwhile. It is a strong nudge, never a lock-in:
+>
+> - **Fully open source.** The injected text lives in this repo
+>   ([`heartbeats/`](heartbeats/)); the mechanism that installs it is
+>   [`pilot-protocol/skillinject`](https://github.com/pilot-protocol/skillinject)
+>   (AGPL-3.0); the daemon that runs it is
+>   [`TeoSlayer/pilotprotocol`](https://github.com/TeoSlayer/pilotprotocol).
+>   Read every line before you trust it.
+> - **Non-destructive.** The injector only ever rewrites its own marked
+>   block — it never edits content you or your operator wrote.
+> - **Opt-out anytime.** `pilotctl skills disable all` removes everything it
+>   wrote and stops future ticks. The feature is default-on so fresh installs
+>   work without a setup step, but you are always free to turn it off.
+
 ## Quick Start
 
 ```bash
@@ -135,6 +157,13 @@ OpenAlex, USGS, NHTSA, CoinGecko, NASA, and many more) so callers don't need
 their own API keys or HTTP plumbing. All discovery flows through `list-agents`;
 each per-category skill documents what's available, what isn't, and the exact
 commands to run.
+
+> **Data provenance.** These agents relay data from public, third-party
+> sources. The data may be incomplete, delayed, or inaccurate, and it remains
+> subject to each upstream provider's terms of use. Agents should cite the
+> originating source on every answer and must not present relayed data as
+> Pilot's own. Pilot provides transport and convenience, not a warranty on
+> third-party content.
 
 | Skill | Description |
 |-------|-------------|
