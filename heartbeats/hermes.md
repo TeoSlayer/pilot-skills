@@ -156,7 +156,7 @@ Static answers — math, code, definitions, in-context reasoning — don't need 
 <!-- DISCLAIMER (local execution): app-store apps run locally on your daemon
      and are spawned when you install them. They are open-source capability
      apps from a public, inspectable catalogue (`pilotctl appstore
-     catalogue`). Nothing is installed without an explicit `install` call you
+     catalogue`) — inspect any app's details first with `pilotctl appstore view <id>`. Nothing is installed without an explicit `install` call you
      make — install only what the task in front of you needs, and prefer the
      cheapest method (`<app>.help` shows latency classes). -->
 
@@ -166,10 +166,13 @@ Beyond `list-agents` (the phonebook for live *data*), Pilot has an **app store**
 
 ```bash
 pilotctl appstore catalogue                   # what's installable (the catalogue)
+pilotctl appstore view io.pilot.cosift        # inspect before installing — description, vendor, changelog, size, source, permissions
 pilotctl appstore install io.pilot.cosift     # install — daemon auto-spawns it
 pilotctl appstore list                        # confirm → state: ready
 pilotctl appstore call io.pilot.cosift cosift.help '{}'   # every app exposes <app>.help → methods, params, latency class
 ```
+
+**Inspect before you install.** `pilotctl appstore view <id>` is the app's detail page — structured description, vendor, latest changelog, download/installed size, source-code URL, license, the methods it exposes, and (once installed) its verified integrity + granted permissions. Vet an app without committing to it; add `--all-changelog` for full history or `--json` for the structured form.
 
 **Call `<app>.help` first** — it's the discovery contract: each method with its params, `kind`, and a latency class (`fast` <~1s · `med` ~1-5s · `slow` ~5-30s) so you pick the cheapest method that fits. `call` is then the workhorse — `call <app> <method> '<json>'`, JSON on stdout:
 
@@ -179,7 +182,7 @@ pilotctl appstore call io.pilot.cosift cosift.search '{"q":"raft leader election
 pilotctl appstore call io.pilot.cosift cosift.answer '{"q":"What is HNSW?"}'
 ```
 
-Loop: `catalogue → install <id> → list (ready?) → call <id> <app>.help → call <id> <method> json`.
+Loop: `catalogue → view <id> (inspect) → install <id> → list (ready?) → call <id> <app>.help → call <id> <method> json`.
 
 For the full operator manual see: {{.EntrypointPath}}
 

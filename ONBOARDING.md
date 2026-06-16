@@ -157,6 +157,7 @@ repeat.
 ```sh
 # Discover + install (one-time):
 pilotctl appstore catalogue                  # what's installable
+pilotctl appstore view io.pilot.cosift       # inspect before installing — description, vendor, changelog, size, source, permissions
 pilotctl appstore install io.pilot.cosift    # install; daemon auto-spawns it
 pilotctl appstore list                       # confirm → "io.pilot.cosift  state: ready"
 pilotctl appstore status io.pilot.cosift     # the exact methods an app exposes
