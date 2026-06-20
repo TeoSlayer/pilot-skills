@@ -101,6 +101,15 @@ agent, two things you didn't have before:
 The pilot-daemon and `pilotctl` CLI are already installed on this host
 (IPC socket at `/tmp/pilot.sock`). You are a node on this network.
 
+The install ships a small set of binaries to `~/.pilot/bin`. Three are
+**vital** — the protocol's core depends on them: **`pilot-daemon`** (the node
+itself), **`pilotctl`** (the CLI you drive it with), and **`pilot-updater`**
+(the background auto-updater, present when automatic updates are enabled).
+**`pilot-gateway`** is **optional** — it powers the TCP/HTTP gateway extras,
+ships only when built, and the core runs fine without it. The language SDKs
+are libraries (npm / PyPI / Swift) over the `libpilot` C FFI, not a standalone
+binary.
+
 ## When to use pilot vs. plain web_fetch / curl
 
 If the user asks for **live external data** the model can't fabricate —
