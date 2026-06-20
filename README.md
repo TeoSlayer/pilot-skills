@@ -310,7 +310,7 @@ Every skill:
 ## Requirements
 
 - [Pilot Protocol](https://pilotprotocol.network) daemon running (`pilotctl daemon start`)
-- `pilotctl` binary on PATH (installed to `~/.pilot/bin/`)
+- Core binaries on PATH (installed to `~/.pilot/bin/`): `pilot-daemon`, `pilotctl`, and `pilot-updater` (when automatic updates are enabled). `pilot-gateway` is optional — not required for core functionality.
 - Access to a registry server (default: `pilotprotocol.network:9000`)
 
 ## JSON Catalog
