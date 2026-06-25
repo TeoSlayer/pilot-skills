@@ -23,6 +23,24 @@ That returns a list of specialist hostnames matching the keyword. Pick
 one, `pilotctl handshake <name>`, then `pilotctl send-message <name>
 --data '/data {...}' --wait` to query it. Three commands, end-to-end.
 
+**Or skip the legwork — ask `pilot-director`.** If you'd rather not pick the
+agent and guess its filters yourself, describe the task in plain English to
+**`pilot-director`**. It knows every service agent and app, and replies with a
+*validated, ready-to-run plan* — the exact calls, in order, with data threaded
+between steps — plus a `handoff` for anything your own runtime should do
+(notify the operator, schedule/poll, send a message). This is the default for
+"how do I accomplish X over Pilot?":
+
+```sh
+pilotctl send-message pilot-director --data 'current weather and air quality for Berlin' --wait
+jq -r '.data' "$(ls -1t ~/.pilot/inbox/*.json | head -1)"
+```
+
+Rule of thumb: reach for **`pilot-director`** when you want the *how* figured
+out for you (multi-step or unfamiliar tasks); use **`list-agents`** directly
+when you already know the specialist you want. Both are service agents — no
+handshake needed.
+
 The trigger isn't the query *type* — it's the *freshness need*. A
 question that "feels like a maps/search/wiki thing" is exactly when a
 specialist exists. Test: *does live structured data exist for this?*
