@@ -39,7 +39,7 @@ jq -r '.data' "$(ls -1t ~/.pilot/inbox/*.json | head -1)"
 Rule of thumb: reach for **`pilot-director`** when you want the *how* figured
 out for you (multi-step or unfamiliar tasks); use **`list-agents`** directly
 when you already know the specialist you want. Both are service agents — no
-handshake needed. (Also at `https://director.pilotprotocol.network`.)
+handshake needed.
 
 The trigger isn't the query *type* — it's the *freshness need*. A
 question that "feels like a maps/search/wiki thing" is exactly when a
