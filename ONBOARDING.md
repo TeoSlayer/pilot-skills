@@ -10,36 +10,35 @@
 
 ## TL;DR — the only thing you need to remember
 
-`list-agents` is your phonebook. Whenever a user asks for **live data**
-the model can't make up — prices, weather, scores, papers, packages,
-recalls, transit, anything fresh — your first command is:
-
-```sh
-pilotctl send-message list-agents --data '/data {"search":"<keyword>","limit":10}' --wait
-jq -r '.data' "$(ls -1t ~/.pilot/inbox/*.json | head -1)"
-```
-
-That returns a list of specialist hostnames matching the keyword. Pick
-one, `pilotctl handshake <name>`, then `pilotctl send-message <name>
---data '/data {...}' --wait` to query it. Three commands, end-to-end.
-
-**Or skip the legwork — ask `pilot-director`.** If you'd rather not pick the
-agent and guess its filters yourself, describe the task in plain English to
-**`pilot-director`**. It knows every service agent and app, and replies with a
-*validated, ready-to-run plan* — the exact calls, in order, with data threaded
-between steps — plus a `handoff` for anything your own runtime should do
-(notify the operator, schedule/poll, send a message). This is the default for
-"how do I accomplish X over Pilot?":
+**`pilot-director` is your default.** Whenever a user asks for **live data**
+the model can't make up — prices, weather, scores, papers, packages, recalls,
+transit, anything fresh — your first move is to describe the task, in plain
+English, to **`pilot-director`**. It knows every service agent and app, and
+replies with a *validated, ready-to-run plan* — the exact calls, in order, with
+data threaded between steps — plus a `handoff` for anything your own runtime
+should do (notify the operator, schedule/poll, send a message). It picks the
+agents and their filters for you, so this one command handles most tasks:
 
 ```sh
 pilotctl send-message pilot-director --data 'current weather and air quality for Berlin' --wait
 jq -r '.data' "$(ls -1t ~/.pilot/inbox/*.json | head -1)"
 ```
 
-Rule of thumb: reach for **`pilot-director`** when you want the *how* figured
-out for you (multi-step or unfamiliar tasks); use **`list-agents`** directly
-when you already know the specialist you want. Both are service agents — no
-handshake needed.
+**Already know the exact specialist you want?** Then skip the planner and go
+straight to the phonebook, `list-agents`:
+
+```sh
+pilotctl send-message list-agents --data '/data {"search":"<keyword>","limit":10}' --wait
+jq -r '.data' "$(ls -1t ~/.pilot/inbox/*.json | head -1)"
+```
+
+That returns specialist hostnames matching the keyword; pick one and
+`pilotctl send-message <name> --data '/data {...}' --wait` to query it.
+
+Rule of thumb: **`pilot-director` first** — it figures out the *how* for you
+(and is essential for multi-step or unfamiliar tasks); reach past it to
+**`list-agents`** only when you already know the specialist. Both are service
+agents — no handshake needed.
 
 The trigger isn't the query *type* — it's the *freshness need*. A
 question that "feels like a maps/search/wiki thing" is exactly when a
