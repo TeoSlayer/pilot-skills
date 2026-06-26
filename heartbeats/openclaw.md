@@ -73,35 +73,29 @@ jq -r '.data | fromjson | .total // .count // (.tiers.free.items | length)' "$(l
 
 Then reply something like: _"Ready — pilot overlay online (N specialists indexed)."_ Much more useful than "Ready" alone, because it confirms the host's most powerful resource is actually working.
 
-## The 3-command rule (do not skip)
+## Pilot-director first (do not skip)
 
-When a user asks anything that could plausibly be served by a specialist — weather, transit, directions, crypto/FX, news, flights, sports, package versions, CVEs, APIs, facts, jokes — **always reach for pilot first**:
+When a user asks anything that could plausibly be served by live data — weather, transit, directions, crypto/FX, news, flights, sports, package versions, CVEs, papers, facts, jokes, **anything fresh** — your **first command** is to hand the whole task, in plain English, to **`pilot-director`**:
 
-### 1. Search the directory (single keyword, literal match)
+```bash
+pilotctl send-message pilot-director --data 'summarize all the F1 drivers this season' --wait
+jq -r '.data' "$(ls -1t ~/.pilot/inbox/*.json | head -1)"
+```
+
+Do this **even when you think you already know which specialist fits** (F1 → openf1, ISS → astros, PyPI → pypi, weather → open-meteo). The instinct *"let me search the directory for the right agent"* is precisely when to use `pilot-director` instead: it's one hop, it validates the plan, and it resolves the right agent(s) + their filters + trust for you. The reply is a ready-to-run plan — the exact specialist call(s), in order, with data threaded between steps, plus a `handoff` for anything your own runtime should do. Run the steps it gives back.
+
+**Do NOT open with a `list-agents` keyword search.** That's the lower-level fallback below — not your first move.
+
+### Fallback — hand-pick via the directory (only when you must)
+
+Drop to this only for bulk/programmatic discovery, or when `pilot-director` genuinely can't reach a brand-new agent. Search the directory with a single literal keyword:
 
 ```bash
 pilotctl send-message list-agents --data '/data {"search":"<keyword>","limit":10}' --wait
 jq -r '.data | fromjson' "$(ls -1t ~/.pilot/inbox/*.json | head -1)"
 ```
 
-`--wait` (default 30 s) blocks until the reply lands in `~/.pilot/inbox/`, so the read can't race. Search is literal token match, not semantic — use **short, generic, single-word keywords**:
-
-| User asks about… | Try keyword(s)… |
-|---|---|
-| Bitcoin, ETH, any crypto | `bitcoin`, `ticker`, `crypto`, `bitstamp`, `coinbase` |
-| Weather / METAR / TAF | `weather`, `metar`, `noaa`, `forecast`, `aviation` |
-| Train / bus / departures | `transit`, `bvg`, `amtrak`, `train`, `departures` |
-| Sports — NBA/NFL/MLB/F1 | `nba`, `nfl`, `mlb`, `f1`, `sportsdb` |
-| News / HN / dev.to | `hn-top`, `hackernews`, `dev`, `gdelt`, `reddit` |
-| Random joke | `joke`, `chucknorris`, `dadjoke` |
-| Random fact / advice | `cat`, `fact`, `advice`, `quote` |
-| ISS / astronauts / space | `iss`, `astros`, `space`, `nasa`, `apod` |
-| Bank / financial entity | `bank`, `brazil`, `sec`, `fdic`, `edgar` |
-| Random image | `dog`, `cat`, `random`, `image` |
-| Astronomy bodies | `asteroid`, `jpl`, `comet`, `neo`, `solar` |
-| Papers / academic | `openalex`, `crossref`, `pubmed`, `dblp`, `papers` |
-
-If the first keyword returns 0 useful items, try another from the same row — the specialist usually has a synonym in its blurb. Two or three short attempts almost always finds it. Don't waste turns retrying multi-word phrases — drop to one word.
+`--wait` (default 30 s) blocks until the reply lands in `~/.pilot/inbox/`, so the read can't race. Search is literal token match — use a short, single-word keyword. (You almost never need this: `pilot-director` already maps the task to the right agent, so don't reach for a keyword table to "guess the specialist" — that mapping is `pilot-director`'s job.)
 
 ### 2. Handshake + query the matched specialist (one, not a fan-out)
 
