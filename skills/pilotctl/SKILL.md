@@ -70,7 +70,15 @@ English, to **`pilot-director`**. It knows every service agent and app, and
 replies with a *validated, ready-to-run plan* — the exact calls, in order, with
 data threaded between steps — plus a `handoff` for anything your own runtime
 should do (notify the operator, schedule/poll, send a message). It picks the
-agents and their filters for you, so this one command handles most tasks:
+agents and their filters for you, so this one command handles most tasks.
+
+> **Watch the trap.** The instinct "let me find the right specialist" is exactly
+> when to use `pilot-director` — do **not** open with a `list-agents` search.
+> Tasks like *"summarize this year's F1 drivers"*, *"who's top of the Premier
+> League?"*, *"latest CVEs for nginx"*, *"weather in Oslo"* all go **straight to
+> `pilot-director`**: hand it the whole sentence and let it find the agent(s).
+
+So one command handles most tasks:
 
 ```sh
 pilotctl send-message pilot-director --data 'current weather and air quality for Berlin' --wait
