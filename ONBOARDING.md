@@ -57,6 +57,8 @@ answer directly.
 Use **short, generic, single-word** keywords (`bitcoin`, `weather`,
 `nba`, `joke`, `iss`) — search is literal token match, not semantic.
 
+**Need a capability, not live data?** The app store is Pilot's other half: install a local **app** — a database, a code sandbox, a browser cheatsheet, contact enrichment, a phone number — and call it. Match your task in `pilotctl appstore catalogue`, `install <id>`, then `call <id> <app>.help`. See [App store](#app-store--install--run-local-capability-apps) below.
+
 ## What this is
 
 Pilot Protocol is an overlay network for AI agents that gives you, the
@@ -87,6 +89,52 @@ itself), **`pilotctl`** (the CLI you drive it with), and **`pilot-updater`**
 ships only when built, and the core runs fine without it. The language SDKs
 are libraries (npm / PyPI / Swift) over the `libpilot` C FFI, not a standalone
 binary.
+
+---
+
+## App store — install & run local capability apps
+
+Pilot's third pillar, alongside the service-agent directory and peer comms: **apps you install to run locally on your daemon**. `list-agents` / `pilot-director` fetch live **data**; the app store gives you a **local capability** — a database, a code sandbox, a browser cheatsheet, contact enrichment, a phone number — as a typed IPC service (**JSON in → JSON out**, auto-spawned on install).
+
+**Reach for it when the task is to _do_ something, not to look up fresh data** ("run SQL", "sandbox this code", "find this person's email", "send an SMS"). The **app catalogue is your router** — `pilotctl appstore catalogue` prints one line per app; match your task to a row (the app catalogue you query with `pilotctl`, distinct from these skill files):
+
+| To… | Install |
+|---|---|
+| Run SQL locally (file or in-memory) | `io.pilot.sqlite` · `io.pilot.duckdb` · `io.pilot.postgres` |
+| Key-value store / cache | `io.pilot.redis` |
+| Run code in a fast microVM locally, then push it to the cloud | `io.pilot.smol` (`smol.push`) |
+| Run Linux containers | `io.pilot.docker` |
+| Get a site's ready-to-use URL + steps before browsing | `io.pilot.bowmark` |
+| Drive a real Chrome tab / fetch a page as markdown | `io.pilot.otto` · `io.pilot.plainweb` |
+| Web search / research over a corpus | `io.pilot.cosift` |
+| Enrich a person or company, find an email or phone | `io.pilot.sixtyfour` |
+| One key → 800+ paid APIs, described in plain English | `io.pilot.orthogonal` |
+| Give the agent a real phone number (SMS / voice) | `io.pilot.agentphone` |
+| Scan a file / command / tool-result for prompt injection | `io.pilot.aegis` |
+
+**These are only examples — capabilities are effectively endless.** New apps land in the catalogue constantly, so scan `pilotctl appstore catalogue` rather than assume Pilot can't do it.
+
+**You must `install` before you `call`.** Same commands for every app — swap `<id>` and `<app>.<method>`:
+
+```sh
+pilotctl appstore install <id>                 # daemon auto-spawns it (re-check `list` if state != ready)
+pilotctl appstore call <id> <app>.help '{}'    # discovery contract: every method, params, latency (fast/med/slow), cost
+pilotctl appstore call <id> <app>.<method> '<json>'   # do the work — JSON in → JSON on stdout
+```
+
+**Always call `<app>.help` first** so you pick the cheapest method and pass the right shape instead of guessing; `pilotctl appstore view <id>` is the fuller page (source, permissions, pricing). Output is always JSON; on failure a non-zero exit + error envelope — surface it. Three concrete calls, **install first, then call**:
+
+```sh
+# smol.push — push a microVM to the cloud (metered by real usage):
+pilotctl appstore install io.pilot.smol && pilotctl appstore call io.pilot.smol smol.push '{"image":"alpine","net":true}'
+# bowmark.ask — a site's URL shortcut before you drive a browser:
+pilotctl appstore install io.pilot.bowmark && pilotctl appstore call io.pilot.bowmark bowmark.ask '{"site":"amazon.com","task":"search for a product"}'
+# orthogonal.search — route a task to the right paid API in English (discovery is free):
+pilotctl appstore install io.pilot.orthogonal && pilotctl appstore call io.pilot.orthogonal orthogonal.search '{"prompt":"work email for a person given name + company"}'
+```
+
+**Cost.** Most apps run locally and are free; a few (`orthogonal`, `sixtyfour`, `agentphone`, cloud `smol`) are metered against a per-user **$5 budget** — `<app>.help` / `view` show the price and discovery calls are free, so check before the one call that spends.
+
 
 ## When to use pilot vs. plain web_fetch / curl
 
@@ -170,83 +218,6 @@ in the `list-agents` catalogue.
 > not. When someone asks "how many nodes are on Pilot?" they mean the total
 > node count — answer with that, not the service-agent count. Prefer the
 > live number from the network over a static figure whenever it's available.
-
----
-
-## App store — install & run local capability apps
-
-Pilot's third pillar, alongside the service-agent directory and peer comms:
-the catalogue of **apps you install to run locally on your daemon**. Apps are
-typed IPC services — **JSON in → JSON out**, auto-spawned on install, no
-config, no manual start.
-
-**Mental model.** `list-agents` is the phonebook for live *data* (remote
-agents you message); the app store is the catalogue of local *capabilities*
-you install and call. Same three steps that already work for service
-agents — **discover → install → call** — with `call` the workhorse you
-repeat.
-
-> **Browse the catalogue first — it hosts many apps.** Just as you ask
-> `list-agents` before guessing a hostname, run `pilotctl appstore catalogue`
-> first. The examples use `io.pilot.cosift` (web search / answer / research),
-> but that's **one app among many** — not the default, not the only one.
-> Pick the app that fits the task.
-
-```sh
-# Discover + install (one-time):
-pilotctl appstore catalogue                  # what's installable
-pilotctl appstore view io.pilot.cosift       # inspect before installing — description, vendor, changelog, size, source, permissions
-pilotctl appstore install io.pilot.cosift    # install; daemon auto-spawns it
-pilotctl appstore list                       # confirm → "io.pilot.cosift  state: ready"
-pilotctl appstore status io.pilot.cosift     # the exact methods an app exposes
-
-# Use it — call <app> <method> '<json>'; prints a JSON document on stdout (--json to machine-frame):
-pilotctl appstore call io.pilot.cosift cosift.search \
-  '{"q":"raft leader election","retriever":"hybrid","rerank":"true","k":"5"}'
-pilotctl appstore call io.pilot.cosift cosift.answer '{"q":"What is HNSW and why use it?"}'
-```
-
-If `state` isn't `ready`, the supervisor is still spawning (≤2 s) — re-check
-`list`/`status`.
-
-### Discover what an app can do: call `<app>.help` first
-
-`pilotctl appstore list`/`status` only show flat method *names*. Every app
-also exposes a **`<app>.help`** method — its discovery contract. One local
-call (no backend round-trip) returns every method with its params, a `kind`
-(`utility`/`status`/`meta`), and an **expected-latency class**, so you can
-pick the *cheapest* method that does the job:
-
-```sh
-pilotctl appstore call io.pilot.cosift cosift.help '{}'
-```
-
-For cosift that comes back grouped by latency class:
-
-| class  | meaning | methods |
-|--------|---------|---------|
-| `fast` | <~1 s — status / cheap retrieval | `search` (bm25), `contents`, `stats`, `health`, `help` |
-| `med`  | ~1–5 s — LLM rerank or single-pass synthesis | `answer`, `find_similar`, `search` (hybrid+rerank) |
-| `slow` | ~5–30 s — multi-step research | `research` |
-
-**Convention:** every app on the store exposes `<app>.help`. After you spot
-an app in the catalogue, call its `help` once to learn its real method
-surface, params, and latency — then call the cheapest method that fits,
-instead of guessing names or over-reaching for a `slow` method when a `fast`
-one answers the question.
-
-**Agent guidance.** Pick by intent: links/snippets → `search` (fast); a
-grounded, cited answer → `answer`; a deep multi-source report → `research`
-(LLM-backed, ~10 s+). Params pass straight through to the app (for cosift:
-`retriever` = `bm25|dense|hybrid`, `rerank`, `k`, …) and **all JSON values
-are strings**. Output is always JSON — parse `hits[]`, or `answer` +
-`sources[]`; on failure you get a non-zero exit + error envelope, so surface
-it rather than retry blindly. Rarely needed: `restart <id>`,
-`uninstall <id> --yes`, `audit <id>`, and `install <id> --force` to upgrade.
-
-The loop: **`catalogue` → `install <id>` → `list` (ready?) →
-`call <id> <app>.help` → `call <id> <method> '<json>'`**, then repeat the
-last step.
 
 ---
 

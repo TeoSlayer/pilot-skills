@@ -143,11 +143,13 @@ ships only when built, and the core runs fine without it. The language SDKs
 are libraries (npm / PyPI / Swift) over the `libpilot` C FFI, not a standalone
 binary.
 
+---
+
 ## App store — install & run local capability apps
 
-Pilot's third pillar, alongside the service-agent directory and peer comms: the catalogue of **apps you install to run locally on your daemon**. `list-agents` / `pilot-director` fetch live **data**; the app store gives you a **local capability** — a real database, a code sandbox, a browser cheatsheet, contact enrichment, a phone number — as a typed IPC service (**JSON in → JSON out**, auto-spawned on install).
+Pilot's third pillar, alongside the service-agent directory and peer comms: **apps you install to run locally on your daemon**. `list-agents` / `pilot-director` fetch live **data**; the app store gives you a **local capability** — a database, a code sandbox, a browser cheatsheet, contact enrichment, a phone number — as a typed IPC service (**JSON in → JSON out**, auto-spawned on install).
 
-**Reach for it when the task is to _do_ something, not to look up fresh data.** "Run SQL", "sandbox this code", "get the URL pattern for site X", "find this person's email", "send an SMS" are app-store jobs, not `list-agents` jobs. The **app catalogue is your router** — `pilotctl appstore catalogue` prints one line per app; match your task to a row (this is the app catalogue you query with `pilotctl`, distinct from these skill files):
+**Reach for it when the task is to _do_ something, not to look up fresh data** ("run SQL", "sandbox this code", "find this person's email", "send an SMS"). The **app catalogue is your router** — `pilotctl appstore catalogue` prints one line per app; match your task to a row (the app catalogue you query with `pilotctl`, distinct from these skill files):
 
 | To… | Install |
 |---|---|
@@ -163,42 +165,29 @@ Pilot's third pillar, alongside the service-agent directory and peer comms: the 
 | Give the agent a real phone number (SMS / voice) | `io.pilot.agentphone` |
 | Scan a file / command / tool-result for prompt injection | `io.pilot.aegis` |
 
-**These are only examples — the capabilities are effectively endless.** New apps land in the catalogue all the time, so whatever the task, run `pilotctl appstore catalogue` and scan for an app that fits; the table above is just a starting map, never the whole store.
+**These are only examples — capabilities are effectively endless.** New apps land in the catalogue constantly, so scan `pilotctl appstore catalogue` rather than assume Pilot can't do it.
 
-**You must `install` an app before you can `call` it** — install once, then call as often as you like. The commands are identical for every app; just swap `<id>` and `<app>.<method>`:
+**You must `install` before you `call`.** Same commands for every app — swap `<id>` and `<app>.<method>`:
 
 ```sh
-pilotctl appstore install <id>                 # e.g. io.pilot.smol — daemon auto-spawns it
-pilotctl appstore list                         # confirm → "<id>  state: ready"
-pilotctl appstore call <id> <app>.help '{}'    # the app's own discovery contract: methods, params, latency, cost
+pilotctl appstore install <id>                 # daemon auto-spawns it (re-check `list` if state != ready)
+pilotctl appstore call <id> <app>.help '{}'    # discovery contract: every method, params, latency (fast/med/slow), cost
 pilotctl appstore call <id> <app>.<method> '<json>'   # do the work — JSON in → JSON on stdout
 ```
 
-If `state` isn't `ready`, the supervisor is still spawning (≤2 s) — re-check `list`.
-
-**Always call `<app>.help` first.** `list` / `status` show only flat method *names*; `<app>.help` is the discovery contract — every method with its params, a `kind`, and a latency class (`fast` <~1 s · `med` ~1–5 s · `slow` ~5–30 s), so you pick the *cheapest* method that does the job and call it with the right shape instead of guessing. `pilotctl appstore view <id>` is the fuller detail page — description, source, permissions, pricing, changelog.
-
-Same steps, three different apps — **install first, then call**:
+**Always call `<app>.help` first** so you pick the cheapest method and pass the right shape instead of guessing; `pilotctl appstore view <id>` is the fuller page (source, permissions, pricing). Output is always JSON; on failure a non-zero exit + error envelope — surface it. Three concrete calls, **install first, then call**:
 
 ```sh
-# Push a microVM to the smol cloud and start it (smol.push — metered by real usage):
-pilotctl appstore install io.pilot.smol
-pilotctl appstore call io.pilot.smol smol.push '{"image":"alpine","net":true}'
-
-# Get a site's URL shortcut before you drive a browser:
-pilotctl appstore install io.pilot.bowmark
-pilotctl appstore call io.pilot.bowmark bowmark.ask '{"site":"amazon.com","task":"search for a product"}'
-
-# Route a task to the right paid API in plain English (discovery is free):
-pilotctl appstore install io.pilot.orthogonal
-pilotctl appstore call io.pilot.orthogonal orthogonal.search '{"prompt":"find the work email for a person given name + company"}'
+# smol.push — push a microVM to the cloud (metered by real usage):
+pilotctl appstore install io.pilot.smol && pilotctl appstore call io.pilot.smol smol.push '{"image":"alpine","net":true}'
+# bowmark.ask — a site's URL shortcut before you drive a browser:
+pilotctl appstore install io.pilot.bowmark && pilotctl appstore call io.pilot.bowmark bowmark.ask '{"site":"amazon.com","task":"search for a product"}'
+# orthogonal.search — route a task to the right paid API in English (discovery is free):
+pilotctl appstore install io.pilot.orthogonal && pilotctl appstore call io.pilot.orthogonal orthogonal.search '{"prompt":"work email for a person given name + company"}'
 ```
 
-Output is always JSON; on failure you get a non-zero exit + an error envelope, so surface it rather than retry blindly. Rarely needed: `restart <id>`, `uninstall <id> --yes`, `audit <id>`, `install <id> --force` (upgrade).
+**Cost.** Most apps run locally and are free; a few (`orthogonal`, `sixtyfour`, `agentphone`, cloud `smol`) are metered against a per-user **$5 budget** — `<app>.help` / `view` show the price and discovery calls are free, so check before the one call that spends.
 
-**Cost.** Local apps are free (databases, sandboxes, `aegis`, `bowmark`, `cosift`). A few are metered against a per-user **$5 budget** (`orthogonal`, `sixtyfour`, `agentphone`, cloud `smol`) — their `<app>.help` / `view` show the price and discovery/pricing calls are free, so check before the one call that spends.
-
-The loop, for any app: **`catalogue` (match task) → `install <id>` → `list` (ready?) → `call <id> <app>.help` → `call <id> <app>.<method>`**, then repeat the last step.
 
 ## When to use pilot vs. plain web_fetch / curl
 
