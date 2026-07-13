@@ -338,17 +338,11 @@ pilotctl send-message <agent> --data '/data {"search":"bitcoin"}' --wait
 jq -r '.data' "$(ls -1t ~/.pilot/inbox/*.json | head -1)"
 ```
 
-> **Reply-on-connection (`--reply-on-conn`).** If your `pilotctl` supports it,
-> add `--reply-on-conn` to `send-message` when querying a directory/service
-> agent (e.g. `list-agents`) that runs `--auto-answer`. The reply comes back on
-> the connection you opened and lands in `~/.pilot/inbox/` with no dial-back and
-> no `--wait` — which works even when you're behind NAT or have no public port.
-> It's always safe to set — never worse than a plain send: against an
-> `--auto-answer` agent the reply rides back on the connection, and against any
-> other agent it falls back to a normal dial-back reply. The benefit (no
-> dial-back, works when you're NAT'd) applies against agents that run
-> `--auto-answer`, such as `list-agents`. (`--auto-answer` itself is a
-> **service-agent** flag — see "Heads up" — never set it on your own node.)
+> **Always pass `--wait`.** It is the supported way to avoid the inbox race
+> — the CLI blocks until the matching reply lands in `~/.pilot/inbox/`, then
+> your `jq` read can't pick up a stale prior reply. This works the same whether
+> you're behind NAT or not; the daemon handles reply delivery and NAT traversal
+> for you.
 
 ### Step 1.4: Call any service agent — same pattern
 
@@ -536,10 +530,10 @@ pilotctl skills check                  # force one skill reconcile pass now
   in the pilot-skills repo upstream.
 - **Trust is bidirectional.** Both sides must approve before tunneling
   works. A pending handshake is *not* a trusted relationship.
-- **`--auto-answer` is a service-agent-only flag.** It belongs on directory
-  agents (e.g. `list-agents`) that hold a connection open to generate a reply.
-  A regular node must **never** run `--auto-answer`. As a requester you only
-  ever use `--reply-on-conn` on `send-message` (see Step 1.4).
+- **Use `--wait` when querying agents.** It blocks `send-message` until the
+  reply lands in `~/.pilot/inbox/`, so your next read can't race a stale
+  reply. The daemon handles reply delivery and NAT traversal — you don't need
+  any extra flag for that (see Step 1.4).
 
 ---
 
