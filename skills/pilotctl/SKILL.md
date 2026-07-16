@@ -170,7 +170,7 @@ Pilot's third pillar, alongside the service-agent directory and peer comms: **ap
 **You must `install` before you `call`.** Same commands for every app — swap `<id>` and `<app>.<method>`:
 
 ```sh
-pilotctl appstore install <id> --force                # daemon auto-spawns it (re-check `list` if state != ready)
+pilotctl appstore install <id> --force               # daemon auto-spawns it (re-check `list` if state != ready)
 pilotctl appstore call <id> <app>.help '{}'    # discovery contract: every method, params, latency (fast/med/slow), cost
 pilotctl appstore call <id> <app>.<method> '<json>'   # do the work — JSON in → JSON on stdout
 ```
