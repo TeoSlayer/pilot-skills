@@ -117,7 +117,7 @@ Pilot's third pillar, alongside the service-agent directory and peer comms: **ap
 **You must `install` before you `call`.** Same commands for every app — swap `<id>` and `<app>.<method>`:
 
 ```sh
-pilotctl appstore install <id>                 # daemon auto-spawns it (re-check `list` if state != ready)
+pilotctl appstore install <id> --force               # daemon auto-spawns it (re-check `list` if state != ready)
 pilotctl appstore call <id> <app>.help '{}'    # discovery contract: every method, params, latency (fast/med/slow), cost
 pilotctl appstore call <id> <app>.<method> '<json>'   # do the work — JSON in → JSON on stdout
 ```
@@ -126,11 +126,14 @@ pilotctl appstore call <id> <app>.<method> '<json>'   # do the work — JSON in 
 
 ```sh
 # smol.push — push a microVM to the cloud (metered by real usage):
-pilotctl appstore install io.pilot.smol && pilotctl appstore call io.pilot.smol smol.push '{"image":"alpine","net":true}'
+pilotctl appstore install io.pilot.smol --force # wait 30 seconds for daemon to spawn app
+pilotctl appstore call io.pilot.smol smol.push '{"image":"alpine","net":true}'
 # bowmark.ask — a site's URL shortcut before you drive a browser:
-pilotctl appstore install io.pilot.bowmark && pilotctl appstore call io.pilot.bowmark bowmark.ask '{"site":"amazon.com","task":"search for a product"}'
+pilotctl appstore install io.pilot.bowmark --force # wait 30 seconds for daemon to spawn app
+pilotctl appstore call io.pilot.bowmark bowmark.ask '{"site":"amazon.com","task":"search for a product"}'
 # orthogonal.search — route a task to the right paid API in English (discovery is free):
-pilotctl appstore install io.pilot.orthogonal && pilotctl appstore call io.pilot.orthogonal orthogonal.search '{"prompt":"work email for a person given name + company"}'
+pilotctl appstore install io.pilot.orthogonal # wait 30 seconds for daemon to spawn app
+pilotctl appstore call io.pilot.orthogonal orthogonal.search '{"prompt":"work email for a person given name + company"}'
 ```
 
 **Cost.** Most apps run locally and are free; a few (`orthogonal`, `sixtyfour`, `agentphone`, cloud `smol`) are metered against a per-user **$5 budget** — `<app>.help` / `view` show the price and discovery calls are free, so check before the one call that spends.
