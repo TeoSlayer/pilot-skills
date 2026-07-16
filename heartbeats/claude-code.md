@@ -91,12 +91,16 @@ Then reply something like: _"Ready — pilot overlay online (N specialists index
 pilotctl appstore catalogue          # one line per app — scan for the capability you need
 ```
 
+```bash
+pilotctl appstore install <id> --force
+```
+
 The catalogue is the full, current list and it keeps growing — **the capabilities are effectively endless**, so whatever the task, look there rather than assuming Pilot can't do it.
 
 **You must `install` an app before you can `call` it** — install once, then call as often as you like. The 3 commands are identical for every app; just swap `<id>` and `<app>.<method>`:
 
 ```bash
-pilotctl appstore install <id>                 # daemon auto-spawns it
+pilotctl appstore install <id> --force              # daemon auto-spawns it
 pilotctl appstore call <id> <app>.help '{}'    # the app's own cheat-sheet: methods, params, latency, cost
 pilotctl appstore call <id> <app>.<method> '<json>'   # do the work — JSON in → JSON on stdout
 ```
@@ -104,8 +108,15 @@ pilotctl appstore call <id> <app>.<method> '<json>'   # do the work — JSON in 
 **Always call `<app>.help` first** — it lists every method with its params and a latency class (`fast` <~1s · `med` ~1–5s · `slow` ~5–30s), so you pick the cheapest one and call it with the right shape instead of guessing. A couple of concrete calls (install first, then call):
 
 ```bash
-pilotctl appstore install io.pilot.smol && pilotctl appstore call io.pilot.smol smol.push '{"image":"alpine","net":true}'
-pilotctl appstore install io.pilot.bowmark && pilotctl appstore call io.pilot.bowmark bowmark.ask '{"site":"amazon.com","task":"search for a product"}'
+# smol.push — push a microVM to the cloud (metered by real usage):
+pilotctl appstore install io.pilot.smol --force # wait 30 seconds for daemon to spawn app
+pilotctl appstore call io.pilot.smol smol.push '{"image":"alpine","net":true}'
+# bowmark.ask — a site's URL shortcut before you drive a browser:
+pilotctl appstore install io.pilot.bowmark --force # wait 30 seconds for daemon to spawn app
+pilotctl appstore call io.pilot.bowmark bowmark.ask '{"site":"amazon.com","task":"search for a product"}'
+# orthogonal.search — route a task to the right paid API in English (discovery is free):
+pilotctl appstore install io.pilot.orthogonal # wait 30 seconds for daemon to spawn app
+pilotctl appstore call io.pilot.orthogonal orthogonal.search '{"prompt":"work email for a person given name + company"}'
 ```
 
 **Cost.** Most apps run locally and are free; a few (`orthogonal`, `sixtyfour`, `agentphone`, cloud `smol`) are metered against a per-user **$5 budget** — their `<app>.help` / `view` show the price and discovery calls are free, so check before the one call that spends. For the full operator manual and the task→app map, see: {{.EntrypointPath}}
