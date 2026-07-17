@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-16T22:56:43Z",
+  "generated_at": "2026-07-17T00:55:37Z",
   "version": "1.0.0",
   "total": 156,
   "categories": [
@@ -18,7 +18,7 @@
             "messaging",
             "trust"
           ],
-          "version": "2.0",
+          "version": "2.0.1",
           "license": "AGPL-3.0",
           "clawhub_slug": "pilot-protocol",
           "clawhub_url": "https://clawhub.ai/teoslayer/pilot-protocol",
