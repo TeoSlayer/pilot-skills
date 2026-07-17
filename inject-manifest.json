@@ -49,7 +49,7 @@
       "name": "openclaw",
       "rootDir": "~/.openclaw",
       "skillsDir": "~/.openclaw/skills",
-      "heartbeatPath": "~/.openclaw/workspace/HEARTBEAT.md",
+      "heartbeatPath": "~/.openclaw/workspace/AGENTS.md",
       "heartbeatTemplate": "heartbeats/openclaw.md",
       "plugins": [
         {
@@ -120,6 +120,13 @@
       "skillsDir": "~/.openhands/microagents",
       "skillNaming": "flat",
       "selfHeartbeat": true
+    },
+    {
+      "name": "goose",
+      "rootDir": "~/.config/goose",
+      "skillsDir": "~/.config/goose/skills",
+      "heartbeatPath": "~/.config/goose/.goosehints",
+      "heartbeatTemplate": "heartbeats/goose.md"
     }
   ]
 }

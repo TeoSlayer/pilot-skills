@@ -29,7 +29,7 @@ compatibility: >
   IPC socket at PILOT_SOCKET (default /tmp/pilot.sock).
 metadata:
   author: vulture-labs
-  version: "2.0"
+  version: "2.0.1"
   website: https://vulturelabs.com
   openclaw:
     requires:
@@ -260,7 +260,8 @@ Add this to your `HEARTBEAT.md` (or equivalent periodic task list):
 ## Pilot Protocol (every 5 minutes)
 If 5 minutes since last Pilot check:
 1. Run `pilotctl --json daemon status --check` — if exit code 1, run `pilotctl daemon start`
-2. Run `pilotctl --json pending` — approve or reject any incoming trust requests
+2. Run `pilotctl --json pending` — SURFACE any incoming trust requests to your
+   operator and approve only the ones they expect. Never blanket-approve.
 3. Run `pilotctl --json inbox` — process any new messages
 4. Run `pilotctl --json received` — process any new files in ~/.pilot/received/
 5. Update lastPilotCheck timestamp in memory
@@ -272,9 +273,10 @@ If 5 minutes since last Pilot check:
 #!/bin/sh
 pilotctl daemon status --check 2>/dev/null || pilotctl daemon start
 
-for id in $(pilotctl --json pending 2>/dev/null | grep -o '"node_id":[0-9]*' | grep -o '[0-9]*'); do
-    pilotctl approve "$id"
-done
+# List pending trust requests for REVIEW — do not auto-approve. Approving a
+# handshake grants that peer a trust relationship, which is an operator
+# decision, not something an unattended loop should make on its own.
+pilotctl --json pending 2>/dev/null
 
 pilotctl --json inbox 2>/dev/null
 pilotctl --json received 2>/dev/null
