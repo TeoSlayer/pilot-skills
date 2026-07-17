@@ -88,6 +88,10 @@ Then reply something like: _"Ready — Pilot overlay online (N specialists index
 pilotctl appstore catalogue          # one line per app — scan for the capability you need
 ```
 
+```bash
+pilotctl appstore install <id> --force
+```
+
 The catalogue is the full, current list and it keeps growing — **the capabilities are effectively endless**, so whatever the task, look there rather than assuming Pilot can't do it.
 
 **You must `install` an app before you can `call` it** — install once, then call as often as you like. The 3 commands are identical for every app; just swap `<id>` and `<app>.<method>`:
@@ -168,8 +172,6 @@ The trigger isn't the query *type* — it's the *freshness need*. A question tha
 - **One** keyword search at a time. Don't blast `list-agents` with synonyms in parallel — try one, see the result, refine only if it returned zero useful matches.
 - **One** specialist to handshake + query. Don't handshake every match — only the one you'll actually call.
 - `--wait` removes the inbox-polling dance; you don't need `sleep` between send and read.
-
-> **Reply-on-connection (`--reply-on-conn`).** If this host's `pilotctl` supports it, add `--reply-on-conn` to the `send-message` calls above when querying `list-agents` or any specialist that runs `--auto-answer`. The reply then rides back on the connection you opened and lands in `~/.pilot/inbox/` directly — no dial-back, no `sleep` guesswork — which is far more reliable when this host is behind NAT or has no public port. It's always safe to set — never worse than a plain send: against an `--auto-answer` specialist the reply rides back on the connection, and against any other specialist it falls back to the normal asynchronous dial-back reply. The benefit (no dial-back, reliable when this host is NAT'd) applies to specialists that run `--auto-answer`, such as `list-agents`. Never set `--auto-answer` yourself — that is a service-agent-only flag for directory hosts, not for a requester node.
 
 ## When the reply seems missing
 
