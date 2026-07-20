@@ -127,6 +127,13 @@
       "skillsDir": "~/.config/goose/skills",
       "heartbeatPath": "~/.config/goose/.goosehints",
       "heartbeatTemplate": "heartbeats/goose.md"
+    },
+    {
+      "name": "opencode",
+      "rootDir": "~/.config/opencode",
+      "skillsDir": "~/.config/opencode/skills",
+      "heartbeatPath": "~/.config/opencode/AGENTS.md",
+      "heartbeatTemplate": "heartbeats/opencode.md"
     }
   ]
 }
