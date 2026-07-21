@@ -212,7 +212,7 @@
       "difficulty": "advanced",
       "agent_count": 4,
       "skills_used": [
-        "pilot-directory",
+        "pilot-momy",
         "pilot-announce-capabilities",
         "pilot-discover",
         "pilot-reputation",
@@ -235,13 +235,13 @@
           "role": "Capability Directory",
           "description": "Capability registry",
           "skills": [
-            "pilot-directory",
+            "pilot-momy",
             "pilot-announce-capabilities",
             "pilot-discover",
             "pilot-reputation"
           ],
           "setup_commands": [
-            "clawhub install pilot-directory pilot-announce-capabilities pilot-discover pilot-reputation",
+            "clawhub install pilot-momy pilot-announce-capabilities pilot-discover pilot-reputation",
             "pilotctl set-hostname <your-prefix>-directory",
             "",
             "# Establish trust with peers (both sides must handshake)",
@@ -347,7 +347,7 @@
       "quick_start": [
         "# Replace <your-prefix> with a unique name for your deployment (e.g. acme)",
         "# On directory node",
-        "clawhub install pilot-directory pilot-announce-capabilities pilot-discover pilot-reputation",
+        "clawhub install pilot-momy pilot-announce-capabilities pilot-discover pilot-reputation",
         "pilotctl set-hostname <your-prefix>-directory",
         "",
         "# On matchmaker node",
@@ -4575,7 +4575,7 @@
         "pilot-chat",
         "pilot-gossip",
         "pilot-presence",
-        "pilot-directory",
+        "pilot-momy",
         "pilot-escrow",
         "pilot-stream-data",
         "pilot-receipt",
@@ -4598,10 +4598,10 @@
             "pilot-chat",
             "pilot-gossip",
             "pilot-presence",
-            "pilot-directory"
+            "pilot-momy"
           ],
           "setup_commands": [
-            "clawhub install pilot-chat pilot-gossip pilot-presence pilot-directory",
+            "clawhub install pilot-chat pilot-gossip pilot-presence pilot-momy",
             "pilotctl set-hostname <your-prefix>-npc-villager",
             "",
             "# Establish trust with peers (both sides must handshake)",
@@ -4725,7 +4725,7 @@
       "quick_start": [
         "# Replace <your-prefix> with a unique name for your deployment (e.g. acme)",
         "# On npc-villager node",
-        "clawhub install pilot-chat pilot-gossip pilot-presence pilot-directory",
+        "clawhub install pilot-chat pilot-gossip pilot-presence pilot-momy",
         "pilotctl set-hostname <your-prefix>-npc-villager",
         "",
         "# On npc-merchant node",
@@ -5628,7 +5628,7 @@
         "pilot-a2a-bridge",
         "pilot-task-router",
         "pilot-audit-log",
-        "pilot-directory",
+        "pilot-momy",
         "pilot-discover",
         "pilot-announce-capabilities",
         "pilot-load-balancer"
@@ -5677,13 +5677,13 @@
           "role": "Tool Registry",
           "description": "MCP tool registrations\" },",
           "skills": [
-            "pilot-directory",
+            "pilot-momy",
             "pilot-discover",
             "pilot-announce-capabilities",
             "pilot-load-balancer"
           ],
           "setup_commands": [
-            "clawhub install pilot-directory pilot-discover pilot-announce-capabilities pilot-load-balancer",
+            "clawhub install pilot-momy pilot-discover pilot-announce-capabilities pilot-load-balancer",
             "pilotctl set-hostname <your-prefix>-tool-registry",
             "",
             "# Establish trust with peers (both sides must handshake)",
@@ -5729,7 +5729,7 @@
         "pilotctl set-hostname <your-prefix>-a2a-bridge",
         "",
         "# On tool registry node",
-        "clawhub install pilot-directory pilot-discover pilot-announce-capabilities pilot-load-balancer",
+        "clawhub install pilot-momy pilot-discover pilot-announce-capabilities pilot-load-balancer",
         "pilotctl set-hostname <your-prefix>-tool-registry",
         "# mcp-gw <-> tool-registry",
         "# On mcp-gw:",

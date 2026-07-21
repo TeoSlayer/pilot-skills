@@ -19,7 +19,7 @@ Connects Google A2A protocol agents to the Pilot network. Routes tasks between A
 ### tool-registry (Tool Registry)
 Central directory where MCP tools, A2A agents, and native Pilot skills register their capabilities. Other agents query it to discover what tools are available.
 
-**Skills:** pilot-directory, pilot-discover, pilot-announce-capabilities, pilot-load-balancer
+**Skills:** pilot-momy, pilot-discover, pilot-announce-capabilities, pilot-load-balancer
 
 ## Data Flow
 
@@ -46,7 +46,7 @@ clawhub install pilot-a2a-bridge pilot-task-router pilot-audit-log
 pilotctl set-hostname <your-prefix>-a2a-bridge
 
 # On tool registry node
-clawhub install pilot-directory pilot-discover pilot-announce-capabilities pilot-load-balancer
+clawhub install pilot-momy pilot-discover pilot-announce-capabilities pilot-load-balancer
 pilotctl set-hostname <your-prefix>-tool-registry
 ```
 

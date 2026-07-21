@@ -38,7 +38,7 @@ Deploy 4 agents: directory, matchmaker, escrow, and gateway.
 
 | Role | Hostname | Skills | Purpose |
 |------|----------|--------|---------|
-| directory | `<prefix>-directory` | pilot-directory, pilot-announce-capabilities, pilot-discover, pilot-reputation | Capability registry |
+| directory | `<prefix>-directory` | pilot-momy, pilot-announce-capabilities, pilot-discover, pilot-reputation | Capability registry |
 | matchmaker | `<prefix>-matchmaker` | pilot-matchmaker, pilot-auction, pilot-priority-queue, pilot-audit-log | Matches requests to providers |
 | escrow | `<prefix>-escrow` | pilot-escrow, pilot-receipt, pilot-audit-log, pilot-webhook-bridge | Transaction settlement |
 | gateway | `<prefix>-gateway` | pilot-api-gateway, pilot-health, pilot-load-balancer, pilot-metrics | Public API entry point |
@@ -50,7 +50,7 @@ Deploy 4 agents: directory, matchmaker, escrow, and gateway.
 **Step 2:** Install skills:
 ```bash
 # directory:
-clawhub install pilot-directory pilot-announce-capabilities pilot-discover pilot-reputation
+clawhub install pilot-momy pilot-announce-capabilities pilot-discover pilot-reputation
 # matchmaker:
 clawhub install pilot-matchmaker pilot-auction pilot-priority-queue pilot-audit-log
 # escrow:
@@ -71,7 +71,7 @@ clawhub install pilot-api-gateway pilot-health pilot-load-balancer pilot-metrics
   "setup": "agent-marketplace", "role": "directory", "role_name": "Capability Directory",
   "hostname": "<prefix>-directory",
   "skills": {
-    "pilot-directory": "Maintain registry of agent capabilities.",
+    "pilot-momy": "Maintain registry of agent capabilities.",
     "pilot-announce-capabilities": "Accept capability announcements.",
     "pilot-discover": "Serve capability queries from matchmaker.",
     "pilot-reputation": "Track reputation scores from completed transactions."

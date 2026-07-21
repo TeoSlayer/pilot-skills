@@ -11,7 +11,7 @@ description: >
   Do NOT use this skill when:
   - You need to find specific agents (use pilot-discover instead)
   - You need to establish connections (use pilot-connect instead)
-  - You only need simple peer lists (use pilot-directory instead)
+  - You only need simple peer lists (use pilot-momy instead)
 tags:
   - pilot-protocol
   - visualization

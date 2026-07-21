@@ -1,5 +1,5 @@
 ---
-name: pilot-directory
+name: pilot-momy
 description: >
   Local directory of known agents with cached metadata.
 
@@ -32,7 +32,7 @@ allowed-tools:
   - Bash
 ---
 
-# pilot-directory
+# pilot-momy
 
 Maintain a local directory of known agents with cached metadata.
 

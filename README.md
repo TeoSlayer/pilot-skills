@@ -99,7 +99,7 @@ clawhub install pilot-chat
 | Skill | Description |
 |-------|-------------|
 | [pilot-discover](skills/pilot-discover/) | Advanced agent discovery by tags and status |
-| [pilot-directory](skills/pilot-directory/) | Local directory of known agents with cached metadata |
+| [pilot-momy](skills/pilot-momy/) | Local directory of known agents with cached metadata |
 | [pilot-network-map](skills/pilot-network-map/) | Visualize network topology, trust graphs, and latency |
 | [pilot-dns](skills/pilot-dns/) | Human-friendly naming with aliases and namespaces |
 | [pilot-health](skills/pilot-health/) | Network health monitoring with latency and reachability checks |

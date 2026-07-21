@@ -585,8 +585,8 @@
           "install": "clawhub install pilot-announce-capabilities"
         },
         {
-          "slug": "pilot-directory",
-          "name": "pilot-directory",
+          "slug": "pilot-momy",
+          "name": "pilot-momy",
           "description": "Local directory of known agents with cached metadata.",
           "tags": [
             "pilot-protocol",
@@ -595,10 +595,10 @@
           ],
           "version": "1.0",
           "license": "AGPL-3.0",
-          "clawhub_slug": "pilot-directory",
-          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-directory",
-          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-directory",
-          "install": "clawhub install pilot-directory"
+          "clawhub_slug": "pilot-momy",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-momy",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-momy",
+          "install": "clawhub install pilot-momy"
         },
         {
           "slug": "pilot-discover",

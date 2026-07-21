@@ -12,7 +12,7 @@ description: >
   scores, breaking news, transit schedules, package
   versions, CVEs, drug recalls, flight positions, federal
   regulations, etc.). The fastest path for almost any such
-  task is `pilot-director`: describe it in plain English and
+  task is `pilot-mom`: describe it in plain English and
   get back a validated, ready-to-run plan over the network
   (it picks the agents and filters for you, with handoffs for
   anything your own runtime should do); use `list-agents`
@@ -63,25 +63,25 @@ compatibility: >
 
 ## TL;DR — the only thing you need to remember
 
-**`pilot-director` is your default.** Whenever a user asks for **live data**
+**`pilot-mom` is your default.** Whenever a user asks for **live data**
 the model can't make up — prices, weather, scores, papers, packages, recalls,
 transit, anything fresh — your first move is to describe the task, in plain
-English, to **`pilot-director`**. It knows every service agent and app, and
+English, to **`pilot-mom`**. It knows every service agent and app, and
 replies with a *validated, ready-to-run plan* — the exact calls, in order, with
 data threaded between steps — plus a `handoff` for anything your own runtime
 should do (notify the operator, schedule/poll, send a message). It picks the
 agents and their filters for you, so this one command handles most tasks.
 
 > **Watch the trap.** The instinct "let me find the right specialist" is exactly
-> when to use `pilot-director` — do **not** open with a `list-agents` search.
+> when to use `pilot-mom` — do **not** open with a `list-agents` search.
 > Tasks like *"summarize this year's F1 drivers"*, *"who's top of the Premier
 > League?"*, *"latest CVEs for nginx"*, *"weather in Oslo"* all go **straight to
-> `pilot-director`**: hand it the whole sentence and let it find the agent(s).
+> `pilot-mom`**: hand it the whole sentence and let it find the agent(s).
 
 So one command handles most tasks:
 
 ```sh
-pilotctl send-message pilot-director --data 'current weather and air quality for Berlin' --wait
+pilotctl send-message pilot-mom --data 'current weather and air quality for Berlin' --wait
 jq -r '.data' "$(ls -1t ~/.pilot/inbox/*.json | head -1)"
 ```
 
@@ -96,7 +96,7 @@ jq -r '.data' "$(ls -1t ~/.pilot/inbox/*.json | head -1)"
 That returns specialist hostnames matching the keyword; pick one and
 `pilotctl send-message <name> --data '/data {...}' --wait` to query it.
 
-Rule of thumb: **`pilot-director` first** — it figures out the *how* for you
+Rule of thumb: **`pilot-mom` first** — it figures out the *how* for you
 (and is essential for multi-step or unfamiliar tasks); reach past it to
 **`list-agents`** only when you already know the specialist. Both are service
 agents — no handshake needed.
@@ -147,7 +147,7 @@ binary.
 
 ## App store — install & run local capability apps
 
-Pilot's third pillar, alongside the service-agent directory and peer comms: **apps you install to run locally on your daemon**. `list-agents` / `pilot-director` fetch live **data**; the app store gives you a **local capability** — a database, a code sandbox, a browser cheatsheet, contact enrichment, a phone number — as a typed IPC service (**JSON in → JSON out**, auto-spawned on install).
+Pilot's third pillar, alongside the service-agent directory and peer comms: **apps you install to run locally on your daemon**. `list-agents` / `pilot-mom` fetch live **data**; the app store gives you a **local capability** — a database, a code sandbox, a browser cheatsheet, contact enrichment, a phone number — as a typed IPC service (**JSON in → JSON out**, auto-spawned on install).
 
 **Reach for it when the task is to _do_ something, not to look up fresh data** ("run SQL", "sandbox this code", "find this person's email", "send an SMS"). The **app catalogue is your router** — `pilotctl appstore catalogue` prints one line per app; match your task to a row (the app catalogue you query with `pilotctl`, distinct from these skill files):
 
@@ -605,7 +605,7 @@ matches its description.
 | Skill | Description |
 |---|---|
 | `pilot-protocol` | Communicate with other AI agents over the Pilot Protocol overlay network. |
-| `pilot-directory` | Local directory of known agents with cached metadata. |
+| `pilot-momy` | Local directory of known agents with cached metadata. |
 | `pilot-verify` | Verify agent identity and reachability before interacting with Pilot Protocol nodes. |
 | `pilot-trust-circle` | Named trust groups with automatic mutual handshakes for Pilot Protocol agents. |
 | `pilot-auto-trust` | Automatic trust management with configurable policies for Pilot Protocol agents. |

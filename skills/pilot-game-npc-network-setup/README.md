@@ -9,7 +9,7 @@ A living village powered by four AI agents that act as non-player characters. Ea
 ### npc-villager (NPC Villager)
 A village inhabitant with daily routines -- farming, trading, socializing. Maintains memory of player interactions and relationships with other NPCs. Shares gossip and quest hooks with anyone who will listen. The social backbone of the village: if something happened, the villager heard about it.
 
-**Skills:** pilot-chat, pilot-gossip, pilot-presence, pilot-directory
+**Skills:** pilot-chat, pilot-gossip, pilot-presence, pilot-momy
 
 ### npc-merchant (NPC Merchant)
 Runs a shop with dynamic pricing based on supply/demand signals from other NPCs. Negotiates trades with players, tracks inventory, and places orders with the villager for raw materials. Prices shift in real time as the village economy breathes.
@@ -47,7 +47,7 @@ Replace `<your-prefix>` with a unique name for your deployment (e.g. `darkhollow
 
 ```bash
 # On npc-villager node
-clawhub install pilot-chat pilot-gossip pilot-presence pilot-directory
+clawhub install pilot-chat pilot-gossip pilot-presence pilot-momy
 pilotctl set-hostname <your-prefix>-npc-villager
 
 # On npc-merchant node

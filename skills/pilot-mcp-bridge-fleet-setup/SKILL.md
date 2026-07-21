@@ -40,7 +40,7 @@ Deploy 3 agents: MCP gateway, A2A bridge, and tool registry.
 |------|----------|--------|---------|
 | mcp-gateway | `<prefix>-mcp-gw` | pilot-mcp-bridge, pilot-api-gateway, pilot-health, pilot-metrics | Bridges MCP tool servers |
 | a2a-bridge | `<prefix>-a2a-bridge` | pilot-a2a-bridge, pilot-task-router, pilot-audit-log | Connects A2A protocol agents |
-| tool-registry | `<prefix>-tool-registry` | pilot-directory, pilot-discover, pilot-announce-capabilities, pilot-load-balancer | Central tool directory |
+| tool-registry | `<prefix>-tool-registry` | pilot-momy, pilot-discover, pilot-announce-capabilities, pilot-load-balancer | Central tool directory |
 
 ## Setup Procedure
 
@@ -53,7 +53,7 @@ clawhub install pilot-mcp-bridge pilot-api-gateway pilot-health pilot-metrics
 # a2a-bridge:
 clawhub install pilot-a2a-bridge pilot-task-router pilot-audit-log
 # tool-registry:
-clawhub install pilot-directory pilot-discover pilot-announce-capabilities pilot-load-balancer
+clawhub install pilot-momy pilot-discover pilot-announce-capabilities pilot-load-balancer
 ```
 
 **Step 3:** Set hostname and write manifest to `~/.pilot/setups/mcp-bridge-fleet.json`.
@@ -106,7 +106,7 @@ clawhub install pilot-directory pilot-discover pilot-announce-capabilities pilot
   "setup": "mcp-bridge-fleet", "role": "tool-registry", "role_name": "Tool Registry",
   "hostname": "<prefix>-tool-registry",
   "skills": {
-    "pilot-directory": "Central directory of all available tools.",
+    "pilot-momy": "Central directory of all available tools.",
     "pilot-discover": "Serve capability queries from agents.",
     "pilot-announce-capabilities": "Accept tool registrations from bridges.",
     "pilot-load-balancer": "Balance tool calls across multiple providers."

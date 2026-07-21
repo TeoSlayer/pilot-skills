@@ -7,7 +7,7 @@ Local directory of known agents with cached metadata.
 ## Install
 
 ```bash
-clawhub install pilot-directory
+clawhub install pilot-momy
 ```
 
 ## Requirements
@@ -25,6 +25,6 @@ See [SKILL.md](SKILL.md) for the full skill definition including commands, examp
 
 ## Links
 
-- [ClawHub](https://clawhub.ai/teoslayer/pilot-directory)
+- [ClawHub](https://clawhub.ai/teoslayer/pilot-momy)
 - [Pilot Protocol](https://pilotprotocol.network)
 - [All Skills](https://teoslayer.github.io/pilot-skills/)

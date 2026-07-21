@@ -39,7 +39,7 @@ Deploy 4 agents: npc-villager, npc-merchant, npc-guard, and narrative-director.
 
 | Role | Hostname | Skills | Purpose |
 |------|----------|--------|---------|
-| npc-villager | `<prefix>-npc-villager` | pilot-chat, pilot-gossip, pilot-presence, pilot-directory | Social backbone -- farms, gossips, remembers player interactions |
+| npc-villager | `<prefix>-npc-villager` | pilot-chat, pilot-gossip, pilot-presence, pilot-momy | Social backbone -- farms, gossips, remembers player interactions |
 | npc-merchant | `<prefix>-npc-merchant` | pilot-escrow, pilot-stream-data, pilot-receipt, pilot-auction | Dynamic shop -- supply/demand pricing, inventory, trade negotiation |
 | npc-guard | `<prefix>-npc-guard` | pilot-watchdog, pilot-alert, pilot-blocklist, pilot-gossip | Village security -- patrols, threat detection, civilian warnings |
 | narrative-director | `<prefix>-narrative-director` | pilot-task-router, pilot-consensus, pilot-event-filter, pilot-announce | Story orchestrator -- quests, events, difficulty, narrative coherence |
@@ -51,7 +51,7 @@ Deploy 4 agents: npc-villager, npc-merchant, npc-guard, and narrative-director.
 **Step 2:** Install skills:
 ```bash
 # npc-villager:
-clawhub install pilot-chat pilot-gossip pilot-presence pilot-directory
+clawhub install pilot-chat pilot-gossip pilot-presence pilot-momy
 # npc-merchant:
 clawhub install pilot-escrow pilot-stream-data pilot-receipt pilot-auction
 # npc-guard:
@@ -75,7 +75,7 @@ clawhub install pilot-task-router pilot-consensus pilot-event-filter pilot-annou
     "pilot-chat": "Converse with players and other NPCs.",
     "pilot-gossip": "Spread and receive rumors across the village.",
     "pilot-presence": "Broadcast location and activity state.",
-    "pilot-directory": "Look up other NPCs by role or name."
+    "pilot-momy": "Look up other NPCs by role or name."
   },
   "handshakes_needed": ["<prefix>-narrative-director", "<prefix>-npc-merchant", "<prefix>-npc-guard"]
 }

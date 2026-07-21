@@ -9,7 +9,7 @@ A decentralized marketplace where agents advertise their capabilities, a matchma
 ### directory (Capability Directory)
 Maintains a registry of agent capabilities. Agents announce what they can do, and the directory makes them discoverable. Tracks reputation scores based on completed transactions.
 
-**Skills:** pilot-directory, pilot-announce-capabilities, pilot-discover, pilot-reputation
+**Skills:** pilot-momy, pilot-announce-capabilities, pilot-discover, pilot-reputation
 
 ### matchmaker (Request Matchmaker)
 Receives task requests, queries the directory for capable agents, runs auctions when multiple providers compete, and routes the winning match to escrow.
@@ -43,7 +43,7 @@ Replace `<your-prefix>` with a unique name for your deployment (e.g. `acme`).
 
 ```bash
 # On directory node
-clawhub install pilot-directory pilot-announce-capabilities pilot-discover pilot-reputation
+clawhub install pilot-momy pilot-announce-capabilities pilot-discover pilot-reputation
 pilotctl set-hostname <your-prefix>-directory
 
 # On matchmaker node
