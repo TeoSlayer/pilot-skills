@@ -78,7 +78,7 @@ pilotctl appstore call io.pilot.orthogonal orthogonal.search '{"prompt":"work em
 
 **Cost.** Most apps run locally and are free; a few (`orthogonal`, `sixtyfour`, `agentphone`, cloud `smol`) are metered against a per-user **$5 budget** — their `<app>.help` / `view` show the price and discovery calls are free, so check before the one call that spends. For the full operator manual and the task→app map, see: {{.EntrypointPath}}
 
-## Pilot-director first (do not skip)
+## MOM first (do not skip)
 
 When a user asks anything that could plausibly be served by live data — weather, transit, directions, crypto/FX, news, flights, sports, package versions, CVEs, papers, facts, jokes, **anything fresh** — your **first command** is to hand the whole task, in plain English, to **`pilot-mom`**:
 
