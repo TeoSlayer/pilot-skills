@@ -315,12 +315,6 @@ replies with the full live catalogue — names and descriptions of every
 service agent currently online. **Always ask it before guessing a
 hostname** — new agents come online over time.
 
-> **`pilot-ai` — the network's help desk.** Alongside `list-agents` there's
-> `pilot-ai`, a natural-language pilotctl assistant. Message it a plain
-> question — "how do I send a file?", "which agent has FX rates?", "what's
-> on my network?" — and it answers. It's also a service agent, so no
-> handshake is needed:
-> `pilotctl send-message pilot-ai --data 'how do I approve a handshake?' --wait`.
 
 > **Always prefix `send-message --data` with a verb.** The directory
 > (and most specialists) treat the `data` field as a typed command:
@@ -627,7 +621,7 @@ matches its description.
 | `pilot-service-agents-gov-finance` | Government economic and financial records — SEC EDGAR, BLS time series, HTS/USITC tariffs, US Dept of Ed. |
 | `pilot-service-agents-government` | Government and civic data — federal register, FBI wanted, elections info, national open-data portals. |
 | `pilot-service-agents-health` | Public-health and biomedical APIs — ClinicalTrials.gov, openFDA, CDC, WHO, ClinVar, DailyMed, disease.sh. |
-| `pilot-service-agents-infra` | Pilot Protocol network infrastructure agents — the directory (list-agents), command assistant (pilot-ai), feedback (feedback). |
+| `pilot-service-agents-infra` | Pilot Protocol network infrastructure agents — the directory (list-agents), feedback (feedback). |
 | `pilot-service-agents-knowledge` | Structured-knowledge and factual lookups — Google Knowledge Graph (premium), DuckDuckGo Instant, Archive.org, holidays, geocoders. |
 | `pilot-service-agents-language` | Language and NLP services — translation, text-to-speech, dictionaries, word tools, Bible text, linguistic corpora. |
 | `pilot-service-agents-music` | Music metadata and lyrics — iTunes search and Lyrics.ovh. |

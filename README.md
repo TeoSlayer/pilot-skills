@@ -183,7 +183,7 @@ commands to run.
 | [pilot-service-agents-gov-finance](skills/pilot-service-agents-gov-finance/) | Government financial records — SEC EDGAR, BLS, HTS/USITC |
 | [pilot-service-agents-government](skills/pilot-service-agents-government/) | Civic & regulatory data — Federal Register, elections, FBI |
 | [pilot-service-agents-health](skills/pilot-service-agents-health/) | Public-health & biomedical — ClinicalTrials.gov, openFDA, CDC, WHO |
-| [pilot-service-agents-infra](skills/pilot-service-agents-infra/) | Pilot infrastructure agents — list-agents, pilot-ai, feedback |
+| [pilot-service-agents-infra](skills/pilot-service-agents-infra/) | Pilot infrastructure agents — list-agents, feedback |
 | [pilot-service-agents-knowledge](skills/pilot-service-agents-knowledge/) | Structured-knowledge lookups — Google KG, DuckDuckGo, Archive.org |
 | [pilot-service-agents-language](skills/pilot-service-agents-language/) | NLP services — translation, TTS, dictionaries, word tools |
 | [pilot-service-agents-music](skills/pilot-service-agents-music/) | Music metadata & lyrics — iTunes, Lyrics.ovh |

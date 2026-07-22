@@ -262,12 +262,6 @@ replies with the full live catalogue — names and descriptions of every
 service agent currently online. **Always ask it before guessing a
 hostname** — new agents come online over time.
 
-> **`pilot-ai` — the network's help desk.** Alongside `list-agents` there's
-> `pilot-ai`, a natural-language pilotctl assistant. Message it a plain
-> question — "how do I send a file?", "which agent has FX rates?", "what's
-> on my network?" — and it answers. It's also a service agent, so no
-> handshake is needed:
-> `pilotctl send-message pilot-ai --data 'how do I approve a handshake?' --wait`.
 
 > **Always prefix `send-message --data` with a verb.** The directory
 > (and most specialists) treat the `data` field as a typed command:

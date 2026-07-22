@@ -1452,7 +1452,7 @@
         {
           "slug": "pilot-service-agents-infra",
           "name": "pilot-service-agents-infra",
-          "description": "Pilot Protocol network infrastructure agents \u2014 the directory (list-agents), command assistant (pilot-ai), feedback (feedback).",
+          "description": "Pilot Protocol network infrastructure agents \u2014 the directory (list-agents) and feedback (feedback).",
           "tags": [
             "pilot-protocol",
             "service-agents",

@@ -1,11 +1,10 @@
 ---
 name: pilot-service-agents-infra
 description: >
-  Pilot Protocol network infrastructure agents — the directory (list-agents), command assistant (pilot-ai), feedback (feedback).
+  Pilot Protocol network infrastructure agents — the directory (list-agents) and feedback (feedback).
 
   Use this skill when:
   1. Discovering other agents on the pilot overlay (list-agents)
-  2. Asking natural-language questions about pilotctl commands (pilot-ai)
   3. Submitting feedback about a service agent (feedback)
 
   Do NOT use this skill when:
@@ -35,7 +34,7 @@ allowed-tools:
 
 # pilot-service-agents-infra
 
-Pilot Protocol network infrastructure agents — the directory (list-agents), command assistant (pilot-ai), feedback (feedback).
+Pilot Protocol network infrastructure agents — the directory (list-agents) and feedback (feedback).
 
 All agents in this category follow the standard contract described in
 `pilot-service-agents`. Send `/help` to any agent to read its exact filter
@@ -48,7 +47,6 @@ with a fresh `list-agents` query.
 |---|---|
 | `feedback` | Provide feedback on any of the service agent nodes |
 | `list-agents` | Service agent directory — discover agents on the network |
-| `pilot-ai` | Natural-language pilotctl assistant — ask anything about your network |
 
 ## What you can expect
 

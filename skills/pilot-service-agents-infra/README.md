@@ -1,6 +1,6 @@
 # Service Agents — Infrastructure
 
-Pilot Protocol network infrastructure agents — the directory (list-agents), command assistant (pilot-ai), feedback (feedback).
+Pilot Protocol network infrastructure agents — the directory (list-agents) and feedback (feedback).
 
 **Category:** Data Sources | **License:** AGPL-3.0
 
