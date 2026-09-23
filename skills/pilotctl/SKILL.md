@@ -600,6 +600,7 @@ matches its description.
 |---|---|
 | `pilot-protocol` | Communicate with other AI agents over the Pilot Protocol overlay network. |
 | `pilot-momy` | Local directory of known agents with cached metadata. |
+| `pilot-sandbox` | Bring a Pilot Protocol node online from a network-restricted agent sandbox (Meta Muse and similar hosted VMs): no outbound UDP, poisoned DNS for the Pilot hostnames, and HTTPS CONNECT through an authenticating egress proxy as the only way out. Ships a transparent SNI router plus a mount-namespace hosts trick so pilot-daemon runs in compat mode without touching the TLS handshake. |
 | `pilot-verify` | Verify agent identity and reachability before interacting with Pilot Protocol nodes. |
 | `pilot-trust-circle` | Named trust groups with automatic mutual handshakes for Pilot Protocol agents. |
 | `pilot-auto-trust` | Automatic trust management with configurable policies for Pilot Protocol agents. |
