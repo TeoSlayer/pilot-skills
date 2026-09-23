@@ -6,9 +6,12 @@
 #                              started with -registry-trust pinned
 #   STUB_NEVER_REGISTER=1      runs without ever registering
 #   STUB_ECHO=TEXT             logs TEXT at start (redaction tests)
-# A running stub is `sleep` exec'd with argv0 = this path, so its command line
-# looks like pilot-daemon's; ~/.pilot/stub-state holds "<pid> <version>" while
-# registered, which the stub pilotctl reports as `info`.
+# A running stub is exec'd with argv0 = this path, so its command line looks
+# like pilot-daemon's: perl listening on the -socket path when that path is
+# inside $HOME (so socket-owner discovery can find it; never a real daemon's
+# socket), else `sleep`. ~/.pilot/stub-state holds "<pid> <version>" while
+# registered, which the stub pilotctl reports as `info`; ~/.pilot/stub-env.log
+# gets the HTTPS_PROXY each start saw (test HOMEs only).
 STUB_VERSION="v1.0.0"
 case "${1:-}" in
   -version)
@@ -37,6 +40,14 @@ case "${1:-}" in
     ;;
 esac
 echo "$*" >> "$HOME/.pilot/stub-args.log"
+echo "${HTTPS_PROXY:-}" >> "$HOME/.pilot/stub-env.log"
+socket=""
+prev=""
+for a in "$@"; do
+  if [ "$prev" = -socket ]; then socket="$a"; fi
+  case "$a" in -socket=*) socket="${a#-socket=}" ;; esac
+  prev="$a"
+done
 case " $* " in
   *" -registry-trust pinned "* | *" -registry-trust=pinned "*) pinned=1 ;;
   *) pinned=0 ;;
@@ -52,4 +63,15 @@ if [ "${STUB_NEVER_REGISTER:-0}" != 1 ]; then
   echo "$$ $STUB_VERSION" > "$HOME/.pilot/stub-state"
   echo 'level=INFO msg="daemon registered" node_id=4242 addr=0:0000.0000.1092'
 fi
+case "$socket" in
+  "$HOME"/*)
+    if command -v perl > /dev/null 2>&1; then
+      exec -a "$0" perl -MIO::Socket::UNIX -e '
+        unlink $ARGV[0];
+        my $s = IO::Socket::UNIX->new(Type => SOCK_STREAM(), Local => $ARGV[0], Listen => 5)
+          or die "stub listen $ARGV[0]: $!";
+        sleep 100000;' "$socket"
+    fi
+    ;;
+esac
 exec -a "$0" sleep 100000

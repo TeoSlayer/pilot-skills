@@ -121,7 +121,7 @@ bins_checksum() {
 # before executing any of it.
 main() {
   local dest ref tarball tmp src skill up rc=0 skills_only no_start pilot_dir bin_dir
-  local frontmatter had_bins=0 before="" upgraded=0 proxy
+  local frontmatter had_bins=0 before="" upgraded=0 proxy stop_out stop_failed=0
   dest="${MUSE_SKILLS_DIR:-$HOME/workspace/skills}"
   ref="${PILOT_SKILLS_REF:-main}"
   skills_only="${PILOT_SKILLS_ONLY:-0}"
@@ -246,11 +246,20 @@ MSG
     exit 0
   fi
   if [ "$upgraded" = 1 ]; then
-    # The installer swaps the files but not a daemon under pilot-up's respawn
-    # loop: stop it so the new binary is the one that comes up.
+    # The installer swaps the files but not a running daemon (pilot-up's, or
+    # one started by hand): stop it so the new binary is the one that comes up.
+    # --stop exits 1 when a daemon still answers afterwards.
     echo
-    echo "The binaries changed: restarting the node on the new pilot-daemon"
-    bash "$up" --stop < /dev/null || true
+    echo "The binaries changed: stopping the running node so the new pilot-daemon comes up"
+    stop_out="$(bash "$up" --stop < /dev/null 2>&1)" || stop_failed=1
+    if [ -n "$stop_out" ]; then printf '%s\n' "$stop_out"; fi
+    if [ "$stop_failed" = 1 ]; then
+      echo "warning: the running node could not be stopped, so it stays on the old pilot-daemon until it is (see above)" >&2
+    elif [[ $stop_out == *"pilot-up: stopped "* ]]; then
+      echo "Restarting the node on the new pilot-daemon"
+    else
+      echo "No node was running; starting it on the new pilot-daemon"
+    fi
   fi
   echo
   echo "Bringing the node online: bash $up"
@@ -259,11 +268,19 @@ MSG
   echo
   case "$rc" in
     0)
-      cat << MSG
+      if [ "$stop_failed" = 1 ]; then
+        cat << MSG
+Done. Skills in $dest, Pilot upgraded in $bin_dir. The node is online but still
+runs the old pilot-daemon, which could not be stopped (see above). Stop it,
+then run: bash $up
+MSG
+      else
+        cat << MSG
 Done. Skills in $dest, Pilot in $bin_dir, node online.
 After a VM restart run: bash $up
 Try it: $bin_dir/pilotctl --json send-message pilot-mom --data 'current BTC price in USD' --wait
 MSG
+      fi
       ;;
     3)
       echo "Skills and Pilot are installed, but the node cannot start from this shell yet: see the steps above." >&2

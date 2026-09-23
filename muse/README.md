@@ -52,8 +52,16 @@ beacon WSS, both on `:443`) under a small respawn loop, logging to
   error, `pilot-up.sh` restarts it once with `-registry-trust=pinned` and the
   bundled fingerprint (the settings the first Muse node registered with) and
   says so. `PILOT_REGISTRY_TRUST` and `PILOT_REGISTRY_FINGERPRINT` override it.
-- It uses the daemon's `-transport=auto` when `pilot-daemon -h` offers it,
-  `-transport=compat` otherwise.
+- **Transport:** `-transport=compat` whenever a proxy is set or this host is
+  marked as Muse. It does not use `-transport=auto` there: auto makes one
+  check through the proxy and settles on `udp` when it fails (a 407, a slow
+  proxy), and `udp` never uses the proxy. With no proxy, a `"transport"` in
+  `config.json` is left to the daemon, else auto when offered.
+  `PILOT_UP_TRANSPORT=compat|auto|udp` overrides.
+- **Rotating proxy credentials:** Muse rotates them every few minutes and a
+  running process keeps the ones it started with. Rerun `pilot-up.sh` from a
+  fresh shell: it restarts the daemon and router if the proxy settings
+  changed, and restarts an online node whose logs show 407s since it started.
 
 Muse has no systemd, so nothing restarts the node after the VM restarts. Run
 this then (it exits at once if the node is already online):
@@ -62,8 +70,10 @@ this then (it exits at once if the node is already online):
 bash ~/workspace/skills/pilot-sandbox/scripts/pilot-up.sh
 ```
 
-Stop it with `pilot-up.sh --stop`. Pid files that a VM restart leaves behind
-are checked against the process command line and removed, never signalled.
+Stop it with `pilot-up.sh --stop`, which also stops a daemon or SNI router
+started by hand (found through the socket and the router port) and exits 1
+if one survives. Pid files that a VM restart leaves behind are checked
+against the process command line and removed, never signalled.
 
 ## Skill frontmatter for Muse
 
@@ -98,7 +108,7 @@ the skills there current.
 |---|---|
 | `PILOT_SKILLS_ONLY=1` | Install the skills only, as the installer did originally |
 | `PILOT_NO_START=1` | Install skills and binaries, but do not start the node |
-| `PILOT_UPGRADE=1` | Rerun the official Pilot installer even if the binaries exist, and restart the node when they changed (use it once the `-proxy` release is out) |
+| `PILOT_UPGRADE=1` | Rerun the official Pilot installer even if the binaries exist, and restart the node when they changed (use it once the `-proxy` release is out). If the running node cannot be stopped, it says so instead of claiming the new version runs |
 | `PILOT_MUSE_FRONTMATTER=0` | Keep each skill's original frontmatter instead of the Muse shape |
 | `MUSE_SKILLS_DIR=/some/path` | Install the skills somewhere other than `~/workspace/skills` |
 | `PILOT_SKILLS="pilotctl pilot-chat"` | Pick a different set of skills (`pilot-sandbox` is always added unless skills-only) |

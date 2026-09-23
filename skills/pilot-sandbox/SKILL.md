@@ -82,7 +82,8 @@ bash ~/workspace/skills/pilot-sandbox/scripts/pilot-up.sh
 Returns: exit 0 with the node address once `daemon registered` appears (or
 at once if a registered daemon is already running); exit 1 with the log tail
 and the next diagnostic step; exit 3 when the only viable path needs root
-(it prints what to do). Stop everything with `pilot-up.sh --stop`.
+(it prints what to do). `pilot-up.sh --stop` stops everything, including a
+daemon or router it did not start (exit 1 if one survives).
 
 `pilot-up.sh` picks the first path that fits (force one with
 `PILOT_UP_MODE=native|direct|sni`):
@@ -93,32 +94,33 @@ and the next diagnostic step; exit 3 when the only viable path needs root
 | `direct` | older daemon, no proxy in the environment | nothing extra |
 | `sni` | older daemon behind a proxy | root + CAP_SYS_ADMIN, python3, unshare |
 
-The daemon runs under a respawn loop detached with `setsid`, logging to
-`~/.pilot/daemon.log`; a crash is respawned, a clean exit is not. Pid files a
-VM restart leaves behind are checked against the command line, then removed.
+- The daemon runs under a respawn loop (`setsid`), logging to
+  `~/.pilot/daemon.log`. Stale pid files are checked, then removed.
+- Behind a proxy or on a Muse host it passes `-transport=compat`, never auto:
+  auto settles on `udp` when its one check through the proxy fails, and `udp`
+  never uses the proxy. `PILOT_UP_TRANSPORT=compat|auto|udp` overrides.
+- Muse rotates proxy credentials every few minutes; a running process keeps
+  its own. Rerun from a fresh shell: what started with other settings restarts.
 
 ## Fast path: native proxy (pilot-daemon with -proxy)
-By hand, what `pilot-up.sh` runs (`-transport=auto` when `-h` offers it):
+What `pilot-up.sh` runs behind a proxy, in the foreground for debugging (start
+the node for real with `pilot-up.sh`, so that `--stop` and reruns manage it):
 ```bash
 export PATH="$PATH:$HOME/.pilot/bin"
 pilot-daemon -h 2>&1 | grep -E '^\s+-proxy'        # supported?
-setsid nohup pilot-daemon -transport=compat -proxy=auto \
+pilot-daemon -transport=compat -proxy=auto \
   -registry registry.pilotprotocol.network:443 -registry-tls -registry-trust system \
-  -identity ~/.pilot/identity.json -socket /tmp/pilot.sock \
-  >> ~/.pilot/daemon.log 2>&1 < /dev/null &
+  -identity ~/.pilot/identity.json -socket /tmp/pilot.sock
 ```
-Returns: `daemon registered` and `compat mode tunnel up` in `daemon.log`.
+Returns: `daemon registered` and `compat mode tunnel up` in its output.
 
-- `-proxy=auto` (default; env `PILOT_PROXY`): in compat mode every outbound
-  connection (registry TLS, beacon WSS, HTTP clients) goes through
-  `HTTPS_PROXY`/`https_proxy`, falling back to `ALL_PROXY`, and honours
-  `NO_PROXY`. `off` disables it; an explicit `http://[user:pass@]host:port`
-  applies to any transport.
-- The proxy is asked to `CONNECT` by hostname, so the poisoned local DNS never
-  matters. TLS stays end to end (pinned fingerprints still work) and the
-  daemon logs proxy URLs redacted (`http://***@host:port`).
-- Run the daemon directly: released `pilotctl daemon start` cannot pass
-  `-proxy`, `-registry-trust` or `-registry-fingerprint`.
+- `-proxy=auto` (default; env `PILOT_PROXY`): in compat mode every connection
+  goes through `HTTPS_PROXY` (else `ALL_PROXY`), honouring `NO_PROXY`; `off`
+  disables it; an explicit `http://[user:pass@]host:port` applies always.
+- The proxy is asked to `CONNECT` by hostname, so the poisoned DNS never
+  matters; TLS stays end to end and proxy URLs are logged redacted.
+- Released `pilotctl daemon start` cannot pass `-proxy`, `-registry-trust` or
+  `-registry-fingerprint`, so the daemon is run directly.
 
 ## Fallback: SNI router (older daemons, root)
 For a `pilot-daemon` without `-proxy`. `pilot-up.sh` does all of this when it
@@ -132,13 +134,14 @@ runs as root; the pieces, under `scripts/`:
    mount namespace (`unshare -m`) and execs `pilot-daemon` in compat mode.
    Only the daemon sees the override.
 
-By hand, as root, from the skill directory:
+To debug by hand (root, skill directory), run each piece in the foreground;
+start the node for real with `pilot-up.sh`:
 ```bash
-nohup python3 scripts/sni_router.py >> ~/.pilot/sni_router.log 2>&1 &
-setsid unshare -m ./scripts/run-daemon.sh >> ~/.pilot/daemon.log 2>&1 < /dev/null &
+python3 scripts/sni_router.py              # shell 1
+unshare -m ./scripts/run-daemon.sh         # shell 2
 ```
-Returns: `routed SNI=...` lines in `sni_router.log`, then `daemon registered`
-in `daemon.log`. Router lines without registration mean TLS trust failed.
+Returns: `routed SNI=...` lines from the router, then `daemon registered`
+from the daemon. Router lines without registration mean TLS trust failed.
 
 ## Verify end to end
 ```bash
@@ -160,14 +163,12 @@ Go looks, it sets `SSL_CERT_FILE` to one found on the box, since the beacon
 ```bash
 export PILOT_REGISTRY_TRUST=pinned PILOT_REGISTRY_FINGERPRINT=<hex sha256>
 ```
-Re-fetch the fingerprint with the snippet in `references/troubleshooting.md`
-after each renewal (~60 days).
+Re-fetch it after each renewal (~60 days): `references/troubleshooting.md`.
 
 ## Operating rules
 1. Never print `HTTPS_PROXY` or copy it into logs; it carries credentials.
 2. Never modify a ClientHello in flight. Route on SNI read-only.
-3. `~/.pilot/identity.json` is the node identity. Never print or copy the
-   private key.
+3. `~/.pilot/identity.json` is the node identity: never print or copy it.
 4. There is no supervisor across reboots: rerun `pilot-up.sh` after one.
 5. With the `sni` path, only the daemon lives in the namespace. `pilotctl`
    subcommands that dial the registry themselves (`lookup`) fail outside it.
@@ -194,7 +195,6 @@ Returns: `pilot-up.sh` prints `node online` with the address, then
 - Fallback only: `python3` (stdlib), `unshare` (util-linux), root or `CAP_SYS_ADMIN`
 
 ## References
-- `references/troubleshooting.md`: native-mode symptoms (407, refused
-  `CONNECT`, `NO_PROXY`, x509), every dead end already explored, and the
-  fingerprint re-fetch snippet.
+- `references/troubleshooting.md`: symptoms (407, refused `CONNECT`,
+  `NO_PROXY`, x509), dead ends already explored, fingerprint re-fetch.
 - https://pilotprotocol.network/docs/firewalls: compat mode without a proxy.

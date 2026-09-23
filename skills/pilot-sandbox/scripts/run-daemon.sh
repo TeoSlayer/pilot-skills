@@ -4,10 +4,11 @@
 # router (scripts/sni_router.py).
 #
 # pilot-up.sh launches it for you when the installed pilot-daemon predates the
-# -proxy flag. By hand, launch it ONLY like this (root or CAP_SYS_ADMIN
-# required for unshare -m):
+# -proxy flag; start the node that way, so that `pilot-up.sh --stop` and reruns
+# manage it. To debug by hand, run it in the foreground (Ctrl-C stops it), root
+# or CAP_SYS_ADMIN required for unshare -m:
 #
-#   setsid unshare -m ./scripts/run-daemon.sh >> ~/.pilot/daemon.log 2>&1 < /dev/null &
+#   unshare -m ./scripts/run-daemon.sh
 #
 # Environment (all optional):
 #   PILOT_REGISTRY_TRUST        system (default) | pinned

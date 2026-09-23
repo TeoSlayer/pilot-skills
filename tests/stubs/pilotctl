@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-# Stub pilotctl for the tests: `--json info` answers while the stub daemon that
-# wrote ~/.pilot/stub-state is alive; `--json daemon stop` finds nothing to stop
-# (like the real one facing a pilot.pid of "0").
+# Stub pilotctl for the tests: `--json info` answers while the process named in
+# ~/.pilot/stub-state is alive. `--json daemon stop` finds nothing to stop (like
+# the real one facing a pilot.pid of "0" on a box without lsof), unless
+# STUB_CTL_DISCOVER=1: then it stops that process, as the real one does when
+# lsof finds the socket's owner.
 state="$HOME/.pilot/stub-state"
 case "$*" in
   "--json info")
@@ -16,6 +18,13 @@ case "$*" in
     exit 1
     ;;
   "--json daemon stop")
+    if [ "${STUB_CTL_DISCOVER:-0}" = 1 ] && [ -f "$state" ]; then
+      read -r pid ver < "$state"
+      if kill -0 "$pid" 2>/dev/null && kill -TERM "$pid" 2>/dev/null; then
+        echo '{"status":"ok"}'
+        exit 0
+      fi
+    fi
     echo '{"status":"error","code":"not_running"}'
     exit 1
     ;;

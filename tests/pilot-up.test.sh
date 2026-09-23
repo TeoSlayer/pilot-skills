@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # Tests for skills/pilot-sandbox/scripts/pilot-up.sh against stub binaries
-# (tests/stubs): pid-file safety, the pinned-trust fallback, transport and
-# version reporting. No network, no root needed, nothing outside a temp HOME.
+# (tests/stubs): pid-file safety, the pinned-trust fallback, transport choice,
+# version reporting, stopping nodes pilot-up did not start, and restarts after
+# proxy credentials rotate. No network, no root needed, nothing outside a temp
+# HOME: every run gets PILOT_SOCKET inside it, so a real daemon on
+# /tmp/pilot.sock is never looked at.
 #   bash tests/pilot-up.test.sh
 set -uo pipefail
 
@@ -22,13 +25,15 @@ cleanup() {
   for h in "$T"/h.*; do
     # In its own process group, so a regression that signals the caller's
     # group cannot take the test runner down with it.
-    [ -d "$h/.pilot" ] && env -i PATH="$PATH" HOME="$h" \
+    [ -d "$h/.pilot" ] && env -i PATH="$PATH" HOME="$h" PILOT_SOCKET="$h/pilot.sock" \
       perl -e 'setpgrp(0, 0); exec @ARGV or die' bash "$UP" --stop > /dev/null 2>&1
   done
   for h in ${BYSTANDERS[@]+"${BYSTANDERS[@]}"}; do
     pkill -P "$h" 2> /dev/null
     kill "$h" 2> /dev/null
   done
+  # Anything started by hand below (stub daemons, routers) runs from $T.
+  pkill -f "$T/" 2> /dev/null
   rm -rf "$T"
 }
 trap cleanup EXIT
@@ -94,6 +99,35 @@ up() {
 alive() { kill -0 "$1" 2> /dev/null; }
 not() { ! "$@"; }
 
+# by_hand [VAR=value...] -- ARGS — start the stub pilot-daemon the way the old
+# "by hand" recipes did: no pid file, own process group. Sets HAND_PID.
+by_hand() {
+  local envs=()
+  while [ $# -gt 0 ] && [ "$1" != -- ]; do
+    envs+=("$1")
+    shift
+  done
+  shift
+  rm -f "$H/.pilot/stub-state"
+  env -i PATH="$PATH" HOME="$H" ${envs[@]+"${envs[@]}"} \
+    perl -e 'setpgrp(0, 0); exec @ARGV or die' "$H/.pilot/bin/pilot-daemon" "$@" \
+    >> "$H/.pilot/hand.log" 2>&1 < /dev/null &
+  HAND_PID=$!
+  disown "$HAND_PID"
+  local i=0
+  while [ ! -s "$H/.pilot/stub-state" ] && [ "$i" -lt 50 ]; do
+    sleep 0.1
+    i=$((i + 1))
+  done
+  i=0
+  while [ ! -S "$H/pilot.sock" ] && [ "$i" -lt 50 ]; do
+    sleep 0.1
+    i=$((i + 1))
+  done
+}
+count_lines() { if [ -f "$1" ]; then wc -l < "$1" | tr -d ' '; else echo 0; fi; }
+last_line() { tail -n 1 "$1" 2> /dev/null; }
+
 echo "=== pilot-up.sh tests ==="
 
 # 1. pilot.pid holding "0" (a failed `pilotctl daemon start`): never signalled.
@@ -104,7 +138,7 @@ expect "pid 0: caller's process group survives" [ "$SURVIVED" = 1 ]
 expect "pid 0: node comes up (rc 0)" [ "$RC" = 0 ]
 expect "pid 0: stale file reported" has "removed stale $H/.pilot/pilot.pid"
 expect "pid 0: native path chosen" has "native path"
-expect "pid 0: 'auto-detect' is not -transport=auto" grep -q -- '-transport=compat' "$H/.pilot/stub-args.log"
+expect "pid 0: behind a proxy: -transport=compat" grep -q -- '-transport=compat' "$H/.pilot/stub-args.log"
 expect "proxy credentials never printed" lacks "s3cret"
 expect "proxy shown redacted" has "proxy: http://***@127.0.0.1:9"
 printf '0\n' > "$H/.pilot/pilot.pid"
@@ -227,6 +261,7 @@ new_home
 up
 expect "direct path: rc 0" [ "$RC" = 0 ]
 expect "direct path: chosen" has "direct path"
+expect "direct path: 'auto-detect' is not -transport=auto" grep -q -- '-transport=compat' "$H/.pilot/stub-args.log"
 up -- --stop
 
 # 11. Older daemon behind a proxy, sni path out of reach: exit 3 with advice
@@ -257,8 +292,167 @@ up -- --stop
 up -- --help
 expect "--help: rc 0" [ "$RC" = 0 ]
 expect "--help: usage text" has "pilot-up.sh --stop"
-up PILOT_UP_TRANSPORT=udp
+up PILOT_UP_TRANSPORT=quic
 expect "bad PILOT_UP_TRANSPORT: rc 2" [ "$RC" = 2 ]
+
+# 14. Transport: compat whenever a proxy is set, even when the daemon offers
+#     auto (auto settles on udp when its one check through the proxy fails,
+#     and udp never uses the proxy).
+new_home
+up STUB_HELP_PROXY=1 STUB_TRANSPORT_AUTO=1 HTTPS_PROXY=http://alice:s3cret@127.0.0.1:9
+expect "proxy + auto offered: rc 0" [ "$RC" = 0 ]
+expect "proxy + auto offered: -transport=compat" grep -q -- '-transport=compat' "$H/.pilot/stub-args.log"
+expect "proxy + auto offered: never -transport=auto" not grep -q -- '-transport=auto' "$H/.pilot/stub-args.log"
+expect "proxy + auto offered: says why" has "-transport=compat (proxy in the environment)"
+up -- --stop
+new_home
+mkdir -p "$H/.pilot/targets"
+: > "$H/.pilot/targets/muse"
+up STUB_HELP_PROXY=1 STUB_TRANSPORT_AUTO=1
+expect "Muse marker, no proxy env: -transport=compat" grep -q -- '-transport=compat' "$H/.pilot/stub-args.log"
+expect "Muse marker: says why" has "(Muse host"
+up -- --stop
+new_home
+printf '{"transport": "auto"}\n' > "$H/.pilot/config.json"
+up STUB_HELP_PROXY=1 STUB_TRANSPORT_AUTO=1 HTTPS_PROXY=http://alice:s3cret@127.0.0.1:9
+expect "config auto + proxy: -transport=compat on argv" grep -q -- '-transport=compat' "$H/.pilot/stub-args.log"
+expect "config auto + proxy: says it overrides" has "note: config.json sets transport auto; using compat"
+up -- --stop
+new_home
+printf '{"proxy": "http://cfg:pw@127.0.0.1:9"}\n' > "$H/.pilot/config.json"
+up STUB_HELP_PROXY=1 STUB_TRANSPORT_AUTO=1
+expect "proxy in config.json: -transport=compat" grep -q -- '-transport=compat' "$H/.pilot/stub-args.log"
+up -- --stop
+new_home
+printf '{"transport": "compat"}\n' > "$H/.pilot/config.json"
+up STUB_HELP_PROXY=1 STUB_TRANSPORT_AUTO=1
+expect "config transport, no proxy: rc 0" [ "$RC" = 0 ]
+expect "config transport, no proxy: not overridden on argv" not grep -q -- '-transport' "$H/.pilot/stub-args.log"
+expect "config transport, no proxy: says so" has "transport from config.json"
+up -- --stop
+new_home
+up STUB_HELP_PROXY=1 STUB_TRANSPORT_AUTO=1 HTTPS_PROXY=http://alice:s3cret@127.0.0.1:9 PILOT_UP_TRANSPORT=auto
+expect "PILOT_UP_TRANSPORT=auto wins" grep -q -- '-transport=auto' "$H/.pilot/stub-args.log"
+up -- --stop
+new_home
+up STUB_HELP_PROXY=1 STUB_TRANSPORT_AUTO=1 STUB_NEVER_REGISTER=1 PILOT_UP_WAIT=3 \
+  'STUB_ECHO=msg="transport auto-selected" transport=udp reason="compat beacon unreachable (proxy CONNECT beacon.pilotprotocol.network:443: 407 Proxy Authentication Required)"'
+expect "auto settled on udp: rc 1" [ "$RC" = 1 ]
+expect "auto settled on udp: next step forces compat" has "next step: -transport=auto settled on udp"
+up -- --stop
+
+# 15. A daemon pilot-up did not start (by hand, no pid file): --stop finds it
+#     through its socket, the drift note's restart command works, and a
+#     daemon that cannot be stopped is reported with exit 1.
+new_home
+by_hand STUB_HELP_PROXY=1 -- -transport=compat -proxy=auto -socket "$H/pilot.sock"
+hand="$HAND_PID"
+up STUB_HELP_PROXY=1
+expect "by hand: already online" has "node already online"
+up -- --stop
+expect "by hand --stop: rc 0" [ "$RC" = 0 ]
+expect "by hand --stop: found on the socket" has "stopped pilot-daemon pid $hand (it answered on $H/pilot.sock; not started by pilot-up)"
+expect "by hand --stop: daemon gone" not alive "$hand"
+up -- --stop
+expect "nothing running --stop: rc 0" [ "$RC" = 0 ]
+expect "nothing running --stop: says so" has "nothing to stop"
+by_hand STUB_HELP_PROXY=1 -- -transport=compat -socket "$H/pilot.sock"
+hand="$HAND_PID"
+make_stubs "$H/.pilot/bin" v2.0.0
+up STUB_HELP_PROXY=1
+expect "by hand + upgraded binary: drift note" has "the running daemon is v1.0.0"
+up -- --stop
+expect "drift advice (--stop) stops the hand-started daemon" not alive "$hand"
+up STUB_HELP_PROXY=1
+expect "drift advice (pilot-up) runs the new binary" has "running v2.0.0"
+up -- --stop
+# No socket owner to find (no listener): pilotctl daemon stop is asked.
+by_hand STUB_HELP_PROXY=1 -- -transport=compat
+hand="$HAND_PID"
+up STUB_CTL_DISCOVER=1 -- --stop
+expect "pilotctl fallback: rc 0" [ "$RC" = 0 ]
+expect "pilotctl fallback: says so" has "(pilotctl daemon stop; not started by pilot-up)"
+expect "pilotctl fallback: daemon gone" not alive "$hand"
+# Something answers that is not pilot-daemon and pilotctl cannot stop it.
+bash -c 'sleep 300; true' > /dev/null 2>&1 < /dev/null &
+BYSTANDERS+=($!)
+disown -a
+b3="$!"
+echo "$b3 v1.0.0" > "$H/.pilot/stub-state"
+up -- --stop
+expect "unstoppable: rc 1" [ "$RC" = 1 ]
+expect "unstoppable: says so" has "could not be stopped"
+expect "unstoppable: the non-daemon owner is left alone" alive "$b3"
+rm -f "$H/.pilot/stub-state"
+
+# 16. An SNI router started by hand (no pid file) holding the router port is
+#     stopped by --stop (and would otherwise make the sni path fail with
+#     "Address already in use").
+if command -v python3 > /dev/null 2>&1 && { [ -r /proc/net/tcp ] || command -v lsof > /dev/null 2>&1; }; then
+  new_home
+  port=$((20000 + RANDOM % 20000))
+  env -i PATH="$PATH" HOME="$H" HTTPS_PROXY=http://u:p@127.0.0.1:9 PILOT_SNI_LISTEN="127.0.0.1:$port" \
+    perl -e 'setpgrp(0, 0); exec @ARGV or die' python3 "$ROOT/skills/pilot-sandbox/scripts/sni_router.py" \
+    >> "$H/.pilot/hand-router.log" 2>&1 < /dev/null &
+  router="$!"
+  disown "$router"
+  for _ in $(seq 1 50); do
+    grep -q 'listening' "$H/.pilot/hand-router.log" 2> /dev/null && break
+    sleep 0.1
+  done
+  up "PILOT_SNI_LISTEN=127.0.0.1:$port" -- --stop
+  expect "router by hand --stop: rc 0" [ "$RC" = 0 ]
+  expect "router by hand --stop: found" has "stopped SNI router pid $router (listening on port $port; not started by pilot-up)"
+  expect "router by hand --stop: gone" not alive "$router"
+else
+  echo "  (skipping hand-started router check: needs python3 and /proc or lsof)"
+fi
+
+# 17. Proxy credentials rotate (Meta Muse): a rerun with different settings
+#     restarts what holds the old ones instead of reusing it.
+new_home
+up STUB_HELP_PROXY=1 STUB_NEVER_REGISTER=1 PILOT_UP_WAIT=2 HTTPS_PROXY=http://muse:oldpw@127.0.0.1:9
+expect "rotation: first run not registered" [ "$RC" = 1 ]
+expect "rotation: settings recorded" [ -s "$H/.pilot/pilot-up.proxy" ]
+expect "rotation: record is owner-only" [ "$(stat -c %a "$H/.pilot/pilot-up.proxy" 2> /dev/null || stat -f %Lp "$H/.pilot/pilot-up.proxy")" = 600 ]
+expect "rotation: record holds no credentials" not grep -q 'oldpw' "$H/.pilot/pilot-up.proxy"
+up STUB_HELP_PROXY=1 STUB_NEVER_REGISTER=1 PILOT_UP_WAIT=2 HTTPS_PROXY=http://muse:oldpw@127.0.0.1:9
+expect "rotation: same settings: loop adopted" has "respawn loop already running"
+up STUB_HELP_PROXY=1 HTTPS_PROXY=http://muse:newpw@127.0.0.1:9
+expect "rotation: new settings: rc 0" [ "$RC" = 0 ]
+expect "rotation: new settings: loop restarted" has "restarting respawn loop pid"
+expect "rotation: new settings: not adopted" lacks "waiting for it instead"
+expect "rotation: daemon started with the new proxy" [ "$(last_line "$H/.pilot/stub-env.log")" = "http://muse:newpw@127.0.0.1:9" ]
+starts="$(count_lines "$H/.pilot/stub-args.log")"
+up STUB_HELP_PROXY=1 HTTPS_PROXY=http://muse:thirdpw@127.0.0.1:9
+expect "rotation, online, no 407: left running" has "node already online"
+expect "rotation, online, no 407: note" has "differs from the one the node started with"
+expect "rotation, online, no 407: no restart" [ "$(count_lines "$H/.pilot/stub-args.log")" = "$starts" ]
+echo 'level=WARN msg="registry dial failed" error="proxy CONNECT registry.pilotprotocol.network:443: 407 Proxy Authentication Required"' >> "$H/.pilot/daemon.log"
+up STUB_HELP_PROXY=1 HTTPS_PROXY=http://muse:thirdpw@127.0.0.1:9
+expect "rotation, online, 407: rc 0" [ "$RC" = 0 ]
+expect "rotation, online, 407: restarts" has "restarting the node with the current ones"
+expect "rotation, online, 407: back online" has "node online via the native path"
+expect "rotation, online, 407: new proxy in use" [ "$(last_line "$H/.pilot/stub-env.log")" = "http://muse:thirdpw@127.0.0.1:9" ]
+starts="$(count_lines "$H/.pilot/stub-args.log")"
+echo 'level=WARN msg="registry dial failed" error="proxy CONNECT registry.pilotprotocol.network:443: 407 Proxy Authentication Required"' >> "$H/.pilot/daemon.log"
+up STUB_HELP_PROXY=1 HTTPS_PROXY=http://muse:thirdpw@127.0.0.1:9
+expect "407 with the current credentials: warns" has "the node already uses this shell's HTTPS_PROXY"
+expect "407 with the current credentials: no pointless restart" [ "$(count_lines "$H/.pilot/stub-args.log")" = "$starts" ]
+expect "rotation: credentials never printed" lacks "pw@"
+up -- --stop
+expect "--stop removes the settings record" [ ! -e "$H/.pilot/pilot-up.proxy" ]
+new_home
+up STUB_HELP_PROXY=1 STUB_NEVER_REGISTER=1 PILOT_UP_WAIT=3 HTTPS_PROXY=http://muse:pw@127.0.0.1:9 \
+  'STUB_ECHO=proxy CONNECT registry.pilotprotocol.network:443: 407 Proxy Authentication Required'
+expect "407 next step: rc 1" [ "$RC" = 1 ]
+expect "407 next step: fresh shell (rotation)" has "Rerun from a new shell"
+up -- --stop
+new_home
+up STUB_HELP_PROXY=1 STUB_NEVER_REGISTER=1 PILOT_UP_WAIT=3 HTTPS_PROXY=http://muse:pw@127.0.0.1:9 \
+  'STUB_ECHO=dial registry TLS: proxy CONNECT registry.pilotprotocol.network:443: 502 Bad Gateway'
+expect "502 next step: upstream, not the allowlist" has "could not reach the Pilot host (502/503/504)"
+up -- --stop
 
 echo "pilot-up.sh: $PASSES passed, $FAILS failed"
 [ "$FAILS" = 0 ]
