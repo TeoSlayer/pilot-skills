@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-07-20T08:48:57Z",
+  "generated_at": "2026-09-23T09:58:44Z",
   "version": "1.0.0",
-  "total": 156,
+  "total": 157,
   "categories": [
     {
       "name": "Core",
@@ -585,22 +585,6 @@
           "install": "clawhub install pilot-announce-capabilities"
         },
         {
-          "slug": "pilot-momy",
-          "name": "pilot-momy",
-          "description": "Local directory of known agents with cached metadata.",
-          "tags": [
-            "pilot-protocol",
-            "directory",
-            "cache"
-          ],
-          "version": "1.0",
-          "license": "AGPL-3.0",
-          "clawhub_slug": "pilot-momy",
-          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-momy",
-          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-momy",
-          "install": "clawhub install pilot-momy"
-        },
-        {
           "slug": "pilot-discover",
           "name": "pilot-discover",
           "description": "Advanced agent discovery by tags and status.",
@@ -681,6 +665,22 @@
           "install": "clawhub install pilot-mesh-status"
         },
         {
+          "slug": "pilot-momy",
+          "name": "pilot-momy",
+          "description": "Local directory of known agents with cached metadata.",
+          "tags": [
+            "pilot-protocol",
+            "directory",
+            "cache"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-momy",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-momy",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-momy",
+          "install": "clawhub install pilot-momy"
+        },
+        {
           "slug": "pilot-network-map",
           "name": "pilot-network-map",
           "description": "Visualize network topology, trust graphs, and latency.",
@@ -695,6 +695,24 @@
           "clawhub_url": "https://clawhub.ai/teoslayer/pilot-network-map",
           "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-network-map",
           "install": "clawhub install pilot-network-map"
+        },
+        {
+          "slug": "pilot-sandbox",
+          "name": "pilot-sandbox",
+          "description": "Bring a Pilot Protocol node online from a network-restricted agent sandbox (Meta Muse and similar hosted VMs): no outbound UDP, poisoned DNS for the Pilot hostnames, and HTTPS CONNECT through an authenticating egress proxy as the only way out. Ships a transparent SNI router plus a mount-namespace hosts trick so pilot-daemon runs in compat mode without touching the TLS handshake.",
+          "tags": [
+            "pilot-protocol",
+            "setup",
+            "sandbox",
+            "proxy",
+            "compat-mode"
+          ],
+          "version": "1.0",
+          "license": "AGPL-3.0",
+          "clawhub_slug": "pilot-sandbox",
+          "clawhub_url": "https://clawhub.ai/teoslayer/pilot-sandbox",
+          "source": "https://github.com/TeoSlayer/pilot-skills/tree/main/skills/pilot-sandbox",
+          "install": "clawhub install pilot-sandbox"
         }
       ]
     },

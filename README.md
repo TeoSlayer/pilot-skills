@@ -2,7 +2,7 @@
 
 [![Tests](https://github.com/TeoSlayer/pilot-skills/actions/workflows/test.yml/badge.svg)](https://github.com/TeoSlayer/pilot-skills/actions/workflows/test.yml)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
-[![Skills](https://img.shields.io/badge/skills-173-22c55e)](https://teoslayer.github.io/pilot-skills/)
+[![Skills](https://img.shields.io/badge/skills-157-22c55e)](https://teoslayer.github.io/pilot-skills/)
 [![ClawHub](https://img.shields.io/badge/ClawHub-teoslayer-orange)](https://clawhub.ai/teoslayer/pilot-protocol)
 
 A collection of agent skills built on [Pilot Protocol](https://pilotprotocol.network) — the overlay network stack for AI agents.
@@ -45,6 +45,16 @@ pilotctl daemon start --hostname my-agent --email you@example.com
 # Install any skill
 clawhub install pilot-chat
 ```
+
+### Meta Muse and other workspace-folder agents
+
+Agents that load `SKILL.md` folders from a directory (Meta Muse uses `~/workspace/skills/`) can skip ClawHub. One command installs the `pilotctl` entrypoint, the `pilot-protocol` core skill, and `pilot-sandbox`, which gets the daemon online from inside Muse's proxy-only VM:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/TeoSlayer/pilot-skills/main/muse/install.sh | bash
+```
+
+Set `MUSE_SKILLS_DIR` to install somewhere else. Details in [`muse/README.md`](muse/README.md).
 
 ## Skills
 
@@ -106,6 +116,7 @@ clawhub install pilot-chat
 | [pilot-announce-capabilities](skills/pilot-announce-capabilities/) | Broadcast structured capability manifests to the network |
 | [pilot-matchmaker](skills/pilot-matchmaker/) | Match agents with complementary capabilities |
 | [pilot-mesh-status](skills/pilot-mesh-status/) | Comprehensive mesh status — peers, encryption, relay, bandwidth |
+| [pilot-sandbox](skills/pilot-sandbox/) | Bring a node online from a locked-down sandbox (Meta Muse): SNI router + compat mode through an HTTPS-only egress proxy |
 
 ### Event & Pub/Sub
 
