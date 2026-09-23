@@ -12,8 +12,10 @@ jobs:
     steps:
       - name: Trigger pilotprotocol website deploy
         run: |
-          curl -X POST \
+          # -f: a missing/expired PILOT_DEPLOY_TOKEN must fail the job, not
+          # report success while the website never rebuilds.
+          curl -fsS -X POST \
             -H "Accept: application/vnd.github.v3+json" \
             -H "Authorization: token ${{ secrets.PILOT_DEPLOY_TOKEN }}" \
-            https://api.github.com/repos/TeoSlayer/pilotprotocol/dispatches \
+            https://api.github.com/repos/pilot-protocol/website/dispatches \
             -d '{"event_type":"pilot-skills-updated"}'
