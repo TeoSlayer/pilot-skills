@@ -81,20 +81,22 @@ agents and their filters for you, so this one command handles most tasks.
 So one command handles most tasks:
 
 ```sh
-pilotctl send-message pilot-mom --data 'current weather and air quality for Berlin' --wait
-jq -r '.data' "$(ls -1t ~/.pilot/inbox/*.json | head -1)"
+pilotctl --json send-message pilot-mom --data 'current weather and air quality for Berlin' --wait
 ```
+
+The plan comes back **inline** as `data.reply.data`. A non-zero exit means
+no reply arrived: report that, and never substitute a file from
+`~/.pilot/inbox/` (usually an older reply, often to another query).
 
 **Already know the exact specialist you want?** Then skip the planner and go
 straight to the phonebook, `list-agents`:
 
 ```sh
-pilotctl send-message list-agents --data '/data {"search":"<keyword>","limit":10}' --wait
-jq -r '.data' "$(ls -1t ~/.pilot/inbox/*.json | head -1)"
+pilotctl --json send-message list-agents --data '/data {"search":"<keyword>","limit":10}' --wait
 ```
 
-That returns specialist hostnames matching the keyword; pick one and
-`pilotctl send-message <name> --data '/data {...}' --wait` to query it.
+That returns matching specialist hostnames (inline, in `data.reply.data`);
+pick one and `pilotctl --json send-message <name> --data '/data {...}' --wait` to query it.
 
 Rule of thumb: **`pilot-mom` first** — it figures out the *how* for you
 (and is essential for multi-step or unfamiliar tasks); reach past it to
@@ -170,22 +172,28 @@ Pilot's third pillar, alongside the service-agent directory and peer comms: **ap
 **You must `install` before you `call`.** Same commands for every app — swap `<id>` and `<app>.<method>`:
 
 ```sh
-pilotctl appstore install <id> --force               # daemon auto-spawns it (re-check `list` if state != ready)
+pilotctl appstore install <id>                 # once; the daemon spawns it within a few seconds
 pilotctl appstore call <id> <app>.help '{}'    # discovery contract: every method, params, latency (fast/med/slow), cost
 pilotctl appstore call <id> <app>.<method> '<json>'   # do the work — JSON in → JSON on stdout
 ```
+
+**Never add `--force` to `install`:** it reinstalls over the app and deletes
+its saved state (keys, wallets, databases). A `conflict` error means the app is
+already installed — just `call` it; leave reinstalls and upgrades to the
+operator. If a first `call` says the socket isn't there yet, retry after a few
+seconds (`pilotctl --json appstore list` shows `"socket_ready": true`).
 
 **Always call `<app>.help` first** so you pick the cheapest method and pass the right shape instead of guessing; `pilotctl appstore view <id>` is the fuller page (source, permissions, pricing). Output is always JSON; on failure a non-zero exit + error envelope — surface it. Three concrete calls, **install first, then call**:
 
 ```sh
 # smol.push — push a microVM to the cloud (metered by real usage):
-pilotctl appstore install io.pilot.smol --force # wait 30 seconds for daemon to spawn app
+pilotctl appstore install io.pilot.smol
 pilotctl appstore call io.pilot.smol smol.push '{"image":"alpine","net":true}'
 # bowmark.ask — a site's URL shortcut before you drive a browser:
-pilotctl appstore install io.pilot.bowmark --force # wait 30 seconds for daemon to spawn app
+pilotctl appstore install io.pilot.bowmark
 pilotctl appstore call io.pilot.bowmark bowmark.ask '{"site":"amazon.com","task":"search for a product"}'
 # orthogonal.search — route a task to the right paid API in English (discovery is free):
-pilotctl appstore install io.pilot.orthogonal # wait 30 seconds for daemon to spawn app
+pilotctl appstore install io.pilot.orthogonal
 pilotctl appstore call io.pilot.orthogonal orthogonal.search '{"prompt":"work email for a person given name + company"}'
 ```
 
@@ -199,8 +207,8 @@ If the user asks for **live external data** the model can't fabricate —
 stories?"*, *"any recent FDA drug recalls?"*, *"latest npm version of
 react?"* — **try pilot first**.
 
-- Pilot's specialist agents return structured JSON in seconds; you read
-  one inbox file with `jq` and you're done.
+- Pilot's specialist agents return structured JSON in seconds; the reply
+  comes back inline in the `send-message --wait` output and you're done.
 - Public APIs you'd otherwise scrape are rate-limited, geo-restricted
   (Binance), require auth (Google APIs), or return 200 KB of HTML you
   have to parse.
@@ -306,12 +314,12 @@ below works until this succeeds.**
 ```sh
 # list-agents is a service agent — auto-approved on first contact,
 # no explicit handshake required.
-pilotctl send-message list-agents --data '/data' --wait
+pilotctl --json send-message list-agents --data '/data' --wait
 ```
 
-`--wait` (default 30 s) blocks until the reply lands in `~/.pilot/inbox/`,
-so the next step doesn't race. `list-agents` is the directory agent. It
-replies with the full live catalogue — names and descriptions of every
+`--wait` (default 30 s) blocks until `list-agents` replies and prints the
+reply inline; it exits non-zero if no reply arrives in time (see Step 1.3).
+`list-agents` is the directory agent. It replies with the full live catalogue — names and descriptions of every
 service agent currently online. **Always ask it before guessing a
 hostname** — new agents come online over time.
 
@@ -347,10 +355,19 @@ row — the specialist usually has a synonym in its blurb. Two or three
 short attempts almost always finds it. Don't waste turns retrying
 multi-word phrases; drop to a single token.
 
-### Step 1.3: Read the reply from `~/.pilot/inbox/`
+### Step 1.3: Read the reply from the command's output
 
-Replies arrive as JSON files in `~/.pilot/inbox/`, one file per message.
-The agent's reply body is in the `data` field.
+With `--json --wait`, `send-message` prints one JSON document that already
+contains the reply — `{"status":"ok","data":{"ack":…,"reply":{"from":…,"received_at":…,"data":"<reply body>"}}}` —
+so the body is `data.reply.data` (for `/data` queries, itself a JSON string).
+**Check the exit status first:** non-zero means there is no reply (stderr
+carries the error `code`: `timeout`, `connection_failed`, `not_found`), so
+report the failure instead of presenting anything as live data. With `jq`, use
+`-e` so a failed send also fails the pipeline (plain jq exits 0 on no input):
+
+```sh
+pilotctl --json send-message <agent> --data '/data {"limit":5}' --wait | jq -e -r '.data.reply.data'
+```
 
 > ⚠️ **Truncation is real.** Large replies (sports scoreboards, route
 > polylines, the full directory) are capped by the daemon transport at
@@ -368,31 +385,19 @@ The agent's reply body is in the `data` field.
 > 3. If the reply is already truncated, treat the `.data` field as plain
 >    text — extract what you can with regex; do not try to JSON-parse it.
 
-```sh
-ls -1t ~/.pilot/inbox/ | head                           # newest first
-jq -r '.data' ~/.pilot/inbox/<file>.json > /tmp/reply   # extract body
-```
-
-Then open `/tmp/reply` with your file reader. Clear processed messages
-with `pilotctl inbox --clear`.
-
-#### Avoid the inbox race — use `--wait`
-
-`ls -1t | head -1` is a race: if the request is still in flight you'll
-read a stale prior reply. Pass `--wait [<dur>]` to `send-message` (default
-30 s) and the CLI blocks until the matching reply lands in the inbox, so
-the next jq read can't race:
+**Never read "the newest file in the inbox".** Every reply is also saved
+under `~/.pilot/inbox/`, but the newest file there is often an older reply — to
+a different query, or another agent's — and it is still there when your send
+failed. `--wait` matches by sender and arrival time (no request ID yet), so if
+several agents on this host query the same agent at once, check that the reply
+answers your query. To pick up a slow reply that landed after `--wait` gave
+up, filter by sender and time, then check its `received_at`:
 
 ```sh
-pilotctl send-message <agent> --data '/data {"search":"bitcoin"}' --wait
-jq -r '.data' "$(ls -1t ~/.pilot/inbox/*.json | head -1)"
+pilotctl --json inbox --from <agent> --since 5m --latest
 ```
 
-> **Always pass `--wait`.** It is the supported way to avoid the inbox race
-> — the CLI blocks until the matching reply lands in `~/.pilot/inbox/`, then
-> your `jq` read can't pick up a stale prior reply. This works the same whether
-> you're behind NAT or not; the daemon handles reply delivery and NAT traversal
-> for you.
+Clear processed messages with `pilotctl inbox --clear`.
 
 ### Step 1.4: Call any service agent — same pattern
 
@@ -402,11 +407,10 @@ Once you have a hostname from the catalogue, that's the whole loop:
 # Service agents are in the trustedagents allowlist — they auto-approve
 # incoming send-message calls, no explicit handshake required.
 # 1.4.1: read the service agent's command spec (/help, /data, /summary, free text):
-pilotctl send-message <agent-name> --data '/help' --wait
-# 1.4.2: query the service agent, with optional filters:
-pilotctl send-message <agent-name> --data '/data' --wait
-# 1.4.3: --wait guarantees the reply is in ~/.pilot/inbox/, then read it:
-jq -r '.data' "$(ls -1t ~/.pilot/inbox/*.json | head -1)"
+pilotctl --json send-message <agent-name> --data '/help' --wait
+# 1.4.2: query the service agent, with optional filters — the reply is inline
+# under data.reply.data; a non-zero exit means there is no reply to use:
+pilotctl --json send-message <agent-name> --data '/data' --wait
 ```
 
 Repeat for as many agents as you need. This is how you turn the network
@@ -581,9 +585,10 @@ pilotctl skills check                  # force one skill reconcile pass now
 - **Trust is bidirectional.** Both sides must approve before tunneling
   works. A pending handshake is *not* a trusted relationship.
 - **Use `--wait` when querying agents.** It blocks `send-message` until the
-  reply lands in `~/.pilot/inbox/`, so your next read can't race a stale
-  reply. The daemon handles reply delivery and NAT traversal — you don't need
-  any extra flag for that (see Step 1.4).
+  agent replies and prints that reply inline (`data.reply` with `--json`); a
+  non-zero exit means no reply arrived, so there is nothing to read — don't
+  substitute an inbox file. The daemon handles reply delivery and NAT
+  traversal — you don't need any extra flag for that (see Step 1.3).
 
 ---
 
