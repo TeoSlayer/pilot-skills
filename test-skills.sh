@@ -1,7 +1,8 @@
 #!/bin/bash
 # test-skills.sh — Validate all Pilot Protocol skills
 # Checks: YAML frontmatter, pilotctl command existence, --json flags, structure,
-# and the agent-instruction lint (tests/lint_agent_instructions.py)
+# the agent-instruction lint (tests/lint_agent_instructions.py) and the recipe
+# execution tests (tests/test_skill_recipes.py)
 set -euo pipefail
 
 SKILLS_DIR="$(cd "$(dirname "$0")/skills" && pwd)"
@@ -207,7 +208,7 @@ LINT_FAIL=0
 while IFS= read -r line; do
   case "$line" in
     FAIL:*) ERRORS+=("${line#FAIL: }"); LINT_FAIL=$((LINT_FAIL + 1)) ;;
-    WARN:*) echo "  $line" ;;
+    WARN:*|WAIVED:*) echo "  $line" ;;
   esac
 done <<< "$LINT_OUT"
 # A non-zero exit without FAIL lines is an environment error (e.g. no jq).
@@ -215,6 +216,20 @@ if [ "$LINT_RC" -ne 0 ] && [ "$LINT_FAIL" -eq 0 ]; then
   ERRORS+=("lint_agent_instructions.py exited $LINT_RC: $LINT_OUT")
 fi
 echo "  Findings: $LINT_FAIL"
+
+# Test 8: Run the recipes themselves (tests/test_skill_recipes.py): the
+# pilot-verify reachability check, the send-message --wait reply read (both
+# pilotctl output shapes) and the trust-circle bootstrap, verbatim from the
+# Markdown, against a stub pilotctl that prints tests/fixtures/pilotctl/.
+echo ""
+echo "--- Test 8: Recipe Execution ---"
+RECIPES="$(dirname "$0")/tests/test_skill_recipes.py"
+if RECIPE_OUT=$(python3 "$RECIPES" 2>&1); then
+  echo "  $(printf '%s\n' "$RECIPE_OUT" | grep -E '^Ran ' || true)"
+else
+  ERRORS+=("test_skill_recipes.py failed:
+$RECIPE_OUT")
+fi
 
 # Summary
 echo ""
