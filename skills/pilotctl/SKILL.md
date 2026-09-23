@@ -621,7 +621,7 @@ matches its description.
 | `pilot-service-agents-gov-finance` | Government economic and financial records — SEC EDGAR, BLS time series, HTS/USITC tariffs, US Dept of Ed. |
 | `pilot-service-agents-government` | Government and civic data — federal register, FBI wanted, elections info, national open-data portals. |
 | `pilot-service-agents-health` | Public-health and biomedical APIs — ClinicalTrials.gov, openFDA, CDC, WHO, ClinVar, DailyMed, disease.sh. |
-| `pilot-service-agents-infra` | Pilot Protocol network infrastructure agents — the directory (list-agents), feedback (feedback). |
+| `pilot-service-agents-infra` | Pilot Protocol network infrastructure agents — the directory (list-agents) and feedback (feedback). |
 | `pilot-service-agents-knowledge` | Structured-knowledge and factual lookups — Google Knowledge Graph (premium), DuckDuckGo Instant, Archive.org, holidays, geocoders. |
 | `pilot-service-agents-language` | Language and NLP services — translation, text-to-speech, dictionaries, word tools, Bible text, linguistic corpora. |
 | `pilot-service-agents-music` | Music metadata and lyrics — iTunes search and Lyrics.ovh. |
