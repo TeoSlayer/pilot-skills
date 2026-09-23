@@ -56,12 +56,17 @@ pilotctl --json inbox
 
 ### Tag members for discovery
 ```bash
-pilotctl --json set-tags <group-name> team
+# set-tags is an operator command, so it goes under extras
+pilotctl --json extras set-tags <group-name> team
 ```
 
 ### Search for group members
 ```bash
-pilotctl --json peers --search <group-name>
+# Peer entries carry no tags (peers --search only matches node IDs), so check
+# each connected peer's registry record for the group tag
+pilotctl --json peers | jq -r '.data.peers[].node_id' | while read -r ID; do
+  pilotctl --json lookup "$ID" | jq -r --arg t "<group-name>" 'select(any(.data.tags[]?; . == $t)) | .data.hostname // .data.node_id'
+done
 ```
 
 ## Workflow Example
@@ -73,11 +78,12 @@ pilotctl --json peers --search <group-name>
 GROUP_TOPIC="data-pipeline-team"
 
 # Tag yourself as member
-pilotctl --json set-tags "$GROUP_TOPIC" team
+pilotctl --json extras set-tags "$GROUP_TOPIC" team
 
-# Find other members
-MEMBERS=$(pilotctl --json peers --search "$GROUP_TOPIC")
-echo "$MEMBERS" | jq -r '.peers[]? | .hostname'
+# Find other members among connected peers (tags live on registry records)
+pilotctl --json peers | jq -r '.data.peers[].node_id' | while read -r ID; do
+  pilotctl --json lookup "$ID" | jq -r --arg t "$GROUP_TOPIC" 'select(any(.data.tags[]?; . == $t)) | .data.hostname // .data.node_id'
+done
 
 # Subscribe to group topic on each peer
 pilotctl --json subscribe agent-b "$GROUP_TOPIC"

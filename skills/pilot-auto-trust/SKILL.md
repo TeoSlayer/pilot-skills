@@ -38,6 +38,13 @@ Automated trust management for Pilot Protocol with policy-based decision making.
 
 ## Commands
 
+Pending entries carry only `node_id`, `public_key`, `justification` and
+`received_at` (under `.data.pending[]`) — no hostname and no address. To
+apply a policy on hostname or network, resolve each requester in the
+registry with `lookup` first. A requester whose record the registry won't
+return (for example a private node) gets no hostname or networks, so these
+rules leave it pending for manual review.
+
 ### List Pending Requests
 ```bash
 pilotctl --json pending
@@ -45,40 +52,56 @@ pilotctl --json pending
 
 ### Auto-Approve by Network
 ```bash
-pilotctl --json pending | jq -r '.[] | select(.address | startswith("1:")) | .node_id' | \
-  xargs -I {} pilotctl --json approve {}
+pilotctl --json pending | jq -r '.data.pending[].node_id' | while read -r NODE_ID; do
+  if pilotctl --json lookup "$NODE_ID" | jq -e 'any(.data.networks[]?; . == 1)' >/dev/null; then
+    pilotctl --json approve "$NODE_ID"
+  fi
+done
 ```
 
 ### Auto-Approve by Hostname Pattern
 ```bash
-pilotctl --json pending | jq -r '.[] | select(.hostname | test("^agent-prod-")) | .node_id' | \
-  xargs -I {} pilotctl --json approve {}
+pilotctl --json pending | jq -r '.data.pending[].node_id' | while read -r NODE_ID; do
+  HOST=$(pilotctl --json lookup "$NODE_ID" | jq -r '.data.hostname // empty')
+  case "$HOST" in
+    agent-prod-*) pilotctl --json approve "$NODE_ID" ;;
+  esac
+done
 ```
+
+Hostnames are first-come in the registry — anyone can claim an unused
+`agent-prod-…` name — so pair a hostname rule with a network or public-key
+check before approving anything sensitive.
 
 ### Batch Reject by Hostname Pattern
 ```bash
-pilotctl --json pending | jq -r '.[] | select(.hostname | test("^untrusted-")) | .node_id' | \
-  xargs -I {} pilotctl --json reject {} "Untrusted source"
+pilotctl --json pending | jq -r '.data.pending[].node_id' | while read -r NODE_ID; do
+  HOST=$(pilotctl --json lookup "$NODE_ID" | jq -r '.data.hostname // empty')
+  case "$HOST" in
+    untrusted-*) pilotctl --json reject "$NODE_ID" "Untrusted source" ;;
+  esac
+done
 ```
 
 ## Workflow Example
 
 ```bash
 #!/bin/bash
-# Auto-approve production agents from a known network
+# Auto-approve production agents from a known network; reject requesters
+# the registry places on other networks; leave unresolvable ones pending.
 
-PENDING=$(pilotctl --json pending)
+pilotctl --json pending | jq -r '.data.pending[].node_id' | while read -r NODE_ID; do
+  RECORD=$(pilotctl --json lookup "$NODE_ID" 2>/dev/null) || continue   # unresolvable: manual review
+  HOST=$(echo "$RECORD" | jq -r '.data.hostname // empty')
+  ON_PROD=$(echo "$RECORD" | jq -r 'any(.data.networks[]?; . == 1)')
 
-# Approve if address is on network 1 (prod) AND hostname matches prod pattern
-echo "$PENDING" | jq -r '.[] | select((.address | startswith("1:")) and (.hostname | test("^agent-prod-"))) | .node_id' | \
-while read -r NODE_ID; do
-  pilotctl --json approve "$NODE_ID"
-done
-
-# Reject anything not on a known network (e.g. unrecognised remote address)
-echo "$PENDING" | jq -r '.[] | select(.address | startswith("1:") | not) | .node_id' | \
-while read -r NODE_ID; do
-  pilotctl --json reject "$NODE_ID" "Unknown network"
+  if [ "$ON_PROD" = "true" ]; then
+    case "$HOST" in
+      agent-prod-*) pilotctl --json approve "$NODE_ID" ;;
+    esac
+  else
+    pilotctl --json reject "$NODE_ID" "Unknown network"
+  fi
 done
 ```
 

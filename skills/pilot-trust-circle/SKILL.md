@@ -45,7 +45,7 @@ cat > ~/.pilot/circles/team-alpha.json <<EOF
 {
   "name": "team-alpha",
   "description": "Production agents for Team Alpha",
-  "members": ["agent1.pilot", "agent2.pilot", "agent3.pilot"]
+  "members": ["agent1", "agent2", "agent3"]
 }
 EOF
 ```
@@ -53,15 +53,17 @@ EOF
 ### Add member to circle
 ```bash
 CIRCLE="team-alpha"
-NEW_MEMBER="agent4.pilot"
+NEW_MEMBER="agent4"
 
 jq --arg member "$NEW_MEMBER" '.members += [$member]' \
   ~/.pilot/circles/$CIRCLE.json > /tmp/circle.json && \
   mv /tmp/circle.json ~/.pilot/circles/$CIRCLE.json
 
 pilotctl --json handshake "$NEW_MEMBER" "Member of $CIRCLE"
-NODE_ID=$(pilotctl --json find "$NEW_MEMBER" | jq -r '.[0].node_id')
-pilotctl --json approve "$NODE_ID"
+# find returns {"status":"ok","data":{"hostname","node_id","address","public"}}
+NODE_ID=$(pilotctl --json find "$NEW_MEMBER" | jq -r '.data.node_id')
+# Only succeeds if they have already sent us a handshake request
+pilotctl --json approve "$NODE_ID" || true
 ```
 
 ### Bootstrap circle membership
@@ -73,10 +75,13 @@ while read -r MEMBER; do
   pilotctl --json handshake "$MEMBER" "Trust circle: $CIRCLE" || true
 done
 
-pilotctl --json pending | jq -r '.[] | .hostname' | \
-while read -r HOSTNAME; do
-  if cat ~/.pilot/circles/$CIRCLE.json | jq -e --arg h "$HOSTNAME" '.members[] | select(. == $h)' >/dev/null; then
-    NODE_ID=$(pilotctl --json pending | jq -r --arg h "$HOSTNAME" '.[] | select(.hostname == $h) | .node_id')
+# Pending entries carry only node_id/public_key/justification/received_at,
+# so resolve each requester's hostname in the registry before matching
+pilotctl --json pending | jq -r '.data.pending[].node_id' | \
+while read -r NODE_ID; do
+  HOST=$(pilotctl --json lookup "$NODE_ID" | jq -r '.data.hostname // empty')
+  [ -n "$HOST" ] || continue
+  if jq -e --arg h "$HOST" 'any(.members[]; . == $h)' ~/.pilot/circles/$CIRCLE.json >/dev/null; then
     pilotctl --json approve "$NODE_ID"
   fi
 done
@@ -89,7 +94,7 @@ Create and bootstrap a new trust circle:
 ```bash
 #!/bin/bash
 CIRCLE="project-x"
-MEMBERS=("alice.pilot" "bob.pilot" "charlie.pilot")
+MEMBERS=("alice" "bob" "charlie")
 
 mkdir -p ~/.pilot/circles
 

@@ -68,7 +68,7 @@ The `hint` field is included in most errors and tells you what to do next.
 - **Mailbox**: received files go to `~/.pilot/received/`, messages go to `~/.pilot/inbox/` — inspect anytime with `pilotctl received` and `pilotctl inbox`
 - **NAT traversal is automatic**: the daemon discovers its public endpoint via the STUN beacon and uses hole-punching or relay for connectivity behind NAT
 - **Nothing is interactive**: every command runs non-interactively and exits. Use `--json` for programmatic output
-- **All agents are on network 0** (the global backbone). Custom networks and nameserver are planned but not yet available
+- **All agents are on network 0** (the global backbone), which every node joins at registration. Custom networks are available too: `pilotctl network list|create|join|…` (see `pilotctl network --help`)
 
 ## Install
 
@@ -116,7 +116,7 @@ Returns the full command schema — use this to discover capabilities at runtime
 | `send <target> <port> --data` | Send to specific port | `sent`, `response` |
 | `recv <port>` | Receive messages | `messages[]` |
 | `send-file <target> <path>` | Send a file | `filename`, `bytes`, `ack` |
-| `send-message <target> --data` | Send typed message | `target`, `type`, `ack` |
+| `send-message <target> --data [--wait]` | Send typed message; `--wait` also returns the reply | `target`, `type`, `ack`, `reply` (with `--wait`) |
 | `subscribe <target> <topic>` | Subscribe to events | `events[]` |
 | `publish <target> <topic>` | Publish an event | `target`, `topic` |
 | `listen <port>` | Listen for datagrams | `messages[]` |
@@ -135,18 +135,18 @@ Returns the full command schema — use this to discover capabilities at runtime
 | `received` | List received files | `files[]` |
 | `inbox` | List inbox messages | `messages[]` |
 | `register` | Register node | `node_id`, `address` |
-| `lookup <node_id>` | Look up node | `node_id`, `real_addr` |
+| `lookup <node_id\|hostname>` | Look up a node's registry record | `node_id`, `address`, `hostname`, `public_key`, `tags`, `networks` |
 | `deregister` | Deregister node | `status` |
-| `rotate-key <id> <owner>` | Rotate keypair | `node_id`, `public_key` |
-| `gateway start` | Start IP bridge | `pid`, `mappings[]` |
-| `gateway stop` | Stop IP bridge | `pid` |
-| `gateway map <addr>` | Add mapping | `local_ip`, `pilot_addr` |
-| `gateway unmap <ip>` | Remove mapping | `unmapped` |
-| `gateway list` | List mappings | `mappings[]` |
+| `rotate-key` | Rotate keypair | `node_id`, `public_key` |
+| `extras gateway start` | Start IP bridge | `pid`, `mappings[]` |
+| `extras gateway stop` | Stop IP bridge | `pid` |
+| `extras gateway map <addr>` | Add mapping | `local_ip`, `pilot_addr` |
+| `extras gateway unmap <ip>` | Remove mapping | `unmapped` |
+| `extras gateway list` | List mappings | `mappings[]` |
 | `set-webhook <url>` | Set webhook | `webhook`, `applied` |
 | `clear-webhook` | Clear webhook | `webhook`, `applied` |
-| `set-tags <tags...>` | Set capability tags | `node_id`, `tags` |
-| `clear-tags` | Clear tags | `tags` |
+| `extras set-tags <tags...>` | Set capability tags (max 3) | `node_id`, `tags` |
+| `extras clear-tags` | Clear tags | `tags` |
 | `init --registry --beacon` | Initialize config | `config_path` |
 | `config` | View/set config | config JSON |
 
@@ -215,8 +215,8 @@ pilotctl clear-hostname               # Remove hostname
 pilotctl find <hostname>              # Discover peer (requires mutual trust)
 pilotctl set-public                   # Make visible to all
 pilotctl set-private                  # Hide (default)
-pilotctl set-tags <tag1> [tag2] [tag3]  # Set capability tags (max 3)
-pilotctl clear-tags                   # Remove all tags
+pilotctl extras set-tags <tag1> [tag2] [tag3]  # Set capability tags (max 3; operator command under extras)
+pilotctl extras clear-tags            # Remove all tags
 ```
 
 ---
