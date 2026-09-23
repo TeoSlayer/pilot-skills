@@ -59,9 +59,10 @@ pilotctl --json send-message <hostname>   --data "/data {filters}" --wait  (fetc
 The agent's **actual response comes back as a separate message** a few seconds
 after the ACK. `--wait` blocks until it arrives and prints it inline: the
 reply is `data.reply`, and the agent's envelope is the JSON string in
-`data.reply.data`. A non-zero exit means no reply arrived (the error JSON on
-stderr says why) — treat that as *no data*; don't read older inbox messages
-in its place. A reply that lands after the wait is still saved and can be
+`data.reply.data` (pilotctl v1.12.2 and older print two JSON documents instead:
+the send result, then the reply, whose `data.data` is the envelope). A
+non-zero exit means no reply arrived (the error JSON on stderr says why) —
+treat that as *no data*; don't read older inbox messages in its place. A reply that lands after the wait is still saved and can be
 picked up by sender and time with
 `pilotctl --json inbox --from <hostname> --since 5m --latest`.
 

@@ -63,7 +63,7 @@ When a user opens with a greeting, "are you ready?", "what model are you?", or a
 pilotctl --json send-message list-agents --data '/data {"search":"","limit":1}' --wait
 ```
 
-**The exit status is the answer.** Exit 0 means the directory replied: the reply is inline under `data.reply`, and `data.reply.data` is a JSON string whose `total` is the number of specialists indexed. Then reply something like: _"Ready — Pilot overlay online (N specialists indexed)."_ Much more useful than "Ready" alone, because it confirms the host's most powerful resource is actually working.
+**The exit status is the answer.** Exit 0 means the directory replied: the reply is inline under `data.reply`, and `data.reply.data` is a JSON string whose `total` is the number of specialists indexed (pilotctl v1.12.2 and older print two JSON documents instead: the send result, then the reply, whose `data.data` is that string). Then reply something like: _"Ready — Pilot overlay online (N specialists indexed)."_ Much more useful than "Ready" alone, because it confirms the host's most powerful resource is actually working.
 
 A non-zero exit means the overlay did not answer (the error JSON on stderr says why): say so plainly — _"Pilot overlay not reachable right now (timeout)."_ Never report it online after a failed send, and never read a file from `~/.pilot/inbox/` to fill the gap: the newest file there is an older reply, often to a different query.
 

@@ -26,15 +26,24 @@ failure that was reproduced in the field:
                      `{{` starts a template action.
   jq-envelope        a jq filter fed directly by `pilotctl --json <cmd>` must
                      run against the real `{"status":"ok","data":{...}}`
-                     output of <cmd> (tests/fixtures/pilotctl/<cmd>.json)
-                     without a jq error or an all-null result, and must not be
-                     written for the unwrapped shape (reading `.field` instead
-                     of `.data.field`).
+                     output of <cmd> (tests/fixtures/pilotctl/<cmd>.json, and
+                     every <cmd>.ok-*.json variant, e.g. an older pilotctl's
+                     output) without a jq error or an all-null result, and
+                     must not be written for the unwrapped shape (reading
+                     `.field` instead of `.data.field`). A `jq -e` predicate
+                     must also be false on every <cmd>.fail-*.json fixture
+                     (what a FAILED <cmd> still prints on stdout) and on no
+                     input at all (a failed command that printed nothing).
 
 jq-envelope is enforced for the injected set (heartbeats, ONBOARDING.md,
 skills/pilotctl and every skill in inject-manifest.json referencedSkills) and
 reported as a warning for the other skills. Everything else is enforced
 everywhere it is checked.
+
+Paths in WAIVED are linted like any other file, but their findings are
+printed as WAIVED lines instead of failing the run; each entry names the
+work that owns the fix. A waiver whose path no longer has findings is
+reported as stale.
 
 Usage:  lint_agent_instructions.py [--self-test]
 Exit status: 0 clean, 1 findings, 2 usage/environment error.
@@ -52,11 +61,19 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 FIXTURES = ROOT / "tests" / "fixtures" / "pilotctl"
 
-# Paths other in-flight work owns. Remove an entry once that work lands and
-# the path passes this lint.
-#   skills/pilot-sandbox/ — still reads the newest inbox file (SKILL.md
-#   "Workflow Example"); owned by the muse one-shot-install branch.
-EXCLUDED_PREFIXES = ("muse/", "skills/pilot-sandbox/", "workflow-injection/tests/")
+# Paths this lint never reads: not agent-facing instructions.
+EXCLUDED_PREFIXES = ("muse/", "workflow-injection/tests/")
+
+# Agent-facing paths another in-flight change owns. They are still linted and
+# every finding is printed (as WAIVED, so CI output shows it), but they do not
+# fail the run. Delete the entry once the owning change lands and the path
+# passes; the lint reports an entry whose path has no findings left as stale.
+WAIVED = {
+    "skills/pilot-sandbox/": (
+        "injected via inject-manifest.json; owned by the muse one-shot-install work "
+        "(branch feat/muse-one-shot-install), which must replace its newest-inbox-file read"
+    ),
+}
 
 # Commands whose second word is part of the command name.
 SUBCOMMAND_GROUPS = {"extras", "appstore", "daemon", "skills", "network", "update", "updates", "task"}
@@ -68,6 +85,13 @@ def rel(p):
 
 def excluded(relpath):
     return relpath.startswith(EXCLUDED_PREFIXES)
+
+
+def waiver(relpath):
+    for prefix, reason in WAIVED.items():
+        if relpath.startswith(prefix):
+            return prefix, reason
+    return None
 
 
 def all_docs():
@@ -178,6 +202,8 @@ def check_heartbeat_template(relpath, text, findings):
 
 FENCE = re.compile(r"^\s*(```|~~~)")
 PUNCT = {"|", "||", "&&", ";", "&", "(", ")", "<", ">", ">>", ";;"}
+# Redirection operators as shlex splits them: `2>/dev/null` -> '2', '>', '/dev/null'.
+REDIRECTS = {">", ">>", "<", ">&", "<&", "&>", "&>>", ">|"}
 
 
 def code_lines(text):
@@ -219,7 +245,16 @@ def pipelines(line):
             continue
         j = i + 1
         words = []
-        while j < len(toks) and toks[j] not in PUNCT:
+        while j < len(toks):
+            if toks[j] in REDIRECTS:
+                # `pilotctl ... 2>/dev/null | jq`: drop the fd number, the
+                # operator and its target, and keep scanning for the pipe.
+                if words and words[-1].isdigit():
+                    words.pop()
+                j += 2
+                continue
+            if toks[j] in PUNCT:
+                break
             words.append(toks[j])
             j += 1
         if "--json" not in words or j + 1 >= len(toks) or toks[j] != "|" or toks[j + 1] != "jq":
@@ -249,7 +284,49 @@ def pipelines(line):
             yield cmd, opts, jq_filter
 
 
-def run_jq(jq_filter, opts, doc):
+def load_fixture(path):
+    """The JSON documents in a fixture file, in order (pilotctl prints one per line)."""
+    text, docs, i = path.read_text(), [], 0
+    dec = json.JSONDecoder()
+    while True:
+        while i < len(text) and text[i].isspace():
+            i += 1
+        if i >= len(text):
+            return docs
+        doc, i = dec.raw_decode(text, i)
+        docs.append(doc)
+
+
+def fixture_set(cmd):
+    """(primary, [(label, path)] of ok-variants, [(label, path)] of failure outputs) for `cmd`."""
+    base = cmd.replace(" ", "-")
+    primary = FIXTURES / (base + ".json")
+    def variants(kind):
+        return [(f.name[len(base) + 1:-len(".json")], f) for f in sorted(FIXTURES.glob("%s.%s-*.json" % (base, kind)))]
+    return (primary if primary.is_file() else None), variants("ok"), variants("fail")
+
+
+def uses_exit_status(opts):
+    """True when jq runs with -e/--exit-status, i.e. the recipe is a predicate."""
+    for o in opts:
+        flag = o[0]
+        if flag == "--exit-status" or (re.fullmatch(r"-[a-zA-Z]+", flag) and "e" in flag):
+            return True
+    return False
+
+
+def jq_exit_status(result):
+    """The exit status `jq -e` would have for a run_jq result."""
+    if result[0] == "error":
+        return 5
+    if not result[1]:
+        return 4
+    last = result[1][-1]
+    return 1 if last is None or last is False else 0
+
+
+def run_jq(jq_filter, opts, docs):
+    """Run jq on `docs` (a list of JSON documents, fed as JSON lines like pilotctl's stdout)."""
     args = ["jq", "-c"]
     for o in opts:
         flag = o[0]
@@ -270,7 +347,8 @@ def run_jq(jq_filter, opts, doc):
             if keep:
                 args.append("-" + keep)
     args.append(jq_filter)
-    p = subprocess.run(args, input=json.dumps(doc), capture_output=True, text=True)
+    stdin = "".join(json.dumps(d) + "\n" for d in docs)
+    p = subprocess.run(args, input=stdin, capture_output=True, text=True)
     if p.returncode != 0:
         return ("error", p.stderr.strip().splitlines()[-1] if p.stderr.strip() else "jq error")
     values = [json.loads(v) for v in p.stdout.split("\n") if v.strip()]
@@ -299,31 +377,53 @@ def check_jq(relpath, text, enforced, findings):
             if jq_filter.strip() == ".":
                 continue
             level = "FAIL" if enforced else "WARN"
-            fixture = FIXTURES / (cmd.replace(" ", "-") + ".json")
-            if not fixture.is_file():
+            primary, oks, fails = fixture_set(cmd)
+            if primary is None:
                 if enforced:
                     findings.append((level, relpath, lineno, "jq-envelope",
                                      "no fixture for `pilotctl --json %s` in tests/fixtures/pilotctl/; "
                                      "add its real output so this recipe can be checked" % cmd))
                 continue
-            wrapped = json.loads(fixture.read_text())
-            got = run_jq(jq_filter, opts, wrapped)
-            if got is None:
+            wrapped = load_fixture(primary)
+            primary_got, broken = None, False
+            for label, docs in [("", wrapped)] + [(" (%s)" % label, load_fixture(f)) for label, f in oks]:
+                got = run_jq(jq_filter, opts, docs)
+                if got is None:  # file inputs: not a pure function of the pilotctl output
+                    broken = True
+                    break
+                if primary_got is None:
+                    primary_got = got
+                if got[0] == "error":
+                    findings.append((level, relpath, lineno, "jq-envelope",
+                                     "jq %r fails on real `pilotctl --json %s` output%s: %s"
+                                     % (jq_filter, cmd, label, got[1])))
+                    broken = True
+                    break
+                if got[1] and degenerate(got):
+                    findings.append((level, relpath, lineno, "jq-envelope",
+                                     "jq %r yields only null on real `pilotctl --json %s` output%s "
+                                     "(fields live under .data)" % (jq_filter, cmd, label)))
+                    broken = True
+                    break
+            if broken:
                 continue
-            if got[0] == "error":
-                findings.append((level, relpath, lineno, "jq-envelope",
-                                 "jq %r fails on real `pilotctl --json %s` output: %s" % (jq_filter, cmd, got[1])))
-                continue
-            if got[1] and degenerate(got):
-                findings.append((level, relpath, lineno, "jq-envelope",
-                                 "jq %r yields only null on real `pilotctl --json %s` output "
-                                 "(fields live under .data)" % (jq_filter, cmd)))
-                continue
-            unwrapped = run_jq(jq_filter, opts, wrapped.get("data"))
-            if unwrapped is not None and not degenerate(unwrapped) and unwrapped[1] != got[1]:
+            unwrapped = run_jq(jq_filter, opts, [wrapped[0].get("data")])
+            if unwrapped is not None and not degenerate(unwrapped) and unwrapped[1] != primary_got[1]:
                 findings.append((level, relpath, lineno, "jq-envelope",
                                  "jq %r is written for the unwrapped shape of `pilotctl --json %s`; "
                                  "read through .data" % (jq_filter, cmd)))
+                continue
+            if not uses_exit_status(opts):
+                continue
+            for label, docs in [(label, load_fixture(f)) for label, f in fails] + [("no output", [])]:
+                got = run_jq(jq_filter, opts, docs)
+                if got is not None and jq_exit_status(got) == 0:
+                    where = ("tests/fixtures/pilotctl/%s.%s.json" % (cmd.replace(" ", "-"), label)
+                             if label != "no output" else "no stdout at all")
+                    findings.append((level, relpath, lineno, "jq-envelope",
+                                     "`jq -e %s` reports success on the output of a FAILED "
+                                     "`pilotctl --json %s` (%s)" % (jq_filter, cmd, where)))
+                    break
 
 
 # ------------------------------------------------------------------- driver
@@ -338,7 +438,23 @@ def lint(files, injected):
         if relpath.startswith("heartbeats/"):
             check_heartbeat_template(relpath, text, findings)
         check_jq(relpath, text, relpath in injected, findings)
-    return findings
+    return apply_waivers(findings)
+
+
+def apply_waivers(findings):
+    """Relabel FAIL findings in WAIVED paths as WAIVED; add a WARN for each stale waiver."""
+    out, hit = [], set()
+    for level, path, lineno, rule, msg in findings:
+        w = waiver(path)
+        if w and level == "FAIL":
+            hit.add(w[0])
+            out.append(("WAIVED", path, lineno, rule, "%s (waived: %s)" % (msg, w[1])))
+        else:
+            out.append((level, path, lineno, rule, msg))
+    for prefix in sorted(set(WAIVED) - hit):
+        out.append(("WARN", prefix, 0, "stale-waiver",
+                    "no findings left under %s; delete its WAIVED entry so the lint enforces it" % prefix))
+    return out
 
 
 SELF_TEST_BAD = {
@@ -358,6 +474,13 @@ SELF_TEST_BAD = {
         "pilotctl --json info | jq -r '.encrypted_peers // 0'\n"
         "pilotctl --json info | jq '{hostname, address}'\n"
         "pilotctl --json pending | jq -r '.[] | select(.address | startswith(\"1:\")) | .node_id'\n"
+        # a probe whose echo timed out carries rtt_ms AND error (ping.fail-echo-timeout.json);
+        # the 2>/dev/null must not hide the pipeline from the check
+        "pilotctl --json ping a --count 1 2>/dev/null | jq -e '[.data.results[] | select(.rtt_ms != null)] | length > 0'\n"
+        # pilotctl <= v1.12.2 prints the send result and the reply as two documents
+        "pilotctl --json send-message x --data '/help' --wait | jq -e -r '.data.reply.data'\n"
+        # true on no input at all, i.e. after pilotctl failed and printed nothing
+        "pilotctl --json peers | jq -e -s 'length >= 0'\n"
         "```\n"
     ),
 }
@@ -365,11 +488,12 @@ SELF_TEST_GOOD = (
     "Never add `--force` to `install`; `pilotctl --json inbox --from x --since 5m --latest`.\n"
     "```bash\n"
     "pilotctl --json send-message list-agents --data '/data {\"search\":\"\",\"limit\":1}' --wait\n"
-    "pilotctl --json send-message x --data '/help' --wait | jq -e -r '.data.reply.data | fromjson | .total'\n"
     "pilotctl --json find agent-prod-1 | jq '.data | {hostname, address, node_id, public}'\n"
     "pilotctl --json lookup \"$ID\" | jq -r --arg t \"$T\" 'select(any(.data.tags[]?; . == $t)) | .data.hostname'\n"
     "pilotctl --json lookup \"$ID\" | jq -e 'any(.data.networks[]?; . == 1)' >/dev/null\n"
-    "pilotctl --json ping a --count 1 | jq -e '[.data.results[] | select(.rtt_ms != null)] | length > 0'\n"
+    "pilotctl --json ping a --count 1 2>/dev/null | jq -e '[.data.results[]? | select(.error == null)] | length > 0'\n"
+    "pilotctl --json send-message x --data '/data {}' --wait | jq -e -r '.data.reply.data // .data.data // empty'\n"
+    "pilotctl --json send-message x --data '/data {}' --wait | jq -e '.data.reply.data // .data.data // empty | fromjson | .total'\n"
     "pilotctl --json info | jq -r '.data.encrypted_peers'\n"
     "pilotctl --json pending | jq -r '.data.pending[].node_id'\n"
     "```\n"
@@ -387,10 +511,15 @@ def self_test():
         if rule == "heartbeat-template":
             check_heartbeat_template(relpath, sample, findings)
         check_jq(relpath, sample, True, findings)
-        hits = [f for f in findings if f[3] == rule]
-        want = {"jq-envelope": 4, "send-then-inbox": 2}.get(rule, 1)  # broken recipes per sample
-        if len(hits) < want:
-            print("self-test FAIL: rule %s flagged %d of %d bad samples" % (rule, len(hits), want))
+        hits = set(f[2] for f in findings if f[3] == rule)
+        # every broken recipe in the sample must be flagged on its own line
+        marker = {"jq-envelope": "pilotctl", "send-then-inbox": "send-message"}.get(rule)
+        if marker:
+            want = set(n for n, l in enumerate(sample.split("\n"), 1) if marker in l)
+        else:
+            want = {1}
+        if not want <= hits:
+            print("self-test FAIL: rule %s missed sample line(s) %s" % (rule, sorted(want - hits)))
             for f in findings:
                 print("   ", f)
             failures += 1
@@ -404,6 +533,20 @@ def self_test():
         print("self-test FAIL: good sample was flagged:")
         for f in findings:
             print("   ", f)
+        failures += 1
+    # waivers: a FAIL under a WAIVED path is reported, not failed; a waiver with
+    # nothing left to waive is reported as stale
+    for prefix in WAIVED:
+        got = apply_waivers([("FAIL", prefix + "SKILL.md", 3, "inbox-newest-file", "m"),
+                             ("FAIL", "skills/other/SKILL.md", 4, "race-claim", "m")])
+        levels = sorted((f[0], f[1]) for f in got)
+        if levels != [("FAIL", "skills/other/SKILL.md"), ("WAIVED", prefix + "SKILL.md")] + (
+                [("WARN", other) for other in sorted(set(WAIVED) - {prefix})]):
+            print("self-test FAIL: waiver for %s not applied: %s" % (prefix, got))
+            failures += 1
+    stale = [f for f in apply_waivers([]) if f[3] == "stale-waiver"]
+    if len(stale) != len(WAIVED):
+        print("self-test FAIL: stale waivers not reported: %s" % stale)
         failures += 1
     print("self-test: %s" % ("PASS" if not failures else "%d failure(s)" % failures))
     return 1 if failures else 0
@@ -420,9 +563,14 @@ def main():
         return 2
     findings = lint(all_docs(), injected_docs())
     fails = [f for f in findings if f[0] == "FAIL"]
-    warns = [f for f in findings if f[0] == "WARN"]
+    warns = [f for f in findings if f[0] == "WARN" and f[3] != "stale-waiver"]
     for level, path, lineno, rule, msg in fails:
         print("FAIL: %s:%d: [%s] %s" % (path, lineno, rule, msg))
+    for level, path, lineno, rule, msg in findings:
+        if level == "WAIVED":
+            print("WAIVED: %s:%d: [%s] %s" % (path, lineno, rule, msg))
+        elif rule == "stale-waiver":
+            print("WARN: %s: [%s] %s" % (path, rule, msg))
     if warns:
         files = sorted(set(f[1] for f in warns))
         print("WARN: %d jq recipe(s) in %d non-injected skill(s) do not match real `pilotctl --json` output "

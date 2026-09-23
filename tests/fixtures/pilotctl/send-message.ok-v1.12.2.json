@@ -1,0 +1,2 @@
+{"status":"ok","data":{"target":"0:0000.0002.BBE4","to":"0:0000.0002.BBE4","type":"text","seq":0,"bytes":33,"reused":false,"ack":"ACK TEXT 33 bytes"}}
+{"status":"ok","data":{"type":"text","from":"0:0000.0002.BBE4","bytes":118,"received_at":"2026-09-24T00:30:04.123456789Z","data":"{\"source\":\"list-agents\",\"items\":[{\"hostname\":\"open-meteo-forecast\"}],\"count\":1,\"total\":430}"}}

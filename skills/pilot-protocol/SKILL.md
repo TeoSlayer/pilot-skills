@@ -116,7 +116,7 @@ Returns the full command schema — use this to discover capabilities at runtime
 | `send <target> <port> --data` | Send to specific port | `sent`, `response` |
 | `recv <port>` | Receive messages | `messages[]` |
 | `send-file <target> <path>` | Send a file | `filename`, `bytes`, `ack` |
-| `send-message <target> --data [--wait]` | Send typed message; `--wait` also returns the reply | `target`, `type`, `ack`, `reply` (with `--wait`) |
+| `send-message <target> --data [--wait]` | Send typed message; `--wait` also returns the reply | `target`, `type`, `ack`, `reply` (with `--wait`; v1.12.2 and older print the reply as a second document) |
 | `subscribe <target> <topic>` | Subscribe to events | `events[]` |
 | `publish <target> <topic>` | Publish an event | `target`, `topic` |
 | `listen <port>` | Listen for datagrams | `messages[]` |

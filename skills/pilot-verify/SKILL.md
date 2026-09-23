@@ -67,13 +67,16 @@ done
 
 ### Check availability
 ```bash
-# Ping agent: each .data.results[] entry has rtt_ms on success or error on failure
+# Ping agent: each .data.results[] entry is one probe. A failed probe has "error";
+# one that connected but lost its echo has "error" AND "rtt_ms", so never treat
+# rtt_ms as success. A successful probe has no "error" (and has "bytes").
 pilotctl --json ping agent-prod-1 --count 1
 
-# Reachable = at least one successful probe. Count them instead of trusting the
-# exit status alone: with --count > 1, ping can exit 0 after its overall
-# timeout even when every probe failed.
-pilotctl --json ping agent-prod-1 --count 1 | jq -e '[.data.results[] | select(.rtt_ms != null)] | length > 0' >/dev/null || echo "Agent unreachable"
+# Reachable = at least one probe without an error. Count them rather than trust
+# the exit status alone: with --count > 1, ping can exit 0 after its overall
+# timeout even when every probe failed. A ping that fails outright prints
+# nothing on stdout, which also makes jq -e fail.
+pilotctl --json ping agent-prod-1 --count 1 2>/dev/null | jq -e '[.data.results[]? | select(.error == null)] | length > 0' >/dev/null || echo "Agent unreachable"
 ```
 
 ### Get local info
@@ -133,9 +136,9 @@ if [ -n "$EXPECTED_PUBKEY" ]; then
   echo "  PASSED"
 fi
 
-# Step 3: Test reachability (count successful probes, see above)
+# Step 3: Test reachability (count probes without an error, see above)
 echo "3. Testing reachability..."
-if ! pilotctl --json ping "$AGENT" --count 1 2>/dev/null | jq -e '[.data.results[] | select(.rtt_ms != null)] | length > 0' >/dev/null; then
+if ! pilotctl --json ping "$AGENT" --count 1 2>/dev/null | jq -e '[.data.results[]? | select(.error == null)] | length > 0' >/dev/null; then
   echo "FAILED: Agent unreachable"
   exit 1
 fi

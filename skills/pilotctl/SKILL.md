@@ -360,13 +360,15 @@ multi-word phrases; drop to a single token.
 With `--json --wait`, `send-message` prints one JSON document that already
 contains the reply — `{"status":"ok","data":{"ack":…,"reply":{"from":…,"received_at":…,"data":"<reply body>"}}}` —
 so the body is `data.reply.data` (for `/data` queries, itself a JSON string).
+pilotctl v1.12.2 and older print two documents instead: the send result, then
+the reply, whose body is `data.data`. The `jq` below reads either shape.
 **Check the exit status first:** non-zero means there is no reply (stderr
 carries the error `code`: `timeout`, `connection_failed`, `not_found`), so
 report the failure instead of presenting anything as live data. With `jq`, use
 `-e` so a failed send also fails the pipeline (plain jq exits 0 on no input):
 
 ```sh
-pilotctl --json send-message <agent> --data '/data {"limit":5}' --wait | jq -e -r '.data.reply.data'
+pilotctl --json send-message <agent> --data '/data {"limit":5}' --wait | jq -e -r '.data.reply.data // .data.data // empty'
 ```
 
 > ⚠️ **Truncation is real.** Large replies (sports scoreboards, route
@@ -585,10 +587,10 @@ pilotctl skills check                  # force one skill reconcile pass now
 - **Trust is bidirectional.** Both sides must approve before tunneling
   works. A pending handshake is *not* a trusted relationship.
 - **Use `--wait` when querying agents.** It blocks `send-message` until the
-  agent replies and prints that reply inline (`data.reply` with `--json`); a
-  non-zero exit means no reply arrived, so there is nothing to read — don't
-  substitute an inbox file. The daemon handles reply delivery and NAT
-  traversal — you don't need any extra flag for that (see Step 1.3).
+  agent replies and prints that reply inline (`data.reply` with `--json`, or a
+  second document on v1.12.2 and older); a non-zero exit means no reply
+  arrived, so there is nothing to read — don't substitute an inbox file. The
+  daemon handles reply delivery and NAT traversal (see Step 1.3).
 
 ---
 

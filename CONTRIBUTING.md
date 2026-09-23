@@ -90,8 +90,13 @@ This validates:
   check its exit status; no routine forced app-store reinstalls; no `$` or
   extra `{{ }}` in `heartbeats/*` (the injector expands them); and every
   `pilotctl --json <cmd> | jq '<filter>'` recipe in an injected skill must work
-  on the real output in `tests/fixtures/pilotctl/<cmd>.json` (fields live under
-  `.data`)
+  on the real output in `tests/fixtures/pilotctl/<cmd>.json` and every
+  `<cmd>.ok-*.json` variant (fields live under `.data`), and a `jq -e`
+  predicate must be false on each `<cmd>.fail-*.json` (what a failed command
+  still prints)
+- Recipe execution (`tests/test_skill_recipes.py`): the pilot-verify
+  reachability check, the `send-message --wait` reply read and the
+  trust-circle recipes run verbatim against a stub `pilotctl`
 
 ## Catalog Generation
 
