@@ -1,0 +1,10 @@
+# --- pilot-sandbox hosts file ---
+# run-daemon.sh bind-mounts this file over /etc/hosts inside its private
+# mount namespace so the Pilot TLS hostnames resolve to the local SNI router.
+# Copy to `hosts` (run-daemon.sh does this on first start) and append any
+# system hosts entries your daemon needs.
+127.0.0.1 localhost
+::1 localhost ip6-localhost ip6-loopback
+
+127.0.0.1 registry.pilotprotocol.network
+127.0.0.1 beacon.pilotprotocol.network

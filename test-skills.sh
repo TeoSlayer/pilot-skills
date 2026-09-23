@@ -17,7 +17,7 @@ VALID_COMMANDS=(
   handshake approve reject untrust pending trust
   connections disconnect
   received inbox
-  info health peers ping traceroute bench listen broadcast context
+  info health peers ping traceroute bench listen broadcast context trusted
   gateway
   set-webhook clear-webhook
   set-visibility
