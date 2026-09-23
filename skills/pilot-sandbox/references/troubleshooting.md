@@ -1,7 +1,27 @@
 # Troubleshooting: Pilot from a restricted sandbox
 
-Dead ends explored on 2026-09-23 while getting node 251945 online from inside
-Meta Muse's VM. Read this before trying a "simpler" approach; most were tried.
+Start with `bash scripts/pilot-up.sh`: it prints the last lines of
+`~/.pilot/daemon.log` and a next step when the node does not register. The
+tables below map what you see to a fix. The dead ends further down were
+explored on 2026-09-23 while getting node 251945 online from inside Meta
+Muse's VM; read them before trying a "simpler" approach.
+
+## Native proxy mode (`pilot-daemon` with `-proxy`)
+Check support with `pilot-daemon -h 2>&1 | grep -E '^\s+-proxy'`. The daemon
+logs proxy URLs redacted (`http://***@host:port`); never paste the raw
+`HTTPS_PROXY` value into a log or an issue.
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `407` / `Proxy Authentication Required` in `daemon.log` | wrong or missing proxy credentials | check the `user:pass@` part of `HTTPS_PROXY`; URL-encode `@`, `:` and `/` inside the password |
+| proxy refused `CONNECT` (`403`, `405`) | proxy allowlist does not include the Pilot hosts | it must allow `registry.pilotprotocol.network:443` and `beacon.pilotprotocol.network:443` |
+| dial errors naming `198.18.x.x`, or `i/o timeout` straight after start | the connection skipped the proxy | `NO_PROXY`/`no_proxy` must not cover `pilotprotocol.network` (or be `*`); `pilot-up.sh` warns when it does |
+| same, with `NO_PROXY` clean | the daemon never saw the proxy | `export HTTPS_PROXY` (not just set it); start via `pilot-up.sh`, not a released `pilotctl daemon start`, which scrubs the environment |
+| `-proxy=auto` but traffic goes direct | `-transport=udp` | auto only applies in compat mode; pass `-transport=compat`, or an explicit `-proxy=http://...` |
+| `x509: certificate signed by unknown authority` | no CA bundle, or a TLS-intercepting proxy | `SSL_CERT_FILE=/path/ca.pem` (the proxy's CA if it intercepts), or `PILOT_REGISTRY_TRUST=pinned` plus a fresh fingerprint (below) |
+| `flag provided but not defined: -proxy` | daemon predates `-proxy` | `pilot-up.sh` picks the SNI fallback on its own; do not force `PILOT_UP_MODE=native` |
+| `pilot-up.sh` exits 3 | older daemon, and no root / CAP_SYS_ADMIN for the fallback | upgrade Pilot once the release with `-proxy` is out, or rerun as root with `sudo -E` |
+| `daemon registered` never appears, no error | slow proxy | `PILOT_UP_WAIT=180 bash scripts/pilot-up.sh` |
 
 ## The environment
 - `pilotprotocol-mcp` installed via npx; `pilotctl` and `pilot-daemon` in `~/.pilot/bin`.
@@ -10,7 +30,7 @@ Meta Muse's VM. Read this before trying a "simpler" approach; most were tried.
   `-socket`, `-identity`. Run `pilot-daemon --help` for the full list.
   `pilotctl daemon start` does NOT forward all of them, and it scrubs the
   environment when forking, so run the daemon binary directly when you need
-  env (such as `HTTPS_PROXY`) to propagate.
+  env (such as `HTTPS_PROXY`) to propagate. `pilot-up.sh` does exactly that.
 
 ## What failed and why
 
@@ -58,20 +78,20 @@ Meta Muse's VM. Read this before trying a "simpler" approach; most were tried.
     reads `/etc/hosts` first, so the daemon resolves the Pilot names to
     `127.0.0.1` while everything else on the box is unaffected.
 
-## Symptoms and fixes
+## SNI-router fallback: symptoms and fixes
 
 | Symptom | Cause | Fix |
 |---|---|---|
 | `sni_router.py` exits with `HTTPS_PROXY not set` | env not exported | `export HTTPS_PROXY=...` before starting |
 | `proxy refused CONNECT ...: 407` in `sni_router.log` | wrong proxy credentials | check the `user:pass@` part of `HTTPS_PROXY` |
 | `no route for SNI=None` | a non-TLS client hit port 443 | ignore; only the daemon should talk to the router |
-| `mount --bind failed` from `run-daemon.sh` | not inside `unshare -m`, or no root | launch exactly as documented |
+| `mount --bind failed` from `run-daemon.sh` | not inside `unshare -m`, or no root | launch exactly as documented, or via `pilot-up.sh` as root |
 | daemon logs `x509: certificate signed by unknown authority` | no CA bundle in the sandbox | `PILOT_REGISTRY_TRUST=pinned` plus a fresh fingerprint (below) |
 | daemon logs a fingerprint mismatch | registry certificate renewed | re-fetch the fingerprint (below), or switch to `system` |
 | `pilotctl lookup` fails from the normal shell | expected outside the namespace | use `pilotctl --json info`, `trusted list`, `ping` instead |
 
 ## Re-fetching the registry certificate fingerprint
-Only needed with `PILOT_REGISTRY_TRUST=pinned`.
+Only needed with `PILOT_REGISTRY_TRUST=pinned` (both paths read it).
 ```bash
 python3 - <<'PY'
 import os, socket, ssl, base64, hashlib

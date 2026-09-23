@@ -3,9 +3,11 @@
 # namespace whose /etc/hosts points the Pilot TLS hostnames at the local SNI
 # router (scripts/sni_router.py).
 #
-# Launch it ONLY like this (root or CAP_SYS_ADMIN required for unshare -m):
+# pilot-up.sh launches it for you when the installed pilot-daemon predates the
+# -proxy flag. By hand, launch it ONLY like this (root or CAP_SYS_ADMIN
+# required for unshare -m):
 #
-#   setsid unshare -m ./scripts/run-daemon.sh >> daemon.log 2>&1 < /dev/null &
+#   setsid unshare -m ./scripts/run-daemon.sh >> ~/.pilot/daemon.log 2>&1 < /dev/null &
 #
 # Environment (all optional):
 #   PILOT_REGISTRY_TRUST        system (default) | pinned
@@ -14,6 +16,7 @@
 #                               references/troubleshooting.md to re-fetch it.
 #   PILOT_SOCKET                Unix socket path (default /tmp/pilot.sock)
 #   PILOT_BIN                   pilot-daemon binary (default ~/.pilot/bin/pilot-daemon)
+#   PILOT_HOSTNAME              node hostname (-hostname)
 #
 # `system` verifies the registry's Let's Encrypt certificate against the OS
 # trust store and survives certificate rotation. `pinned` is the fallback for
@@ -39,16 +42,17 @@ if ! mount --bind "$HOSTS_FILE" /etc/hosts 2>/dev/null; then
   exit 1
 fi
 
-TRUST_ARGS=(-registry-trust="$TRUST")
-[ "$TRUST" = "pinned" ] && TRUST_ARGS+=(-registry-fingerprint="$FINGERPRINT")
+EXTRA_ARGS=(-registry-trust="$TRUST")
+[ "$TRUST" = "pinned" ] && EXTRA_ARGS+=(-registry-fingerprint="$FINGERPRINT")
+[ -f "$HOME/.pilot/config.json" ] && EXTRA_ARGS+=(-config="$HOME/.pilot/config.json")
+[ -n "${PILOT_HOSTNAME:-}" ] && EXTRA_ARGS+=(-hostname="$PILOT_HOSTNAME")
 
 rm -f "$SOCKET"
 exec "$DAEMON" \
   -transport=compat \
-  -config="$HOME/.pilot/config.json" \
   -registry=registry.pilotprotocol.network:443 \
   -registry-tls \
-  "${TRUST_ARGS[@]}" \
+  "${EXTRA_ARGS[@]}" \
   -compat-beacon=wss://beacon.pilotprotocol.network/v1/compat \
   -socket="$SOCKET" \
   -identity="$HOME/.pilot/identity.json"
