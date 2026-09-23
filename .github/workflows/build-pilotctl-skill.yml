@@ -11,6 +11,7 @@ on:
     paths:
       - "ONBOARDING.md"
       - "skills/*/SKILL.md"
+      - "inject-manifest.json"
       - ".github/workflows/build-pilotctl-skill.yml"
   workflow_dispatch:
 
