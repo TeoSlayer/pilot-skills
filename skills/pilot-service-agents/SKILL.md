@@ -48,17 +48,22 @@ over the overlay, so once you understand one you understand them all. The
 catalogue itself is served by a directory agent called `list-agents` — always
 start there.
 
-## The flow: discover → pick → invoke → read inbox
+## The flow: discover → pick → invoke → read the reply
 
 ```
-pilotctl send-message list-agents --data "/data {filters}"   (find agents)
-pilotctl send-message <hostname>   --data "/help"            (read contract)
-pilotctl send-message <hostname>   --data "/data {filters}"  (fetch data)
-pilotctl inbox                                               (read response)
+pilotctl --json send-message list-agents --data "/data {filters}" --wait   (find agents)
+pilotctl --json send-message <hostname>   --data "/help" --wait            (read contract)
+pilotctl --json send-message <hostname>   --data "/data {filters}" --wait  (fetch data)
 ```
 
-The send-message call returns an ACK immediately; the **actual response comes
-back as an inbox message** a few seconds later from the agent you called.
+The agent's **actual response comes back as a separate message** a few seconds
+after the ACK. `--wait` blocks until it arrives and prints it inline: the
+reply is `data.reply`, and the agent's envelope is the JSON string in
+`data.reply.data`. A non-zero exit means no reply arrived (the error JSON on
+stderr says why) — treat that as *no data*; don't read older inbox messages
+in its place. A reply that lands after the wait is still saved and can be
+picked up by sender and time with
+`pilotctl --json inbox --from <hostname> --since 5m --latest`.
 
 ## Discovering agents via list-agents
 
@@ -66,14 +71,12 @@ back as an inbox message** a few seconds later from the agent you called.
 
 ### List all commands it supports
 ```bash
-pilotctl --json send-message list-agents --data "/help"
-pilotctl --json inbox
+pilotctl --json send-message list-agents --data "/help" --wait
 ```
 
 ### Filter the catalogue
 ```bash
-pilotctl --json send-message list-agents --data '/data {"category":"academic","limit":20}'
-pilotctl --json inbox
+pilotctl --json send-message list-agents --data '/data {"category":"academic","limit":20}' --wait
 ```
 
 Supported filter fields on `list-agents` `/data`:
@@ -91,14 +94,12 @@ category), and `tiers.free` / `tiers.premium` buckets with their disclaimers.
 
 ### Gemini summary of matches
 ```bash
-pilotctl --json send-message list-agents --data '/summary {"category":"flights"}'
-pilotctl --json inbox
+pilotctl --json send-message list-agents --data '/summary {"category":"flights"}' --wait
 ```
 
 ### Free-text question over the catalogue
 ```bash
-pilotctl --json send-message list-agents --data 'which agent gives me Formula 1 race results?'
-pilotctl --json inbox
+pilotctl --json send-message list-agents --data 'which agent gives me Formula 1 race results?' --wait
 ```
 
 ## Talking to a specific service agent
@@ -145,20 +146,14 @@ knowledge:
 
 ```bash
 # 1. Find the right category
-pilotctl --json send-message list-agents --data '/data {"category":"flights","limit":5}'
-sleep 5
-pilotctl --json inbox   # pick e.g. adsb-lol-latlon
+pilotctl --json send-message list-agents --data '/data {"category":"flights","limit":5}' --wait   # pick e.g. adsb-lol-latlon
 
 # 2. Read its filter contract
-pilotctl --json send-message adsb-lol-latlon --data '/help'
-sleep 5
-pilotctl --json inbox
+pilotctl --json send-message adsb-lol-latlon --data '/help' --wait
 
 # 3. Query with the filters you just learned
 pilotctl --json send-message adsb-lol-latlon \
-  --data '/data {"lat":40.78,"lon":-73.97,"radius":8}'
-sleep 5
-pilotctl --json inbox
+  --data '/data {"lat":40.78,"lon":-73.97,"radius":8}' --wait
 ```
 
 ## What to expect across the catalogue
@@ -182,7 +177,7 @@ in the catalogue — read one of those once you know which kind of data you
 need. Discover the list with:
 
 ```bash
-pilotctl --json send-message list-agents --data '/data {}'
+pilotctl --json send-message list-agents --data '/data {}' --wait
 ```
 
 Then look for the matching `pilot-service-agents-*` skill.
