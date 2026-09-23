@@ -1,24 +1,27 @@
 #!/bin/bash
 # test-skills.sh — Validate all Pilot Protocol skills
-# Checks: YAML frontmatter, pilotctl command existence, --json flags, structure
+# Checks: YAML frontmatter, pilotctl command existence, --json flags, structure,
+# and the agent-instruction lint (tests/lint_agent_instructions.py)
 set -euo pipefail
 
 SKILLS_DIR="$(cd "$(dirname "$0")/skills" && pwd)"
 ERRORS=()
 
-# Known valid commands extracted from pilotctl help
+# Known valid top-level commands extracted from pilotctl help.
+# set-tags, clear-tags and gateway are deliberately absent: pilotctl rejects
+# them at top level ("not in the core CLI") — they must be written as
+# `pilotctl extras set-tags|clear-tags|gateway ...`.
 VALID_COMMANDS=(
   init config
   daemon
   register lookup rotate-key set-public set-private deregister
-  find set-hostname clear-hostname set-tags clear-tags enable-tasks disable-tasks
+  find set-hostname clear-hostname enable-tasks disable-tasks
   connect send recv send-file send-message subscribe publish
   task
   handshake approve reject untrust pending trust
   connections disconnect
   received inbox
   info health peers ping traceroute bench listen broadcast context trusted
-  gateway
   set-webhook clear-webhook
   set-visibility
   network
@@ -187,6 +190,31 @@ for skill_file in "$SKILLS_DIR"/*/SKILL.md; do
   fi
 done
 echo "  Missing: $WF_FAIL"
+
+# Test 7: Agent-instruction lint (heartbeats, ONBOARDING.md, skills,
+# workflow-injection docs): stale inbox reads, false claims, routine
+# `appstore install --force`, heartbeat-template hazards, and jq recipes
+# executed against real `pilotctl --json` output shapes.
+echo ""
+echo "--- Test 7: Agent-Instruction Lint ---"
+LINT="$(dirname "$0")/tests/lint_agent_instructions.py"
+if ! SELFTEST_OUT=$(python3 "$LINT" --self-test 2>&1); then
+  ERRORS+=("lint self-test failed: $SELFTEST_OUT")
+fi
+LINT_RC=0
+LINT_OUT=$(python3 "$LINT" 2>&1) || LINT_RC=$?
+LINT_FAIL=0
+while IFS= read -r line; do
+  case "$line" in
+    FAIL:*) ERRORS+=("${line#FAIL: }"); LINT_FAIL=$((LINT_FAIL + 1)) ;;
+    WARN:*) echo "  $line" ;;
+  esac
+done <<< "$LINT_OUT"
+# A non-zero exit without FAIL lines is an environment error (e.g. no jq).
+if [ "$LINT_RC" -ne 0 ] && [ "$LINT_FAIL" -eq 0 ]; then
+  ERRORS+=("lint_agent_instructions.py exited $LINT_RC: $LINT_OUT")
+fi
+echo "  Findings: $LINT_FAIL"
 
 # Summary
 echo ""

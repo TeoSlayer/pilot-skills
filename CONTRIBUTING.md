@@ -84,6 +84,14 @@ This validates:
 - `--json` flag is present on all pilotctl calls
 - Line count is within limits
 - Dependencies and workflow sections exist
+- Agent-instruction lint (`tests/lint_agent_instructions.py`, needs `python3`
+  and `jq`): no "newest inbox file" reads — read the reply that
+  `pilotctl --json send-message X --data ... --wait` prints (`data.reply`) and
+  check its exit status; no routine forced app-store reinstalls; no `$` or
+  extra `{{ }}` in `heartbeats/*` (the injector expands them); and every
+  `pilotctl --json <cmd> | jq '<filter>'` recipe in an injected skill must work
+  on the real output in `tests/fixtures/pilotctl/<cmd>.json` (fields live under
+  `.data`)
 
 ## Catalog Generation
 
