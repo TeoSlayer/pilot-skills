@@ -42,22 +42,22 @@ Secure database access through Pilot Protocol tunnels for remote PostgreSQL, MyS
 
 ### Start Gateway
 ```bash
-pilotctl --json gateway start
+pilotctl --json extras gateway start
 ```
 
 ### Map Remote Database
 ```bash
-pilotctl --json gateway map db-server 192.168.100.10
+pilotctl --json extras gateway map db-server 192.168.100.10
 ```
 
 ### List Mappings
 ```bash
-pilotctl --json gateway list
+pilotctl --json extras gateway list
 ```
 
 ### Stop Gateway
 ```bash
-pilotctl --json gateway stop
+pilotctl --json extras gateway stop
 ```
 
 ## Workflow Example
@@ -68,8 +68,8 @@ pilotctl --json gateway stop
 
 pilotctl --json daemon start
 pilotctl --json find postgres-prod
-pilotctl --json gateway start
-pilotctl --json gateway map postgres-prod 192.168.100.10
+pilotctl --json extras gateway start
+pilotctl --json extras gateway map postgres-prod 192.168.100.10
 
 # Connect with standard client
 psql -h 192.168.100.10 -p 5432 -U dbuser -d production
@@ -79,19 +79,19 @@ psql -h 192.168.100.10 -p 5432 -U dbuser -d production
 
 ```bash
 # PostgreSQL
-pilotctl --json gateway map postgres-server 192.168.100.10
+pilotctl --json extras gateway map postgres-server 192.168.100.10
 psql -h 192.168.100.10 -p 5432 -U user -d database
 
 # MySQL
-pilotctl --json gateway map mysql-server 192.168.100.11
+pilotctl --json extras gateway map mysql-server 192.168.100.11
 mysql -h 192.168.100.11 -P 3306 -u root -p
 
 # MongoDB
-pilotctl --json gateway map mongo-server 192.168.100.12
+pilotctl --json extras gateway map mongo-server 192.168.100.12
 mongosh mongodb://192.168.100.12:27017
 
 # Redis
-pilotctl --json gateway map redis-server 192.168.100.13
+pilotctl --json extras gateway map redis-server 192.168.100.13
 redis-cli -h 192.168.100.13 -p 6379
 ```
 

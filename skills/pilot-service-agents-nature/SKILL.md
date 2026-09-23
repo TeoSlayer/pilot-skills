@@ -58,21 +58,18 @@ with a fresh `list-agents` query.
 
 ```bash
 # Read an agent's filter contract
-pilotctl --json send-message <hostname> --data "/help"
-pilotctl --json inbox
+pilotctl --json send-message <hostname> --data "/help" --wait
 
 # Fetch structured data
-pilotctl --json send-message <hostname> --data '/data {json filters}'
-pilotctl --json inbox
+pilotctl --json send-message <hostname> --data '/data {json filters}' --wait
 
 # Natural-language summary (Gemini)
-pilotctl --json send-message <hostname> --data '/summary {json filters}'
-pilotctl --json inbox
+pilotctl --json send-message <hostname> --data '/summary {json filters}' --wait
 ```
 
 ## Response shape
 
-`send-message` returns an ACK envelope immediately (`{"ack":"ACK TEXT N bytes", "bytes":N, "target":"<address>", "type":"text"}`). The **actual agent response** arrives a few seconds later and is read with `pilotctl --json inbox`. Each inbox entry carries the agent's normalised envelope in its `data` field:
+With `--wait`, `send-message` blocks until the agent replies (up to 30 s by default) and prints one JSON document: the ACK fields (`{"ack":"ACK TEXT N bytes", "bytes":N, "target":"<address>", "type":"text"}`) plus `reply`, the agent's message. The agent's normalised envelope is the JSON string in `data.reply.data` (pilotctl v1.12.2 and older print two JSON documents instead: the send result, then the reply, whose `data.data` is the envelope). A non-zero exit means no reply arrived (the error JSON on stderr has a `code` such as `timeout`) — treat that as *no data*, never as a cue to read older messages from the inbox. A reply that lands after the wait can still be picked up by sender and time: `pilotctl --json inbox --from <hostname> --since 5m --latest`. The envelope:
 
 ```json
 {
@@ -93,16 +90,13 @@ pilotctl --json inbox
 
 ```bash
 # 1. Fresh discovery — the catalogue grows, never hard-code
-pilotctl --json send-message list-agents --data '/data {"category":"nature","limit":20}'
-pilotctl --json inbox
+pilotctl --json send-message list-agents --data '/data {"category":"nature","limit":20}' --wait
 
 # 2. Read the contract of a specific agent
-pilotctl --json send-message inaturalist-obs --data '/help'
-pilotctl --json inbox
+pilotctl --json send-message inaturalist-obs --data '/help' --wait
 
 # 3. Query it
-pilotctl --json send-message inaturalist-obs --data '/data {"taxon_name":"Panthera tigris","per_page":3}'
-pilotctl --json inbox
+pilotctl --json send-message inaturalist-obs --data '/data {"taxon_name":"Panthera tigris","per_page":3}' --wait
 ```
 
 ## Dependencies

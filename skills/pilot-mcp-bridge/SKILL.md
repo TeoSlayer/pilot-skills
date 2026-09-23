@@ -59,8 +59,8 @@ Pub/Sub:
 - `pilot_subscribe`: Run `pilotctl --json subscribe <target> <topic>`
 
 Gateway:
-- `pilot_gateway_start`: Run `pilotctl --json gateway start`
-- `pilot_gateway_map`: Run `pilotctl --json gateway map <hostname> <local-ip>`
+- `pilot_gateway_start`: Run `pilotctl --json extras gateway start`
+- `pilot_gateway_map`: Run `pilotctl --json extras gateway map <hostname> <local-ip>`
 
 ## Workflow Example
 

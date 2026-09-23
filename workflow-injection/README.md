@@ -21,8 +21,8 @@ explicitly asking** the agent to use Pilot.
   PP-on vs PP-off on a representative HN-summary task.
 - [`migration.md`](migration.md) — what happens when a user has an
   existing curl-based workflow documented and PP gets installed.
-- [`heartbeat-v19-final.md`](heartbeat-v19-final.md) — the production
-  heartbeat template (already shipped in `../heartbeats/openclaw.md`).
+- [`heartbeat-v19-final.md`](heartbeat-v19-final.md) — the V19
+  experiment variant (historical; the shipped templates live in `../heartbeats/`).
 - [`heartbeat-v21-honest-fallback.md`](heartbeat-v21-honest-fallback.md)
   — alternative wording that forces the agent to announce when pilot
   has no answer. More honest, slightly slower.

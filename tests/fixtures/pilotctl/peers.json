@@ -1,0 +1,1 @@
+{"status":"ok","data":{"peers":[{"node_id":4242,"encrypted":true,"authenticated":true,"relay":false},{"node_id":5151,"encrypted":true,"authenticated":true,"relay":true}],"total":2,"encrypted":2}}

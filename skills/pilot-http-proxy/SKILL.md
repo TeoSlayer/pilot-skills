@@ -42,27 +42,27 @@ Route HTTP requests through Pilot Protocol tunnels using the gateway subsystem.
 
 ### Start Gateway
 ```bash
-pilotctl --json gateway start
+pilotctl --json extras gateway start
 ```
 
 ### Map Remote HTTP Service
 ```bash
-pilotctl --json gateway map <hostname> <local-ip>
+pilotctl --json extras gateway map <hostname> <local-ip>
 ```
 
 ### List Mappings
 ```bash
-pilotctl --json gateway list
+pilotctl --json extras gateway list
 ```
 
 ### Remove Mapping
 ```bash
-pilotctl --json gateway unmap <local-ip>
+pilotctl --json extras gateway unmap <local-ip>
 ```
 
 ### Stop Gateway
 ```bash
-pilotctl --json gateway stop
+pilotctl --json extras gateway stop
 ```
 
 ## Workflow Example
@@ -73,8 +73,8 @@ pilotctl --json gateway stop
 
 pilotctl --json daemon start
 pilotctl --json find api-server
-pilotctl --json gateway start
-pilotctl --json gateway map api-server 192.168.100.50
+pilotctl --json extras gateway start
+pilotctl --json extras gateway map api-server 192.168.100.50
 
 # Access remote service
 curl http://192.168.100.50/api/v1/status

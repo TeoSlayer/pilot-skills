@@ -42,12 +42,12 @@ Expose local APIs to the Pilot Protocol network through gateway mode or custom m
 
 ### Start Gateway (HTTP/HTTPS)
 ```bash
-pilotctl --json gateway start
+pilotctl --json extras gateway start
 ```
 
 ### Map Remote API
 ```bash
-pilotctl --json gateway map <hostname> <local-ip>
+pilotctl --json extras gateway map <hostname> <local-ip>
 ```
 
 ### Listen for Custom API Requests
