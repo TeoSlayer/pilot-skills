@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Stub pilotctl for the tests: `--json info` answers while the stub daemon that
+# wrote ~/.pilot/stub-state is alive; `--json daemon stop` finds nothing to stop
+# (like the real one facing a pilot.pid of "0").
+state="$HOME/.pilot/stub-state"
+case "$*" in
+  "--json info")
+    if [ -f "$state" ]; then
+      read -r pid ver < "$state"
+      if kill -0 "$pid" 2>/dev/null; then
+        printf '{"status":"ok","data":{"address":"0:0000.0000.1092","node_id":4242,"version":"%s"}}\n' "$ver"
+        exit 0
+      fi
+    fi
+    echo '{"status":"error","code":"not_running"}'
+    exit 1
+    ;;
+  "--json daemon stop")
+    echo '{"status":"error","code":"not_running"}'
+    exit 1
+    ;;
+esac
+exit 0

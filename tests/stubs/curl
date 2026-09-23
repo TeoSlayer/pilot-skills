@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Fake curl for the installer test: serves the repo's skills as the codeload
+# tarball and the stub official installer; anything else fails. No network.
+set -euo pipefail
+out="" url=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -o) out="$2"; shift 2 ;;
+    -*) shift ;;
+    *) url="$1"; shift ;;
+  esac
+done
+emit() { if [ -n "$out" ]; then cat > "$out"; else cat; fi; }
+case "$url" in
+  https://codeload.github.com/TeoSlayer/pilot-skills/tar.gz/*)
+    tar -czf - -C "$STUB_TARBALL_ROOT" . | emit ;;
+  "$PILOT_INSTALL_URL")
+    emit < "$STUB_DIR/official-install.sh" ;;
+  *) echo "fake curl: unexpected URL $url" >&2; exit 22 ;;
+esac

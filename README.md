@@ -54,7 +54,7 @@ Agents that load `SKILL.md` folders from a directory (Meta Muse uses `~/workspac
 curl -fsSL https://raw.githubusercontent.com/TeoSlayer/pilot-skills/main/muse/install.sh | bash
 ```
 
-Set `PILOT_SKILLS_ONLY=1` to install just the skills, `MUSE_SKILLS_DIR` to install them somewhere else. Details in [`muse/README.md`](muse/README.md).
+Set `PILOT_SKILLS_ONLY=1` to install just the skills, `MUSE_SKILLS_DIR` to install them somewhere else. The installed copies get the frontmatter Muse loads (`name: "pilot_sandbox"`, one-line description; `PILOT_MUSE_FRONTMATTER=0` keeps the original), and the host is marked with `~/.pilot/targets/muse`. Details in [`muse/README.md`](muse/README.md).
 
 ## Skills
 

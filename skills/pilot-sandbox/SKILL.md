@@ -38,7 +38,7 @@ compatibility: >
   (util-linux), and root or CAP_SYS_ADMIN.
 metadata:
   author: vulture-labs
-  version: "1.1"
+  version: "1.2"
   openclaw:
     requires:
       bins:
@@ -53,9 +53,8 @@ allowed-tools:
 ## Purpose
 Get a Pilot node registered when the sandbox blocks outbound UDP, poisons DNS
 for `*.pilotprotocol.network`, and only allows HTTPS `CONNECT` through an
-authenticating egress proxy. A node first went live from inside Meta Muse's
-VM this way on 2026-09-23, after the dead ends in
-`references/troubleshooting.md`.
+authenticating egress proxy. A node first went live inside Meta Muse's VM this
+way on 2026-09-23, after the dead ends in `references/troubleshooting.md`.
 
 ## Constraints (verify before assuming they changed)
 - Outbound UDP is blocked, so the default transport cannot work.
@@ -71,10 +70,10 @@ VM this way on 2026-09-23, after the dead ends in
 ```bash
 curl -fsSL https://raw.githubusercontent.com/TeoSlayer/pilot-skills/main/muse/install.sh | bash
 ```
-Installs this skill plus `pilotctl` and `pilot-protocol`, installs
-`pilotctl` and `pilot-daemon` into `~/.pilot/bin` if missing (official
-installer, no root), then runs `scripts/pilot-up.sh`. `curl` honours
-`HTTPS_PROXY`, so every download goes through the proxy.
+Installs this skill plus `pilotctl` and `pilot-protocol`, `pilotctl` and
+`pilot-daemon` into `~/.pilot/bin` if missing (official installer, run with
+`PILOT_ALLOW_ROOT=1` as root), then runs `scripts/pilot-up.sh`. `curl`
+honours `HTTPS_PROXY`, so every download goes through the proxy.
 
 ## (Re)start after a VM restart
 ```bash
@@ -94,11 +93,12 @@ and the next diagnostic step; exit 3 when the only viable path needs root
 | `direct` | older daemon, no proxy in the environment | nothing extra |
 | `sni` | older daemon behind a proxy | root + CAP_SYS_ADMIN, python3, unshare |
 
-The daemon runs under a small respawn loop detached with `setsid`, logging to
-`~/.pilot/daemon.log`. A crash is respawned; a clean exit is not.
+The daemon runs under a respawn loop detached with `setsid`, logging to
+`~/.pilot/daemon.log`; a crash is respawned, a clean exit is not. Pid files a
+VM restart leaves behind are checked against the command line, then removed.
 
 ## Fast path: native proxy (pilot-daemon with -proxy)
-What `pilot-up.sh` runs, if you need it by hand:
+By hand, what `pilot-up.sh` runs (`-transport=auto` when `-h` offers it):
 ```bash
 export PATH="$PATH:$HOME/.pilot/bin"
 pilot-daemon -h 2>&1 | grep -E '^\s+-proxy'        # supported?
@@ -117,8 +117,8 @@ Returns: `daemon registered` and `compat mode tunnel up` in `daemon.log`.
 - The proxy is asked to `CONNECT` by hostname, so the poisoned local DNS never
   matters. TLS stays end to end (pinned fingerprints still work) and the
   daemon logs proxy URLs redacted (`http://***@host:port`).
-- Run the daemon directly. Released `pilotctl daemon start` scrubs the
-  environment, so `HTTPS_PROXY` never reaches the daemon it forks.
+- Run the daemon directly: released `pilotctl daemon start` cannot pass
+  `-proxy`, `-registry-trust` or `-registry-fingerprint`.
 
 ## Fallback: SNI router (older daemons, root)
 For a `pilot-daemon` without `-proxy`. `pilot-up.sh` does all of this when it
@@ -151,15 +151,17 @@ service-agent directory; `ping` reports round-trip times through the beacon
 relay. All three succeeding means the registry and beacon paths both work.
 
 ## TLS trust: `system` first, `pinned` as fallback
-Both paths default to `-registry-trust=system` (the registry's Let's Encrypt
-certificate against the OS trust store; survives rotation). On an x509 error,
-point `SSL_CERT_FILE` at a CA bundle, or pin:
+`pilot-up.sh` starts with `-registry-trust=system` (Let's Encrypt; survives
+rotation). On an x509 error for the registry it restarts the daemon once with
+`-registry-trust=pinned` and the bundled fingerprint (`c1f958f6...`, the first
+Muse node's pin, valid until 2026-12-16) and says so. With no CA bundle where
+Go looks, it sets `SSL_CERT_FILE` to one found on the box, since the beacon
+(WSS) cannot be pinned. To choose yourself (`system` means no retry):
 ```bash
-export PILOT_REGISTRY_TRUST=pinned
-export PILOT_REGISTRY_FINGERPRINT=<hex sha256 of the registry leaf>
+export PILOT_REGISTRY_TRUST=pinned PILOT_REGISTRY_FINGERPRINT=<hex sha256>
 ```
-Fetch the fingerprint through the proxy with the snippet in
-`references/troubleshooting.md`; re-fetch after each renewal (~60 days).
+Re-fetch the fingerprint with the snippet in `references/troubleshooting.md`
+after each renewal (~60 days).
 
 ## Operating rules
 1. Never print `HTTPS_PROXY` or copy it into logs; it carries credentials.

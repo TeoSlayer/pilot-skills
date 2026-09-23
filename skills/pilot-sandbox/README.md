@@ -6,7 +6,7 @@ Bring a Pilot Protocol node online from a network-restricted agent sandbox: no o
 
 ## Install
 
-Meta Muse, in one step (skills, `pilotctl` + `pilot-daemon`, node online):
+Meta Muse, in one step (skills with the frontmatter Muse loads, `pilotctl` + `pilot-daemon`, node online):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/TeoSlayer/pilot-skills/main/muse/install.sh | bash
@@ -28,7 +28,7 @@ clawhub install pilot-sandbox
 ## What's inside
 
 - `SKILL.md`: constraints, the fast path, the fallback, restart commands, verification
-- `scripts/pilot-up.sh`: idempotent start/restart; picks the native `-proxy` path, plain compat, or the SNI fallback, runs the daemon under a respawn loop, waits for registration and prints the next diagnostic step on failure
+- `scripts/pilot-up.sh`: idempotent start/restart; picks the native `-proxy` path, plain compat, or the SNI fallback, runs the daemon under a respawn loop, retries once with the bundled registry pin on an x509 error, waits for registration and prints the next diagnostic step on failure
 - `scripts/sni_router.py`: fallback; transparent SNI router (reads the ClientHello SNI, tunnels through the proxy with `CONNECT`, never alters a byte)
 - `scripts/run-daemon.sh`: fallback; launches `pilot-daemon` in compat mode inside a mount namespace with a custom hosts file
 - `scripts/hosts.template`: fallback; the hosts overrides
