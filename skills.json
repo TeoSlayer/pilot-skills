@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-24T10:27:09Z",
+  "generated_at": "2026-09-24T19:25:52Z",
   "version": "1.0.0",
   "total": 157,
   "categories": [
@@ -699,7 +699,7 @@
         {
           "slug": "pilot-sandbox",
           "name": "pilot-sandbox",
-          "description": "Bring a Pilot Protocol node online from a network-restricted agent sandbox (Meta Muse and similar hosted VMs): no outbound UDP, poisoned DNS for the Pilot hostnames, and HTTPS CONNECT through an authenticating egress proxy as the only way out. Ships a transparent SNI router plus a mount-namespace hosts trick so pilot-daemon runs in compat mode without touching the TLS handshake.",
+          "description": "Get a Pilot Protocol node online in a network-restricted agent sandbox (Meta Muse and similar VMs: no outbound UDP, poisoned DNS, egress only via an authenticating HTTPS proxy whose credentials rotate). scripts/pilot-up.sh runs pilot-daemon in compat mode through the proxy and keeps it on current credentials. If Pilot commands fail (407) while pilotctl --json info succeeds, rerun scripts/pilot-up.sh from a fresh shell.",
           "tags": [
             "pilot-protocol",
             "setup",
@@ -707,7 +707,7 @@
             "proxy",
             "compat-mode"
           ],
-          "version": "1.0",
+          "version": "1.3",
           "license": "AGPL-3.0",
           "clawhub_slug": "pilot-sandbox",
           "clawhub_url": "https://clawhub.ai/teoslayer/pilot-sandbox",
