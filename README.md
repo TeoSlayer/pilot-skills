@@ -48,13 +48,13 @@ clawhub install pilot-chat
 
 ### Meta Muse and other workspace-folder agents
 
-Agents that load `SKILL.md` folders from a directory (Meta Muse uses `~/workspace/skills/`) can skip ClawHub. One command installs the `pilotctl` entrypoint, the `pilot-protocol` core skill, and `pilot-sandbox`, which gets the daemon online from inside Muse's proxy-only VM:
+Agents that load `SKILL.md` folders from a directory (Meta Muse uses `~/workspace/skills/`) can skip ClawHub. One command installs the `pilotctl` entrypoint, the `pilot-protocol` core skill and `pilot-sandbox`, installs `pilotctl` + `pilot-daemon`, and brings the node online from inside Muse's proxy-only VM:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/TeoSlayer/pilot-skills/main/muse/install.sh | bash
 ```
 
-Set `MUSE_SKILLS_DIR` to install somewhere else. Details in [`muse/README.md`](muse/README.md).
+Set `PILOT_SKILLS_ONLY=1` to install just the skills, `MUSE_SKILLS_DIR` to install them somewhere else. The installed copies get the frontmatter Muse loads (`name: "pilot_sandbox"`, one-line description; `PILOT_MUSE_FRONTMATTER=0` keeps the original), and the host is marked with `~/.pilot/targets/muse`. Details in [`muse/README.md`](muse/README.md).
 
 ## Skills
 
@@ -116,7 +116,7 @@ Set `MUSE_SKILLS_DIR` to install somewhere else. Details in [`muse/README.md`](m
 | [pilot-announce-capabilities](skills/pilot-announce-capabilities/) | Broadcast structured capability manifests to the network |
 | [pilot-matchmaker](skills/pilot-matchmaker/) | Match agents with complementary capabilities |
 | [pilot-mesh-status](skills/pilot-mesh-status/) | Comprehensive mesh status — peers, encryption, relay, bandwidth |
-| [pilot-sandbox](skills/pilot-sandbox/) | Bring a node online from a locked-down sandbox (Meta Muse): SNI router + compat mode through an HTTPS-only egress proxy |
+| [pilot-sandbox](skills/pilot-sandbox/) | Bring a node online from a locked-down sandbox (Meta Muse): compat mode through an HTTPS-only egress proxy, natively or via an SNI router |
 
 ### Event & Pub/Sub
 

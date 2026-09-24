@@ -14,18 +14,25 @@ ClientHello bytes, and the server answers a rewritten hello with
 DECRYPTION_FAILED_OR_BAD_RECORD_MAC.
 
 Environment:
-  HTTPS_PROXY        required. http://[user:pass@]host:port
+  HTTPS_PROXY        required. http(s)://[user:pass@]host[:port] (port defaults
+                     to 80 for http, 443 for https; percent-encode reserved
+                     characters in the credentials)
   PILOT_SNI_LISTEN   optional. default 127.0.0.1:443
+
+Nothing it prints contains the proxy credentials: every log line goes through
+scrub(), and an unusable HTTPS_PROXY is rejected without echoing it.
 
 Pair this with run-daemon.sh, which bind-mounts a hosts file that points the
 Pilot hostnames at this listener inside a private mount namespace.
 """
 import base64
 import os
+import re
 import socket
+import ssl
 import sys
 import threading
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlsplit
 
 DEFAULT_LISTEN = ("127.0.0.1", 443)
 
@@ -88,19 +95,78 @@ def recv_hello(sock) -> bytes:
     return data
 
 
-def proxy_connect(proxy: str, target_host: str, target_port: int):
+class Proxy:
+    """A parsed egress proxy. Holds the credentials; never print it."""
+
+    def __init__(self, url: str):
+        try:
+            p = urlsplit(url.strip())
+            scheme = (p.scheme or "").lower()
+            host = p.hostname
+            port = p.port
+        except ValueError:
+            raise ValueError("HTTPS_PROXY is not a valid proxy URL") from None
+        if scheme not in ("http", "https"):
+            raise ValueError("HTTPS_PROXY must be an http:// or https:// URL")
+        if not host or "@" in (p.path + p.query + p.fragment):
+            raise ValueError(
+                "HTTPS_PROXY is not a valid proxy URL "
+                "(percent-encode '@', '/', '?' and '#' in the credentials)")
+        self.scheme = scheme
+        self.host = host
+        self.port = port or (443 if scheme == "https" else 80)
+        self.auth = None
+        secrets = set()
+        if p.username is not None:
+            secrets |= {url, url.strip()}
+            user = unquote(p.username)
+            password = unquote(p.password or "")
+            token = base64.b64encode(f"{user}:{password}".encode()).decode()
+            self.auth = f"Basic {token}"
+            secrets |= {token, f"{p.username}:{p.password or ''}", f"{user}:{password}"}
+            secrets |= {x for x in (p.password or "", password) if len(x) >= 4}
+            # A short user name is usually a plain word that would mask
+            # hostnames in the log; a long one is treated as a token.
+            secrets |= {x for x in (p.username, user) if len(x) >= 8}
+        # Longest first, so a secret that contains another is masked whole.
+        self.secrets = sorted((x for x in secrets if len(x) >= 2), key=len, reverse=True)
+
+    def __repr__(self):
+        return f"Proxy({self.redacted()})"
+
+    def redacted(self) -> str:
+        auth = "***@" if self.auth else ""
+        return f"{self.scheme}://{auth}{self.host}:{self.port}"
+
+
+_USERINFO = re.compile(r"([A-Za-z][A-Za-z0-9+.-]*://)[^\s/]*@")
+
+
+def scrub(text, proxy=None) -> str:
+    """Mask credentials in text: any scheme://user:pass@ (up to the last @ of
+    the token) and, when a proxy is given, every form of its secrets."""
+    out = _USERINFO.sub(r"\1***@", str(text))
+    if proxy is not None:
+        for secret in proxy.secrets:
+            out = out.replace(secret, "***")
+    return out
+
+
+def log(msg, proxy=None):
+    print(scrub(msg, proxy), flush=True)
+
+
+def proxy_connect(proxy: Proxy, target_host: str, target_port: int):
     """Open a CONNECT tunnel through the proxy; return the socket or None."""
-    p = urlparse(proxy)
-    if not p.hostname or not p.port:
-        raise ValueError(f"cannot parse proxy URL {proxy!r}")
-    up = socket.create_connection((p.hostname, p.port), timeout=15)
+    up = socket.create_connection((proxy.host, proxy.port), timeout=15)
+    if proxy.scheme == "https":
+        up = ssl.create_default_context().wrap_socket(up, server_hostname=proxy.host)
     headers = (
         f"CONNECT {target_host}:{target_port} HTTP/1.1\r\n"
         f"Host: {target_host}:{target_port}\r\n"
     )
-    if p.username is not None:
-        cred = f"{p.username}:{p.password or ''}".encode()
-        headers += f"Proxy-Authorization: Basic {base64.b64encode(cred).decode()}\r\n"
+    if proxy.auth:
+        headers += f"Proxy-Authorization: {proxy.auth}\r\n"
     up.sendall((headers + "\r\n").encode())
 
     # Read the full response head (until the blank line) before replaying.
@@ -114,7 +180,7 @@ def proxy_connect(proxy: str, target_host: str, target_port: int):
             break
     status_line = resp.split(b"\r\n", 1)[0]
     if b" 200" not in status_line:
-        print(f"proxy refused CONNECT {target_host}:{target_port}: {status_line!r}", flush=True)
+        log(f"proxy refused CONNECT {target_host}:{target_port}: {status_line!r}", proxy)
         up.close()
         return None
     return up
@@ -143,13 +209,13 @@ def handle(client, proxy):
         sni = extract_sni(hello)
         route = ROUTES.get(sni)
         if route is None:
-            print(f"no route for SNI={sni!r}, closing", flush=True)
+            log(f"no route for SNI={sni!r}, closing", proxy)
             return
         target_host, target_port = route
         up = proxy_connect(proxy, target_host, target_port)
         if up is None:
             return
-        print(f"routed SNI={sni} -> {target_host}:{target_port}", flush=True)
+        log(f"routed SNI={sni} -> {target_host}:{target_port}", proxy)
         up.settimeout(None)
         client.settimeout(None)
         up.sendall(hello)  # replay the ORIGINAL bytes, unmodified
@@ -160,7 +226,7 @@ def handle(client, proxy):
         t1.join()
         t2.join()
     except Exception as e:  # noqa: BLE001 - log and drop the connection
-        print(f"handle error: {e}", flush=True)
+        log(f"handle error: {e}", proxy)
     finally:
         for s in (client, up):
             try:
@@ -176,15 +242,19 @@ def parse_listen(value: str):
 
 
 def main():
-    proxy = os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy")
-    if not proxy:
+    raw = os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy")
+    if not raw:
         sys.exit("HTTPS_PROXY not set")
+    try:
+        proxy = Proxy(raw)
+    except ValueError as e:  # our own messages: they never contain the URL
+        sys.exit(f"sni_router: {e}")
     listen = parse_listen(os.environ.get("PILOT_SNI_LISTEN", "")) if os.environ.get("PILOT_SNI_LISTEN") else DEFAULT_LISTEN
     srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     srv.bind(listen)
     srv.listen(100)
-    print(f"SNI router listening on {listen[0]}:{listen[1]} via proxy {urlparse(proxy).hostname}", flush=True)
+    log(f"SNI router listening on {listen[0]}:{listen[1]} via proxy {proxy.redacted()}", proxy)
     while True:
         c, _ = srv.accept()
         threading.Thread(target=handle, args=(c, proxy), daemon=True).start()

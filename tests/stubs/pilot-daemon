@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+# Stub pilot-daemon for the tests. Never touches the network. Behaviour:
+#   STUB_HELP_PROXY=1          -h lists -proxy (a daemon with native proxy support)
+#   STUB_HELP_PROXY_CMD=1      -h also lists -proxy-cmd (re-reads rotated credentials)
+#   STUB_TRANSPORT_AUTO=1      -h offers -transport auto
+#   STUB_X509_UNLESS_PINNED=1  logs a registry x509 error and exits 1 unless
+#                              started with -registry-trust pinned
+#   STUB_NEVER_REGISTER=1      runs without ever registering
+#   STUB_ECHO=TEXT             logs TEXT at start (redaction tests)
+# A running stub is exec'd with argv0 = this path, so its command line looks
+# like pilot-daemon's: perl listening on the -socket path when that path is
+# inside $HOME (so socket-owner discovery can find it; never a real daemon's
+# socket), else `sleep`. ~/.pilot/stub-state holds "<pid> <version>" while
+# registered, which the stub pilotctl reports as `info`; ~/.pilot/stub-env.log
+# gets the HTTPS_PROXY each start saw (test HOMEs only).
+STUB_VERSION="v1.0.0"
+case "${1:-}" in
+  -version)
+    echo "pilot-daemon $STUB_VERSION"
+    exit 0
+    ;;
+  -h | -help | --help)
+    {
+      echo "Usage of pilot-daemon:"
+      echo "  -config string"
+      printf '    \tpath to config file (JSON)\n'
+      if [ "${STUB_HELP_PROXY:-0}" = 1 ]; then
+        echo "  -proxy string"
+        printf '    \toutbound proxy: auto, off or http(s)://[user:pass@]host[:port] (default "auto")\n'
+      fi
+      if [ "${STUB_HELP_PROXY_CMD:-0}" = 1 ]; then
+        echo "  -proxy-cmd string"
+        printf '    \tcommand (run with /bin/sh -c) whose output is the current proxy URL\n'
+      fi
+      echo "  -transport string"
+      if [ "${STUB_TRANSPORT_AUTO:-0}" = 1 ]; then
+        printf "    \\ttunnel transport: 'auto', 'udp' or 'compat' (default \"auto\")\\n"
+      else
+        printf "    \\ttunnel transport: 'udp' (default) or 'compat'; UDP auto-detect is off (default \"udp\")\\n"
+      fi
+      echo "  -version"
+      printf '    \tprint the version and exit\n'
+    } >&2
+    exit 0
+    ;;
+esac
+echo "$*" >> "$HOME/.pilot/stub-args.log"
+echo "${HTTPS_PROXY:-}" >> "$HOME/.pilot/stub-env.log"
+echo "https_proxy=${https_proxy:-} HTTP_PROXY=${HTTP_PROXY:-} ALL_PROXY=${ALL_PROXY:-} NO_PROXY=${NO_PROXY:-}" >> "$HOME/.pilot/stub-env2.log"
+echo "${PILOT_PROXY_CMD:-}" >> "$HOME/.pilot/stub-proxycmd.log"
+socket=""
+prev=""
+for a in "$@"; do
+  if [ "$prev" = -socket ]; then socket="$a"; fi
+  case "$a" in -socket=*) socket="${a#-socket=}" ;; esac
+  prev="$a"
+done
+case " $* " in
+  *" -registry-trust pinned "* | *" -registry-trust=pinned "*) pinned=1 ;;
+  *) pinned=0 ;;
+esac
+if [ -n "${STUB_ECHO:-}" ]; then echo "level=WARN msg=stub detail=$STUB_ECHO"; fi
+if [ "${STUB_X509_UNLESS_PINNED:-0}" = 1 ] && [ "$pinned" = 0 ]; then
+  echo 'level=WARN msg="registry dial failed, retrying" attempt=1 error="dial registry TLS: tls: failed to verify certificate: x509: certificate signed by unknown authority"'
+  sleep 1
+  exit 1
+fi
+echo 'level=INFO msg="outbound network" transport=compat'
+if [ "${STUB_NEVER_REGISTER:-0}" != 1 ]; then
+  echo "$$ $STUB_VERSION" > "$HOME/.pilot/stub-state"
+  echo 'level=INFO msg="daemon registered" node_id=4242 addr=0:0000.0000.1092'
+fi
+case "$socket" in
+  "$HOME"/*)
+    if command -v perl > /dev/null 2>&1; then
+      exec -a "$0" perl -MIO::Socket::UNIX -e '
+        unlink $ARGV[0];
+        my $s = IO::Socket::UNIX->new(Type => SOCK_STREAM(), Local => $ARGV[0], Listen => 5)
+          or die "stub listen $ARGV[0]: $!";
+        sleep 100000;' "$socket"
+    fi
+    ;;
+esac
+exec -a "$0" sleep 100000

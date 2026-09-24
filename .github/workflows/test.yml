@@ -18,6 +18,15 @@ jobs:
       - name: Run skill tests
         run: bash test-skills.sh
 
+      - name: Run Muse installer and pilot-sandbox script tests
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          bash tests/muse-frontmatter.test.sh
+          bash tests/muse-install.test.sh
+          bash tests/pilot-up.test.sh
+          python3 -m unittest discover -s tests -p 'test_*.py'
+
       - name: Generate skills catalog
         run: bash generate-catalog.sh
 

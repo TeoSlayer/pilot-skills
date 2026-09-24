@@ -3,9 +3,17 @@
 # namespace whose /etc/hosts points the Pilot TLS hostnames at the local SNI
 # router (scripts/sni_router.py).
 #
-# Launch it ONLY like this (root or CAP_SYS_ADMIN required for unshare -m):
+# pilot-up.sh launches it for you when the installed pilot-daemon predates the
+# -proxy flag; start the node that way, so that `pilot-up.sh --stop` and reruns
+# manage it. To debug by hand, run it in the foreground (Ctrl-C stops it), root
+# or CAP_SYS_ADMIN required for unshare -m, with an egress relay started by
+# hand on 127.0.0.1:3128 (scripts/egress_relay.py):
 #
-#   setsid unshare -m ./scripts/run-daemon.sh >> daemon.log 2>&1 < /dev/null &
+#   PILOT_DAEMON_PROXY=http://127.0.0.1:3128 unshare -m ./scripts/run-daemon.sh
+#
+# PILOT_DAEMON_PROXY, not HTTPS_PROXY: this is a bash script, and where bash
+# re-exports the rotating proxy at startup (BASH_ENV, a profile) that would
+# replace an HTTPS_PROXY set on the command line.
 #
 # Environment (all optional):
 #   PILOT_REGISTRY_TRUST        system (default) | pinned
@@ -14,6 +22,12 @@
 #                               references/troubleshooting.md to re-fetch it.
 #   PILOT_SOCKET                Unix socket path (default /tmp/pilot.sock)
 #   PILOT_BIN                   pilot-daemon binary (default ~/.pilot/bin/pilot-daemon)
+#   PILOT_HOSTNAME              node hostname (-hostname)
+#   PILOT_DAEMON_PROXY          proxy URL for the daemon's own HTTP clients,
+#                               set as HTTPS_PROXY & co. right before the exec,
+#                               with loopback added to NO_PROXY (pilot-up.sh
+#                               passes the egress relay's URL; a shell here
+#                               may re-export the rotating one)
 #
 # `system` verifies the registry's Let's Encrypt certificate against the OS
 # trust store and survives certificate rotation. `pinned` is the fallback for
@@ -39,16 +53,28 @@ if ! mount --bind "$HOSTS_FILE" /etc/hosts 2>/dev/null; then
   exit 1
 fi
 
-TRUST_ARGS=(-registry-trust="$TRUST")
-[ "$TRUST" = "pinned" ] && TRUST_ARGS+=(-registry-fingerprint="$FINGERPRINT")
+EXTRA_ARGS=(-registry-trust="$TRUST")
+[ "$TRUST" = "pinned" ] && EXTRA_ARGS+=(-registry-fingerprint="$FINGERPRINT")
+[ -f "$HOME/.pilot/config.json" ] && EXTRA_ARGS+=(-config="$HOME/.pilot/config.json")
+[ -n "${PILOT_HOSTNAME:-}" ] && EXTRA_ARGS+=(-hostname="$PILOT_HOSTNAME")
+
+if [ -n "${PILOT_DAEMON_PROXY:-}" ]; then
+  NP="${NO_PROXY:-${no_proxy:-}}"
+  for h in localhost 127.0.0.1; do
+    case ",$NP," in *",$h,"*) ;; *) NP="${NP:+$NP,}$h" ;; esac
+  done
+  export HTTPS_PROXY="$PILOT_DAEMON_PROXY" https_proxy="$PILOT_DAEMON_PROXY" \
+    HTTP_PROXY="$PILOT_DAEMON_PROXY" http_proxy="$PILOT_DAEMON_PROXY" \
+    NO_PROXY="$NP" no_proxy="$NP"
+  unset ALL_PROXY all_proxy
+fi
 
 rm -f "$SOCKET"
 exec "$DAEMON" \
   -transport=compat \
-  -config="$HOME/.pilot/config.json" \
   -registry=registry.pilotprotocol.network:443 \
   -registry-tls \
-  "${TRUST_ARGS[@]}" \
+  "${EXTRA_ARGS[@]}" \
   -compat-beacon=wss://beacon.pilotprotocol.network/v1/compat \
   -socket="$SOCKET" \
   -identity="$HOME/.pilot/identity.json"

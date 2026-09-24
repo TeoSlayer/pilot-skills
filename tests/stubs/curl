@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Fake curl for the installer test: serves the repo's skills as the codeload
+# tarball and the stub official installer; anything else fails. No network.
+# STUB_PROXY_407=1: the proxy rejects the credentials of every CONNECT, which
+# `curl -f` reports as (22) and `-w '%{http_connect}'` as 407.
+set -euo pipefail
+out="" url="" fmt=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -o) out="$2"; shift 2 ;;
+    -w) fmt="$2"; shift 2 ;;
+    --max-time) shift 2 ;;
+    -*) shift ;;
+    *) url="$1"; shift ;;
+  esac
+done
+emit() { if [ -n "$out" ]; then cat > "$out"; else cat; fi; }
+if [ "${STUB_PROXY_407:-0}" = 1 ]; then
+  if [ "$fmt" = '%{http_connect}' ]; then printf '407'; fi
+  echo "curl: (22) HTTP response code said error" >&2
+  exit 22
+fi
+case "$url" in
+  https://codeload.github.com/TeoSlayer/pilot-skills/tar.gz/*)
+    tar -czf - -C "$STUB_TARBALL_ROOT" . | emit ;;
+  "$PILOT_INSTALL_URL")
+    emit < "$STUB_DIR/official-install.sh" ;;
+  *) echo "fake curl: unexpected URL $url" >&2; exit 22 ;;
+esac
