@@ -1,28 +1,26 @@
 ---
 name: pilot-sandbox
 description: >
-  Bring a Pilot Protocol node online from a network-restricted agent sandbox
-  (Meta Muse and similar hosted VMs): no outbound UDP, poisoned DNS for the
-  Pilot hostnames, and HTTPS CONNECT through an authenticating egress proxy
-  as the only way out. One idempotent script, scripts/pilot-up.sh, runs
-  pilot-daemon in compat mode through the proxy natively (no root) when the
-  daemon has the -proxy flag, and falls back to a transparent SNI router plus
-  a mount-namespace hosts trick for older daemons.
+  Get a Pilot Protocol node online in a network-restricted agent sandbox (Meta
+  Muse and similar VMs: no outbound UDP, poisoned DNS, egress only via an
+  authenticating HTTPS proxy). scripts/pilot-up.sh runs pilot-daemon in compat
+  mode through the proxy, and restarts it after the proxy credentials rotate
+  (Pilot commands then fail with 407 while pilotctl --json info works).
 
   Use this skill when:
-  1. You are setting up Pilot inside Meta Muse's dedicated VM, or the VM
-     restarted and the node is offline
-  2. pilotctl daemon start hangs or the daemon never logs "daemon registered"
-     inside a sandbox, container, or hosted agent VM
-  3. HTTPS_PROXY is set and direct TCP to registry.pilotprotocol.network fails
-     or resolves to a blackhole address (198.18.x.x)
-  4. Compat mode alone (-transport=compat) still cannot reach the registry
+  1. Pilot commands fail (407, connection errors) while pilotctl --json info
+     succeeds: the proxy credentials rotated; rerun scripts/pilot-up.sh from a
+     fresh shell
+  2. Setting up Pilot in Meta Muse, or the VM restarted and the node is offline
+  3. The daemon never logs "daemon registered" in a sandbox
+  4. HTTPS_PROXY is set and registry.pilotprotocol.network resolves to
+     198.18.x.x
 
   Do NOT use this skill when:
-  - The daemon is already registered (pilotctl --json info succeeds)
+  - The daemon is registered AND Pilot commands work
   - Outbound UDP works: plain pilotctl daemon start is enough
-  - UDP is blocked but direct TCP/443 works with no proxy: set
-    "transport": "compat" in ~/.pilot/config.json, see the firewalls doc
+  - No proxy and direct TCP/443 works: set "transport": "compat" in
+    ~/.pilot/config.json
 tags:
   - pilot-protocol
   - setup
@@ -70,10 +68,9 @@ way on 2026-09-23, after the dead ends in `references/troubleshooting.md`.
 ```bash
 curl -fsSL https://raw.githubusercontent.com/TeoSlayer/pilot-skills/main/muse/install.sh | bash
 ```
-Installs this skill plus `pilotctl` and `pilot-protocol`, `pilotctl` and
-`pilot-daemon` into `~/.pilot/bin` if missing (official installer, run with
-`PILOT_ALLOW_ROOT=1` as root), then runs `scripts/pilot-up.sh`. `curl`
-honours `HTTPS_PROXY`, so every download goes through the proxy.
+Installs this skill, `pilotctl` and `pilot-protocol`, plus `pilotctl` and
+`pilot-daemon` in `~/.pilot/bin` if missing (official installer; as root with
+`PILOT_ALLOW_ROOT=1`), then runs `scripts/pilot-up.sh`. `curl` uses `HTTPS_PROXY`.
 
 ## (Re)start after a VM restart
 ```bash
@@ -99,8 +96,14 @@ daemon or router it did not start (exit 1 if one survives).
 - Behind a proxy or on a Muse host it passes `-transport=compat`, never auto:
   auto settles on `udp` when its one check through the proxy fails, and `udp`
   never uses the proxy. `PILOT_UP_TRANSPORT=compat|auto|udp` overrides.
-- Muse rotates proxy credentials every few minutes; a running process keeps
-  its own. Rerun from a fresh shell: what started with other settings restarts.
+
+## Commands fail with 407 while `pilotctl --json info` works
+Muse rotates proxy credentials every few minutes, and a running daemon keeps
+the ones it started with: open tunnels survive, new connections get `407 Proxy
+Authentication Required` (or `malformed HTTP status code`). Rerun
+`scripts/pilot-up.sh` from a fresh shell: when it runs the node and the log
+shows those 407s, it restarts the node with the current credentials. If it
+says `node already online` with a note, run `pilot-up.sh --stop && pilot-up.sh`.
 
 ## Fast path: native proxy (pilot-daemon with -proxy)
 What `pilot-up.sh` runs behind a proxy, in the foreground for debugging (start
@@ -169,8 +172,7 @@ Re-fetch it after each renewal (~60 days): `references/troubleshooting.md`.
 1. Never print `HTTPS_PROXY` or copy it into logs; it carries credentials.
 2. Never modify a ClientHello in flight. Route on SNI read-only.
 3. `~/.pilot/identity.json` is the node identity: never print or copy it.
-4. There is no supervisor across reboots: rerun `pilot-up.sh` after one.
-5. With the `sni` path, only the daemon lives in the namespace. `pilotctl`
+4. With the `sni` path, only the daemon lives in the namespace. `pilotctl`
    subcommands that dial the registry themselves (`lookup`) fail outside it.
 
 ## Workflow Example
@@ -179,8 +181,6 @@ An agent inside Muse needs live data from the Pilot directory after a restart.
 bash ~/workspace/skills/pilot-sandbox/scripts/pilot-up.sh || exit 1
 export PATH="$PATH:$HOME/.pilot/bin"
 pilotctl --json info
-
-# Ask pilot-mom for a plan, then read the reply from the inbox.
 pilotctl --json send-message pilot-mom --data 'current BTC price in USD' --wait
 jq -r '.data' "$(ls -1t ~/.pilot/inbox/*.json | head -1)"
 ```

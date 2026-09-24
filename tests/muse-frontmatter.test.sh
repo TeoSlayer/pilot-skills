@@ -196,5 +196,29 @@ for f in "$ROOT"/skills/*/SKILL.md; do
   fi
 done
 
+# 10. The installed pilot-sandbox description is whole (under the 1024-byte
+#     cap, so nothing is cut) and routes the rotated-credentials case, where
+#     pilotctl --json info still succeeds, to pilot-up.sh instead of away.
+desc_line="$(sed -n 3p "$T/real/pilot-sandbox/SKILL.md")"
+value="${desc_line#description: \"}"
+value="${value%\"}"
+if [ "${value%...}" = "$value" ] && [ "$(printf '%s' "$value" | LC_ALL=C wc -c | tr -d ' ')" -le 1040 ]; then
+  pass
+else
+  failed "pilot-sandbox description not truncated" "${value: -80}"
+fi
+for want in "407" "while pilotctl --json info succeeds" "rerun scripts/pilot-up.sh from a fresh shell" \
+  "The daemon is registered AND Pilot commands work"; do
+  if [[ $value == *"$want"* ]]; then pass; else failed "pilot-sandbox description has: $want" "$value"; fi
+done
+if [[ $value == *"already registered (pilotctl --json info succeeds)"* ]]; then
+  failed "pilot-sandbox description no longer forbids the rerun when info succeeds" "$value"
+else
+  pass
+fi
+# The rotation case comes before "Do NOT use", so a cut could never drop it.
+head_part="${value%%Do NOT use*}"
+if [[ $head_part == *"rerun scripts/pilot-up.sh from a fresh shell"* ]]; then pass; else failed "rotation case listed before Do NOT use" "$value"; fi
+
 echo "muse_frontmatter: $PASSES passed, $FAILS failed"
 [ "$FAILS" = 0 ]

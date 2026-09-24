@@ -454,5 +454,172 @@ up STUB_HELP_PROXY=1 STUB_NEVER_REGISTER=1 PILOT_UP_WAIT=3 HTTPS_PROXY=http://mu
 expect "502 next step: upstream, not the allowlist" has "could not reach the Pilot host (502/503/504)"
 up -- --stop
 
+# 18. What counts as the proxy rejecting credentials: its signatures only,
+#     never a bare 407 (slog timestamps are stamped to the millisecond, so
+#     about one daemon line in a thousand carries ".407").
+# sourced FUNCTION [ARGS] — run a pilot-up.sh function in a subshell (the file
+# runs main only when executed), with a throwaway HOME.
+sourced() {
+  (
+    HOME="$T/unit-home"
+    # shellcheck source=skills/pilot-sandbox/scripts/pilot-up.sh
+    source "$UP" > /dev/null 2>&1 || exit 99
+    set +e
+    "$@"
+  )
+}
+rejects() { printf '%s\n' "$1" | sourced auth_rejected; }
+while IFS= read -r line; do
+  [ -n "$line" ] || continue
+  OUT="$line"
+  expect "not a proxy 407: $line" not rejects "$line"
+done << 'LINES'
+time=2026-09-24T02:27:46.407+03:00 level=INFO msg="compat mode tunnel up" peers=3
+time=2026-09-23T23:36:28.407Z level=INFO msg="registry heartbeat" rtt=407ms
+time=2026-09-23T23:36:28.195Z level=INFO msg="beacon reconnect" backoff=1.407s bytes=407
+time=2026-09-23T23:36:28.195Z level=INFO msg="peer up" addr=0:0000.0000.A407 port=407
+pilot-up: daemon exited (rc=1) after 407s; restarting in 2s
+time=2026-09-23T23:36:28.195Z level=WARN msg="dial failed" error="proxy CONNECT beacon.pilotprotocol.network:443: 403 Forbidden"
+proxy refused CONNECT registry.pilotprotocol.network:443: b'HTTP/1.1 502 Bad Gateway'
+LINES
+while IFS= read -r line; do
+  [ -n "$line" ] || continue
+  OUT="$line"
+  expect "proxy 407: $line" rejects "$line"
+done << 'LINES'
+time=2026-09-23T23:36:28.195Z level=WARN msg="registry dial failed" error="proxy CONNECT registry.pilotprotocol.network:443: 407 Proxy Authentication Required"
+proxy refused CONNECT registry.pilotprotocol.network:443: b'HTTP/1.1 407 Proxy Authentication Required'
+proxy refused CONNECT beacon.pilotprotocol.network:443: b'HTTP/1.0 407 authenticationrequired'
+time=2026-09-23T23:36:28.195Z level=WARN msg="beacon dial failed" err="proxy authentication required"
+time=2026-09-23T23:36:28.195Z level=WARN msg="beacon dial failed" err="malformed HTTP status code \"x\""
+time=2026-09-23T23:36:28.195Z level=WARN msg="registry dial failed" error="proxy CONNECT: 407 Proxy Authentication Required"
+LINES
+every_ms="$(for i in $(seq 0 999); do printf 'time=2026-09-24T02:27:46.%03dZ level=INFO msg=tick rtt=%dms bytes=%d\n' "$i" "$i" "$i"; done)"
+OUT="(1000 slog lines, every millisecond stamp)"
+expect "no false 407 in a thousand slog lines" not rejects "$every_ms"
+
+# 19. A node pilot-up's respawn loop does not run, or a 407 older than the
+#     loop's last start, never restarts or stops anything; neither do slog
+#     lines stamped .407.
+SLOG='time=2026-09-24T02:27:46.407+03:00 level=INFO msg="compat mode tunnel up" peers=3 rtt=407ms'
+REAL407='time=2026-09-24T02:27:47.001+03:00 level=WARN msg="registry dial failed" error="proxy CONNECT registry.pilotprotocol.network:443: 407 Proxy Authentication Required"'
+new_home
+up STUB_HELP_PROXY=1 HTTPS_PROXY=http://muse:credA@127.0.0.1:9
+expect ".407 stamp: first start online" [ "$RC" = 0 ]
+{
+  echo "$SLOG"
+  echo 'pilot-up: daemon exited (rc=1) after 407s; restarting in 2s'
+} >> "$H/.pilot/daemon.log"
+starts="$(count_lines "$H/.pilot/stub-args.log")"
+up STUB_HELP_PROXY=1 HTTPS_PROXY=http://muse:credB@127.0.0.1:9
+expect ".407 stamp, rotated shell: rc 0" [ "$RC" = 0 ]
+expect ".407 stamp, rotated shell: left running" has "node already online"
+expect ".407 stamp, rotated shell: no restart" lacks "restarting the node"
+expect ".407 stamp, rotated shell: no new daemon" [ "$(count_lines "$H/.pilot/stub-args.log")" = "$starts" ]
+expect ".407 stamp, rotated shell: note" has "differs from the one the node started with"
+up STUB_HELP_PROXY=1 HTTPS_PROXY=http://muse:credA@127.0.0.1:9
+expect ".407 stamp, same shell: no false warning" lacks "warning"
+expect ".407 stamp, same shell: no restart" [ "$(count_lines "$H/.pilot/stub-args.log")" = "$starts" ]
+# A real 407 logged by an earlier run, before the loop's latest start.
+echo "$REAL407" >> "$H/.pilot/daemon.log"
+up -- --stop
+up STUB_HELP_PROXY=1 HTTPS_PROXY=http://muse:credA@127.0.0.1:9
+expect "407 before the last start: online" [ "$RC" = 0 ]
+starts="$(count_lines "$H/.pilot/stub-args.log")"
+up STUB_HELP_PROXY=1 HTTPS_PROXY=http://muse:credB@127.0.0.1:9
+expect "407 before the last start: no restart" lacks "restarting the node"
+expect "407 before the last start: no new daemon" [ "$(count_lines "$H/.pilot/stub-args.log")" = "$starts" ]
+# Another pilot-daemon took over the socket after pilot-up's started: the log
+# after the marker is not that node's, so nothing is restarted or stopped.
+echo "$REAL407" >> "$H/.pilot/daemon.log"
+by_hand STUB_HELP_PROXY=1 -- -transport=compat -socket "$H/pilot.sock"
+hand="$HAND_PID"
+sleep 0.5
+starts="$(count_lines "$H/.pilot/stub-args.log")"
+up STUB_HELP_PROXY=1 HTTPS_PROXY=http://muse:credB@127.0.0.1:9
+expect "socket taken over: online" has "node already online"
+expect "socket taken over: no restart" lacks "restarting the node"
+expect "socket taken over: other daemon untouched" alive "$hand"
+expect "socket taken over: no new daemon" [ "$(count_lines "$H/.pilot/stub-args.log")" = "$starts" ]
+up -- --stop
+expect "socket taken over: --stop stops both" not alive "$hand"
+# A node started outside pilot-up (by hand, a service) that logs to
+# ~/.pilot/daemon.log, even with a real 407 there and an old pilot-up marker
+# before it: a note, never a stop (pilotctl daemon stop would boot a launchd
+# agent out for good).
+new_home
+{
+  echo 'pilot-up: 2026-09-20T10:00:00Z starting /old/pilot-daemon -transport=compat'
+  echo "$SLOG"
+  echo "$REAL407"
+} >> "$H/.pilot/daemon.log"
+by_hand STUB_HELP_PROXY=1 -- -transport=compat -proxy=auto -socket "$H/pilot.sock"
+hand="$HAND_PID"
+starts="$(count_lines "$H/.pilot/stub-args.log")"
+up STUB_HELP_PROXY=1 STUB_CTL_DISCOVER=1 HTTPS_PROXY=http://corp:pw@proxy.corp:8080
+expect "not pilot-up's node: rc 0" [ "$RC" = 0 ]
+expect "not pilot-up's node: left running" has "node already online"
+expect "not pilot-up's node: not restarted" lacks "restarting"
+expect "not pilot-up's node: not stopped" lacks "stopped"
+expect "not pilot-up's node: still alive" alive "$hand"
+expect "not pilot-up's node: no new daemon" [ "$(count_lines "$H/.pilot/stub-args.log")" = "$starts" ]
+expect "not pilot-up's node: note says so" has "this node was not started by pilot-up"
+up -- --stop
+
+# 20. A stale pilot.pid naming another project's run-daemon.sh is not ours:
+#     removed, never signalled. This skill's run-daemon.sh (by absolute path,
+#     or relative to the process's working directory on Linux) still is.
+mkdir -p "$T/otherapp"
+printf '#!/bin/bash\nwhile :; do sleep 1; done\n' > "$T/otherapp/run-daemon.sh"
+bash "$T/otherapp/run-daemon.sh" > /dev/null 2>&1 < /dev/null &
+BYSTANDERS+=($!)
+b4="$!"
+(cd "$T/otherapp" && exec bash ./run-daemon.sh) > /dev/null 2>&1 < /dev/null &
+BYSTANDERS+=($!)
+b5="$!"
+disown -a
+sleep 0.3
+OUT="bystanders $b4 $b5"
+expect "other run-daemon.sh (absolute) is not a daemon" not sourced is_daemon "$b4"
+expect "other run-daemon.sh (relative) is not a daemon" not sourced is_daemon "$b5"
+OURS="$ROOT/skills/pilot-sandbox/scripts/run-daemon.sh"
+PERL="$(command -v perl)"
+# perl with argv "bash -e 'sleep 300' <path>": looks like bash running <path>.
+# shellcheck disable=SC2016 # $ARGV is perl's
+"$PERL" -e 'exec {$ARGV[0]} "bash", "-e", "sleep 300", $ARGV[1] or die' "$PERL" "$OURS" > /dev/null 2>&1 < /dev/null &
+fake_abs="$!"
+# shellcheck disable=SC2016 # $ARGV is perl's
+(cd "$ROOT/skills/pilot-sandbox" && exec "$PERL" -e 'exec {$ARGV[0]} "bash", "-e", "sleep 300", "./scripts/run-daemon.sh" or die' "$PERL") > /dev/null 2>&1 < /dev/null &
+fake_rel="$!"
+BYSTANDERS+=("$fake_abs" "$fake_rel")
+disown -a
+sleep 0.3
+OUT="$(tr '\0' ' ' 2> /dev/null < "/proc/$fake_abs/cmdline" || ps -ww -o command= -p "$fake_abs")"
+expect "this skill's run-daemon.sh (absolute) is ours" sourced is_daemon "$fake_abs"
+if [ -d "/proc/$fake_rel/cwd" ]; then
+  expect "this skill's run-daemon.sh (relative, /proc cwd) is ours" sourced is_daemon "$fake_rel"
+else
+  expect "relative run-daemon.sh without /proc: not trusted" not sourced is_daemon "$fake_rel"
+fi
+new_home
+echo "$b4" > "$H/.pilot/pilot.pid"
+up STUB_HELP_PROXY=1
+expect "other run-daemon.sh in pilot.pid: node comes up" [ "$RC" = 0 ]
+expect "other run-daemon.sh in pilot.pid: removed as stale" has "removed stale $H/.pilot/pilot.pid"
+expect "other run-daemon.sh in pilot.pid: not stopped" lacks "stopping unregistered"
+expect "other run-daemon.sh in pilot.pid: alive after start" alive "$b4"
+up -- --stop
+echo "$b5" > "$H/.pilot/pilot.pid"
+up -- --stop
+expect "other run-daemon.sh in pilot.pid: alive after --stop" alive "$b4"
+expect "relative other run-daemon.sh in pilot.pid: alive after --stop" alive "$b5"
+new_home
+echo "$fake_abs" > "$H/.pilot/pilot.pid"
+up STUB_HELP_PROXY=1
+expect "our run-daemon.sh in pilot.pid: stopped as a leftover daemon" has "stopping unregistered pilot-daemon pid $fake_abs"
+expect "our run-daemon.sh in pilot.pid: gone" not alive "$fake_abs"
+expect "our run-daemon.sh in pilot.pid: node comes up" [ "$RC" = 0 ]
+up -- --stop
+
 echo "pilot-up.sh: $PASSES passed, $FAILS failed"
 [ "$FAILS" = 0 ]

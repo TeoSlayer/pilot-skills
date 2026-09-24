@@ -59,9 +59,12 @@ beacon WSS, both on `:443`) under a small respawn loop, logging to
   `config.json` is left to the daemon, else auto when offered.
   `PILOT_UP_TRANSPORT=compat|auto|udp` overrides.
 - **Rotating proxy credentials:** Muse rotates them every few minutes and a
-  running process keeps the ones it started with. Rerun `pilot-up.sh` from a
-  fresh shell: it restarts the daemon and router if the proxy settings
-  changed, and restarts an online node whose logs show 407s since it started.
+  running process keeps the ones it started with, so Pilot commands start
+  failing with 407 while `pilotctl --json info` still works. Rerun
+  `pilot-up.sh` from a fresh shell: it restarts the daemon and router if the
+  proxy settings changed, and restarts an online node it runs whose logs show
+  407s (`proxy CONNECT ...: 407`, not any number 407) since its last start. A
+  node it did not start is never stopped for this; it prints a note instead.
 
 Muse has no systemd, so nothing restarts the node after the VM restarts. Run
 this then (it exits at once if the node is already online):

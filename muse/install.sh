@@ -278,6 +278,8 @@ MSG
         cat << MSG
 Done. Skills in $dest, Pilot in $bin_dir, node online.
 After a VM restart run: bash $up
+If Pilot commands later fail with 407 while pilotctl --json info still works,
+the proxy credentials rotated: run the same command from a fresh shell.
 Try it: $bin_dir/pilotctl --json send-message pilot-mom --data 'current BTC price in USD' --wait
 MSG
       fi

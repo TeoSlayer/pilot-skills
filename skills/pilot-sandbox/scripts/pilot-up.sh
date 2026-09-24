@@ -37,8 +37,9 @@
 # Proxy credentials rotate in Meta Muse, and a running process keeps the ones it
 # started with. A salted hash of the proxy settings is kept next to each pid
 # file: a rerun with different settings restarts the respawn loop and the SNI
-# router instead of reusing them, and restarts an online node whose logs show
-# 407s since it started.
+# router instead of reusing them, and restarts an online node run by pilot-up's
+# respawn loop whose logs show the proxy rejecting its credentials (a 407)
+# since its last start. A node pilot-up did not start only gets a note.
 # --stop also stops a pilot-daemon that pilot-up did not start but that answers
 # on the socket (found through the socket's owner), and an sni_router.py
 # listening on the router port. It exits 1 when one could not be stopped.
@@ -308,16 +309,38 @@ is_supervisor() {
 }
 
 # is_daemon PID — PID is pilot-daemon (argv0 basename pilot-daemon or daemon,
-# as pilotctl checks), or run-daemon.sh on its way to exec'ing it.
+# as pilotctl checks), or this skill's run-daemon.sh on its way to exec'ing it
+# (run by unshare, bash or sh). A run-daemon.sh from any other directory
+# belongs to something else.
 is_daemon() {
-  local args argv0
+  local args argv0 arg
   args="$(proc_args "$1")"
   argv0="${args%%$'\n'*}"
   argv0="${argv0##*/}"
   case "$argv0" in
     pilot-daemon | daemon) return 0 ;;
-    unshare | bash | sh) grep -qE '(^|/)run-daemon\.sh$' <<< "$args" ;;
+    unshare | bash | sh) ;;
     *) return 1 ;;
+  esac
+  case "$args" in *$'\n'*) ;; *) return 1 ;; esac
+  while IFS= read -r arg; do
+    case "$arg" in run-daemon.sh | */run-daemon.sh) ;; *) continue ;; esac
+    if is_our_run_daemon "$1" "$arg"; then return 0; fi
+  done <<< "${args#*$'\n'}"
+  return 1
+}
+
+# is_our_run_daemon PID PATH — PATH, an argument of PID, is this skill's
+# run-daemon.sh: the same file as $SCRIPT_DIR/run-daemon.sh, with a relative
+# PATH resolved against PID's working directory (the old recipe ran
+# ./scripts/run-daemon.sh from the skill directory). Without /proc a relative
+# PATH never matches.
+is_our_run_daemon() {
+  local ours="$SCRIPT_DIR/run-daemon.sh"
+  [ -f "$ours" ] || return 1
+  case "$2" in
+    /*) [ "$2" -ef "$ours" ] ;;
+    *) [ -d "/proc/$1/cwd" ] && [ "/proc/$1/cwd/$2" -ef "$ours" ] ;;
   esac
 }
 
@@ -368,10 +391,12 @@ holds_any() {
   return 1
 }
 
-# socket_owner_pid — the pilot-daemon (is_daemon) that holds $SOCKET, found
-# through /proc on Linux or lsof elsewhere, as `pilotctl daemon stop` does when
-# it has no pid file. Nothing when there is none.
-socket_owner_pid() {
+# socket_owner_pids — every pilot-daemon (is_daemon) holding a socket bound to
+# $SOCKET, found through /proc on Linux or lsof elsewhere, as `pilotctl daemon
+# stop` does when it has no pid file. Usually one; a daemon that was started
+# on the same path later rebinds it while the first keeps its (now unlinked)
+# socket, and both are listed.
+socket_owner_pids() {
   local links pid
   if [ -r /proc/net/unix ]; then
     links="$(awk -v p="$SOCKET" '
@@ -380,20 +405,21 @@ socket_owner_pid() {
     ' /proc/net/unix 2>/dev/null || true)"
     [ -n "$links" ] || return 0
     for pid in $(pids_matching is_daemon); do
-      if holds_any "$pid" "$links"; then
-        printf '%s' "$pid"
-        return 0
-      fi
+      if holds_any "$pid" "$links"; then printf '%s\n' "$pid"; fi
     done
   elif command -v lsof >/dev/null 2>&1; then
     for pid in $(lsof -t -U -a "$SOCKET" 2>/dev/null || true); do
-      if valid_pid "$pid" && is_daemon "$pid"; then
-        printf '%s' "$pid"
-        return 0
-      fi
+      if valid_pid "$pid" && is_daemon "$pid"; then printf '%s\n' "$pid"; fi
     done
   fi
   return 0
+}
+
+# socket_owner_pid — the first of socket_owner_pids, or nothing.
+socket_owner_pid() {
+  local pids
+  pids="$(socket_owner_pids)"
+  printf '%s' "${pids%%$'\n'*}"
 }
 
 # router_listener_pids — sni_router.py processes (is_router) that hold a TCP
@@ -924,26 +950,68 @@ wait_registered() {
   done
 }
 
-# auth_rejected — stdin (a log) shows the proxy rejecting the credentials. In
-# Muse an expired credential can also surface as "malformed HTTP status code".
+# auth_rejected — stdin (a log) shows the proxy rejecting the credentials: the
+# daemon's "proxy CONNECT <host:port>: 407 Proxy Authentication Required", the
+# SNI router's "HTTP/1.1 407 ..." status line, or, in Muse, "malformed HTTP
+# status code" (the signatures pilot-daemon's own proxy code reacts to). Never
+# a bare 407: slog timestamps (time=...T02:27:46.407Z), durations, sizes and
+# pilot-up's own "after 407s" contain one.
 auth_rejected() {
-  grep -Eq 'Proxy Authentication Required|(^|[^0-9])407([^0-9]|$)|malformed HTTP status code'
+  grep -Eiq 'Proxy Authentication Required|proxy CONNECT( [^ ]+)?: 407([^0-9]|$)|HTTP/[0-9.]+ 407([^0-9]|$)|malformed HTTP status code'
 }
 
-# since_start FILE MARKER — FILE's lines after the last one matching MARKER
-# (within its last 400 lines): what the current process has logged.
-since_start() {
-  tail -n 400 "$1" 2>/dev/null | awk -v m="$2" '$0 ~ m { buf = ""; next } { buf = buf $0 "\n" } END { printf "%s", buf }'
+# since_marker FILE MARKER — FILE's lines after the last line matching the ERE
+# MARKER: what the process started there has logged. Nothing when no line
+# matches, since the log then belongs to a start pilot-up knows nothing about.
+since_marker() {
+  local n
+  n="$(grep -anE -- "$2" "$1" 2>/dev/null | tail -n 1)" || true
+  n="${n%%:*}"
+  case "$n" in '' | *[!0-9]*) return 0 ;; esac
+  tail -n "+$((n + 1))" "$1" 2>/dev/null || true
 }
 
-# recent_auth_rejects — the logs (daemon.log from the respawn loop's last
-# start, sni_router.log from the running router's start) that show the proxy
-# rejecting credentials.
+# ppid_of PID — PID's parent pid (empty when unknown).
+ppid_of() {
+  local p="" stat fields
+  if [ -r "/proc/$1/stat" ]; then
+    stat="$(cat "/proc/$1/stat" 2>/dev/null || true)"
+    read -r -a fields <<< "${stat##*) }" || true
+    p="${fields[1]:-}"
+  else
+    p="$(ps -o ppid= -p "$1" 2>/dev/null || true)"
+  fi
+  printf '%s' "${p//[[:space:]]/}"
+}
+
+# managed_daemon — the pid of the running pilot-daemon when pilot-up's live
+# respawn loop started it: pilot.pid names a pilot-daemon whose parent is the
+# loop in pilot-up.pid, and no other pilot-daemon holds a socket on $SOCKET
+# (which one answers could not be told apart). Nothing otherwise: a node
+# started by hand, by `pilotctl daemon start`, or by a service (the official
+# macOS launchd agent also logs to ~/.pilot/daemon.log).
+managed_daemon() {
+  local sup pid owner
+  sup="$(live_pid "$SUP_PID_FILE" is_supervisor)"
+  [ -n "$sup" ] || return 0
+  pid="$(live_pid "$DAEMON_PID_FILE" is_daemon)"
+  [ -n "$pid" ] || return 0
+  [ "$(ppid_of "$pid")" = "$sup" ] || return 0
+  for owner in $(socket_owner_pids); do
+    [ "$owner" = "$pid" ] || return 0
+  done
+  printf '%s' "$pid"
+}
+
+# recent_auth_rejects — the logs that show the proxy rejecting credentials
+# since the running processes started: daemon.log after the respawn loop's
+# last "starting" line, sni_router.log after the running router's start.
+# Only called for a node managed_daemon recognises.
 recent_auth_rejects() {
   local out=""
-  if since_start "$LOG" '^pilot-up: [0-9TZ:-]+ starting ' | auth_rejected; then out="$LOG"; fi
+  if since_marker "$LOG" '^pilot-up: [0-9TZ:-]+ starting ' | auth_rejected; then out="$LOG"; fi
   if [ -n "$(live_pid "$ROUTER_PID_FILE" is_router)" ] \
-    && since_start "$ROUTER_LOG" 'SNI router listening on' | auth_rejected; then
+    && since_marker "$ROUTER_LOG" 'SNI router listening on' | auth_rejected; then
     out="${out:+$out and }$ROUTER_LOG"
   fi
   printf '%s' "$out"
@@ -969,12 +1037,15 @@ proxy_recorded_current() {
 # rotated_proxy_restart — the node answers, but its processes keep the proxy
 # credentials they started with. After Muse rotates them, open tunnels survive
 # while every new connection gets a 407 ("node online, all apps broken"). When
-# the logs show that since the last start and this shell's proxy settings
-# differ from the recorded ones, stop everything so that the start that
-# follows uses this shell's settings. Returns 0 when it stopped the node.
+# pilot-up's respawn loop runs the node, its logs show that since the last
+# start, and this shell's proxy settings differ from the recorded ones, stop
+# everything so that the start that follows uses this shell's settings. A
+# node pilot-up did not start is never stopped here (main prints a note).
+# Returns 0 when it stopped the node.
 rotated_proxy_restart() {
   local rejects
   [ -n "$(proxy_url)" ] || return 1
+  [ -n "$(managed_daemon)" ] || return 1
   rejects="$(recent_auth_rejects)"
   [ -n "$rejects" ] || return 1
   if proxy_recorded_current; then
@@ -998,9 +1069,11 @@ next_step() {
     echo "-transport=auto settled on udp (its check through the proxy failed), and udp never uses the proxy: rerun with PILOT_UP_TRANSPORT=compat"
     return 0
   fi
+  if auth_rejected <<< "$text"; then
+    echo "the proxy rejected the credentials in HTTPS_PROXY (407): they are wrong, or expired (Meta Muse rotates them every few minutes). Rerun from a new shell, which has current ones; elsewhere, check the user:pass part of HTTPS_PROXY"
+    return 0
+  fi
   case "$text" in
-    *"Proxy Authentication Required"* | *" 407"* | *"407 "* | *"malformed HTTP status code"*)
-      echo "the proxy rejected the credentials in HTTPS_PROXY (407): they are wrong, or expired (Meta Muse rotates them every few minutes). Rerun from a new shell, which has current ones; elsewhere, check the user:pass part of HTTPS_PROXY" ;;
     *"fingerprint mismatch"*)
       echo "the registry certificate no longer matches the pinned fingerprint (it was renewed): re-fetch it into PILOT_REGISTRY_FINGERPRINT (snippet in references/troubleshooting.md), or use system trust with a CA bundle in SSL_CERT_FILE" ;;
     *x509:* | *"unknown authority"* | *"failed to verify certificate"*)
@@ -1100,8 +1173,13 @@ main() {
   if node_online && ! rotated_proxy_restart; then
     report_online "node already online"
     if [ -n "$(proxy_url)" ] && ! proxy_recorded_current; then
-      say "note: this shell's HTTPS_PROXY differs from the one the node started with (or the node was not started by pilot-up)." \
-        "  If new Pilot connections fail with 407, restart it: bash $SCRIPT_DIR/pilot-up.sh --stop && bash $SCRIPT_DIR/pilot-up.sh"
+      if [ -n "$(managed_daemon)" ]; then
+        say "note: this shell's HTTPS_PROXY differs from the one the node started with." \
+          "  If new Pilot connections fail with 407, restart it: bash $SCRIPT_DIR/pilot-up.sh --stop && bash $SCRIPT_DIR/pilot-up.sh"
+      else
+        say "note: this node was not started by pilot-up, so it keeps the proxy settings it started with and pilot-up never restarts it on its own." \
+          "  If new Pilot connections fail with 407, restart it the way it was started, or replace it with one pilot-up runs: bash $SCRIPT_DIR/pilot-up.sh --stop && bash $SCRIPT_DIR/pilot-up.sh"
+      fi
     fi
     exit 0
   fi
@@ -1177,4 +1255,8 @@ main() {
   report_failure
 }
 
-main "$@"
+# Run main unless this file is being sourced (tests source it for its
+# functions).
+if [ "${BASH_SOURCE[0]:-$0}" = "$0" ]; then
+  main "$@"
+fi

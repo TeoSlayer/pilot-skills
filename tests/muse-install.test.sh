@@ -68,6 +68,7 @@ install HTTPS_PROXY=http://alice:s3cret@127.0.0.1:9 STUB_INSTALL_VERSION=v1.0.0
 expect "fresh: rc 0" [ "$RC" = 0 ]
 expect "fresh: node online" has "node online via the native path"
 expect "fresh: done message" has "Done. Skills in $H/workspace/skills"
+expect "fresh: done message says what to do after a credential rotation" has "the proxy credentials rotated: run the same command from a fresh shell"
 expect "fresh: credentials never printed" lacks "s3cret"
 for s in pilotctl pilot-protocol pilot-sandbox; do
   f="$H/workspace/skills/$s/SKILL.md"
