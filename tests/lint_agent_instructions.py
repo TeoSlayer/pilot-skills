@@ -68,12 +68,7 @@ EXCLUDED_PREFIXES = ("muse/", "workflow-injection/tests/")
 # every finding is printed (as WAIVED, so CI output shows it), but they do not
 # fail the run. Delete the entry once the owning change lands and the path
 # passes; the lint reports an entry whose path has no findings left as stale.
-WAIVED = {
-    "skills/pilot-sandbox/": (
-        "injected via inject-manifest.json; owned by the muse one-shot-install work "
-        "(branch feat/muse-one-shot-install), which must replace its newest-inbox-file read"
-    ),
-}
+WAIVED = {}
 
 # Commands whose second word is part of the command name.
 SUBCOMMAND_GROUPS = {"extras", "appstore", "daemon", "skills", "network", "update", "updates", "task"}
@@ -535,19 +530,27 @@ def self_test():
             print("   ", f)
         failures += 1
     # waivers: a FAIL under a WAIVED path is reported, not failed; a waiver with
-    # nothing left to waive is reported as stale
-    for prefix in WAIVED:
-        got = apply_waivers([("FAIL", prefix + "SKILL.md", 3, "inbox-newest-file", "m"),
-                             ("FAIL", "skills/other/SKILL.md", 4, "race-claim", "m")])
-        levels = sorted((f[0], f[1]) for f in got)
-        if levels != [("FAIL", "skills/other/SKILL.md"), ("WAIVED", prefix + "SKILL.md")] + (
-                [("WARN", other) for other in sorted(set(WAIVED) - {prefix})]):
-            print("self-test FAIL: waiver for %s not applied: %s" % (prefix, got))
+    # nothing left to waive is reported as stale. With no real waiver in place,
+    # a made-up one keeps the mechanism tested.
+    saved = dict(WAIVED)
+    if not WAIVED:
+        WAIVED["skills/self-test-waived/"] = "self-test"
+    try:
+        for prefix in WAIVED:
+            got = apply_waivers([("FAIL", prefix + "SKILL.md", 3, "inbox-newest-file", "m"),
+                                 ("FAIL", "skills/other/SKILL.md", 4, "race-claim", "m")])
+            levels = sorted((f[0], f[1]) for f in got)
+            if levels != [("FAIL", "skills/other/SKILL.md"), ("WAIVED", prefix + "SKILL.md")] + (
+                    [("WARN", other) for other in sorted(set(WAIVED) - {prefix})]):
+                print("self-test FAIL: waiver for %s not applied: %s" % (prefix, got))
+                failures += 1
+        stale = [f for f in apply_waivers([]) if f[3] == "stale-waiver"]
+        if len(stale) != len(WAIVED):
+            print("self-test FAIL: stale waivers not reported: %s" % stale)
             failures += 1
-    stale = [f for f in apply_waivers([]) if f[3] == "stale-waiver"]
-    if len(stale) != len(WAIVED):
-        print("self-test FAIL: stale waivers not reported: %s" % stale)
-        failures += 1
+    finally:
+        WAIVED.clear()
+        WAIVED.update(saved)
     print("self-test: %s" % ("PASS" if not failures else "%d failure(s)" % failures))
     return 1 if failures else 0
 

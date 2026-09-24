@@ -1,6 +1,6 @@
 # Sandbox
 
-Bring a Pilot Protocol node online from a network-restricted agent sandbox: no outbound UDP, poisoned DNS, HTTPS-proxy-only egress. Built for Meta Muse's dedicated VM; works in any sandbox with the same shape. One idempotent script, `scripts/pilot-up.sh`, starts the node (and restarts it after a VM reboot): natively through the proxy when `pilot-daemon` has the `-proxy` flag, no root needed, or with the SNI-router recipe for older daemons.
+Bring a Pilot Protocol node online from a network-restricted agent sandbox: no outbound UDP, poisoned DNS, HTTPS-proxy-only egress. Built for Meta Muse's dedicated VM; works in any sandbox with the same shape. One idempotent script, `scripts/pilot-up.sh`, starts the node (and restarts it after a VM reboot): natively through the proxy when `pilot-daemon` has the `-proxy` flag, no root needed, or with the SNI-router recipe for older daemons. The sandbox proxy rotates its credentials every few minutes, so the node re-reads them from a fresh shell: `pilot-daemon -proxy-cmd` when the daemon has it, otherwise through `scripts/egress_relay.py`, a local relay that stamps current credentials on every connection.
 
 **Category:** Discovery & Network | **License:** AGPL-3.0
 
@@ -28,7 +28,8 @@ clawhub install pilot-sandbox
 ## What's inside
 
 - `SKILL.md`: constraints, the fast path, the fallback, restart commands, verification
-- `scripts/pilot-up.sh`: idempotent start/restart; picks the native `-proxy` path, plain compat, or the SNI fallback, runs the daemon under a respawn loop (always `-transport=compat` behind a proxy), retries once with the bundled registry pin on an x509 error, restarts whatever holds rotated proxy credentials, waits for registration and prints the next diagnostic step on failure; `--stop` also stops a daemon or router started by hand
+- `scripts/pilot-up.sh`: idempotent start/restart; picks the native `-proxy` path, plain compat, or the SNI fallback, runs the daemon under a respawn loop (always `-transport=compat` behind a proxy), retries once with the bundled registry pin on an x509 error, keeps the node on current proxy credentials (`-proxy-cmd`, or the egress relay; the respawn loop re-reads them before each start), waits for registration and prints the next diagnostic step on failure; `--stop` also stops a daemon or router started by hand
+- `scripts/egress_relay.py`: local proxy on `127.0.0.1:3128` that strips the client's credentials and stamps fresh ones read from a fresh shell, retrying once on a 407 (used for daemons without `-proxy-cmd`; never terminates TLS, never logs credentials)
 - `scripts/sni_router.py`: fallback; transparent SNI router (reads the ClientHello SNI, tunnels through the proxy with `CONNECT`, never alters a byte)
 - `scripts/run-daemon.sh`: fallback; launches `pilot-daemon` in compat mode inside a mount namespace with a custom hosts file
 - `scripts/hosts.template`: fallback; the hosts overrides
@@ -40,6 +41,7 @@ clawhub install pilot-sandbox
 - `HTTPS_PROXY` set, allowing `CONNECT` to port 443
 - Fast path: a `pilot-daemon` with the `-proxy` flag (the release after v1.13.9; version TBD). No root.
 - Fallback for older daemons: `python3` and `unshare` (util-linux); root or `CAP_SYS_ADMIN`
+- Rotating proxy credentials: a `pilot-daemon` with `-proxy-cmd`, or `python3` for the egress relay
 
 ## Tags
 
@@ -47,7 +49,7 @@ clawhub install pilot-sandbox
 
 ## Documentation
 
-See [SKILL.md](SKILL.md) for the full skill definition. The story of how this recipe was found is on the Pilot blog: [Getting a Pilot node online from a locked-down agent sandbox](https://pilotprotocol.network/blog/pilot-protocol-from-a-locked-down-agent-sandbox).
+See [SKILL.md](SKILL.md) for the full skill definition. The story of how this recipe was found is on the Pilot blog: [Getting a Pilot node online from a locked-down agent sandbox](https://pilotprotocol.network/blog/pilot-protocol-from-a-locked-down-agent-sandbox), and the rotating-credentials follow-up: [When the Egress Proxy Rotates Its Credentials](https://pilotprotocol.network/blog/rotating-egress-proxy-credentials).
 
 ## Links
 

@@ -17,6 +17,7 @@ PASSES=0
 OUT=""
 RC=0
 H="$T/home"
+RELAY="127.0.0.1:$((40000 + RANDOM % 10000))"
 mkdir -p "$H" "$T/fakebin" "$T/tarball/pilot-skills-main"
 cp "$STUBS/curl" "$T/fakebin/curl"
 cp -R "$ROOT/skills" "$T/tarball/pilot-skills-main/skills"
@@ -24,7 +25,7 @@ UP="$H/workspace/skills/pilot-sandbox/scripts/pilot-up.sh"
 
 # stop_node — pilot-up.sh --stop for the test HOME (never the default socket).
 stop_node() {
-  env -i PATH="$PATH" HOME="$H" PILOT_SOCKET="$H/pilot.sock" \
+  env -i PATH="$PATH" HOME="$H" PILOT_SOCKET="$H/pilot.sock" PILOT_RELAY_LISTEN="$RELAY" \
     perl -e 'setpgrp(0, 0); exec @ARGV or die' bash "$UP" --stop > /dev/null 2>&1
 }
 
@@ -51,12 +52,15 @@ lacks() { ! grep -qF -- "$1" <<< "$OUT"; }
 not() { ! "$@"; }
 
 # install [VAR=value...] — run muse/install.sh (fed on stdin, as curl | bash
-# does) with a clean environment. Sets OUT and RC.
+# does) with a clean environment, stub binaries whose pilot-daemon has -proxy
+# and -proxy-cmd (the next release), and the egress relay (if one is started)
+# on a random port. Sets OUT and RC.
 install() {
   OUT="$(env -i PATH="$T/fakebin:$PATH" HOME="$H" \
     STUB_DIR="$STUBS" STUB_TARBALL_ROOT="$T/tarball" \
     PILOT_INSTALL_URL=https://stub.invalid/install.sh \
-    PILOT_SOCKET="$H/pilot.sock" PILOT_UP_WAIT=8 STUB_HELP_PROXY=1 \
+    PILOT_SOCKET="$H/pilot.sock" PILOT_UP_WAIT=8 STUB_HELP_PROXY=1 STUB_HELP_PROXY_CMD=1 \
+    PILOT_RELAY_LISTEN="$RELAY" \
     "$@" perl -e 'setpgrp(0, 0); exec @ARGV or die' bash < "$ROOT/muse/install.sh" 2>&1)"
   RC=$?
 }
@@ -69,6 +73,8 @@ expect "fresh: rc 0" [ "$RC" = 0 ]
 expect "fresh: node online" has "node online via the native path"
 expect "fresh: done message" has "Done. Skills in $H/workspace/skills"
 expect "fresh: done message says what to do after a credential rotation" has "the proxy credentials rotated: run the same command from a fresh shell"
+expect "fresh: the node re-reads rotating credentials (-proxy-cmd)" has "credentials re-read by pilot-daemon (-proxy-cmd)"
+expect "fresh: done message says so" has "The node re-reads the rotating proxy credentials itself"
 expect "fresh: credentials never printed" lacks "s3cret"
 for s in pilotctl pilot-protocol pilot-sandbox; do
   f="$H/workspace/skills/$s/SKILL.md"

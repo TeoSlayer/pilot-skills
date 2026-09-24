@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Stub pilot-daemon for the tests. Never touches the network. Behaviour:
 #   STUB_HELP_PROXY=1          -h lists -proxy (a daemon with native proxy support)
+#   STUB_HELP_PROXY_CMD=1      -h also lists -proxy-cmd (re-reads rotated credentials)
 #   STUB_TRANSPORT_AUTO=1      -h offers -transport auto
 #   STUB_X509_UNLESS_PINNED=1  logs a registry x509 error and exits 1 unless
 #                              started with -registry-trust pinned
@@ -27,6 +28,10 @@ case "${1:-}" in
         echo "  -proxy string"
         printf '    \toutbound proxy: auto, off or http(s)://[user:pass@]host[:port] (default "auto")\n'
       fi
+      if [ "${STUB_HELP_PROXY_CMD:-0}" = 1 ]; then
+        echo "  -proxy-cmd string"
+        printf '    \tcommand (run with /bin/sh -c) whose output is the current proxy URL\n'
+      fi
       echo "  -transport string"
       if [ "${STUB_TRANSPORT_AUTO:-0}" = 1 ]; then
         printf "    \\ttunnel transport: 'auto', 'udp' or 'compat' (default \"auto\")\\n"
@@ -41,6 +46,7 @@ case "${1:-}" in
 esac
 echo "$*" >> "$HOME/.pilot/stub-args.log"
 echo "${HTTPS_PROXY:-}" >> "$HOME/.pilot/stub-env.log"
+echo "https_proxy=${https_proxy:-} HTTP_PROXY=${HTTP_PROXY:-} ALL_PROXY=${ALL_PROXY:-} NO_PROXY=${NO_PROXY:-}" >> "$HOME/.pilot/stub-env2.log"
 socket=""
 prev=""
 for a in "$@"; do

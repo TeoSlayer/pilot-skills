@@ -18,6 +18,10 @@
 #   PILOT_SOCKET                Unix socket path (default /tmp/pilot.sock)
 #   PILOT_BIN                   pilot-daemon binary (default ~/.pilot/bin/pilot-daemon)
 #   PILOT_HOSTNAME              node hostname (-hostname)
+#   PILOT_DAEMON_PROXY          proxy URL for the daemon's own HTTP clients,
+#                               set as HTTPS_PROXY & co. right before the exec
+#                               (pilot-up.sh passes the egress relay's address;
+#                               a shell here may re-export the rotating one)
 #
 # `system` verifies the registry's Let's Encrypt certificate against the OS
 # trust store and survives certificate rotation. `pinned` is the fallback for
@@ -47,6 +51,12 @@ EXTRA_ARGS=(-registry-trust="$TRUST")
 [ "$TRUST" = "pinned" ] && EXTRA_ARGS+=(-registry-fingerprint="$FINGERPRINT")
 [ -f "$HOME/.pilot/config.json" ] && EXTRA_ARGS+=(-config="$HOME/.pilot/config.json")
 [ -n "${PILOT_HOSTNAME:-}" ] && EXTRA_ARGS+=(-hostname="$PILOT_HOSTNAME")
+
+if [ -n "${PILOT_DAEMON_PROXY:-}" ]; then
+  export HTTPS_PROXY="$PILOT_DAEMON_PROXY" https_proxy="$PILOT_DAEMON_PROXY" \
+    HTTP_PROXY="$PILOT_DAEMON_PROXY" http_proxy="$PILOT_DAEMON_PROXY"
+  unset ALL_PROXY all_proxy
+fi
 
 rm -f "$SOCKET"
 exec "$DAEMON" \

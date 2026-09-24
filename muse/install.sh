@@ -26,7 +26,8 @@
 #   PILOT_MUSE_FRONTMATTER  0 = keep the canonical SKILL.md frontmatter (for agents
 #                           that need name to equal the folder name)
 #   PILOT_INSTALL_URL       official installer (default https://pilotprotocol.network/install.sh)
-#   pilot-up.sh also reads PILOT_HOSTNAME, PILOT_PROXY, PILOT_UP_WAIT, PILOT_UP_MODE,
+#   pilot-up.sh also reads PILOT_HOSTNAME, PILOT_PROXY, PILOT_PROXY_CMD,
+#   PILOT_UP_WAIT, PILOT_UP_MODE, PILOT_UP_CREDS, PILOT_RELAY_LISTEN,
 #   PILOT_REGISTRY_TRUST and PILOT_REGISTRY_FINGERPRINT.
 #
 # curl honours HTTPS_PROXY, so every download works from proxy-only sandboxes.
@@ -278,7 +279,8 @@ MSG
         cat << MSG
 Done. Skills in $dest, Pilot in $bin_dir, node online.
 After a VM restart run: bash $up
-If Pilot commands later fail with 407 while pilotctl --json info still works,
+The node re-reads the rotating proxy credentials itself (see "proxy" above).
+If Pilot commands still fail with 407 while pilotctl --json info works,
 the proxy credentials rotated: run the same command from a fresh shell.
 Try it: $bin_dir/pilotctl --json send-message pilot-mom --data 'current BTC price in USD' --wait
 MSG

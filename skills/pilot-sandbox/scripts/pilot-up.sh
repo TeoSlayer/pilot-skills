@@ -4,7 +4,8 @@
 # systemd, so nothing brings the daemon back on its own).
 #
 #   bash pilot-up.sh           start the node (or adopt a running one) and wait
-#   bash pilot-up.sh --stop    stop the daemon, its respawn loop and the SNI router
+#   bash pilot-up.sh --stop    stop the daemon, its respawn loop, the SNI router
+#                              and the egress relay
 #
 # Launch paths, tried in this order (force one with PILOT_UP_MODE):
 #   native  pilot-daemon has the -proxy flag: run it with -proxy=auto. No root.
@@ -34,15 +35,34 @@
 # A clean exit (for example `pilotctl daemon stop`) is not respawned. A pid file
 # is trusted only when the process's command line matches, so pid files left
 # behind by a VM restart are removed, never signalled.
-# Proxy credentials rotate in Meta Muse, and a running process keeps the ones it
-# started with. A salted hash of the proxy settings is kept next to each pid
-# file: a rerun with different settings restarts the respawn loop and the SNI
-# router instead of reusing them, and restarts an online node run by pilot-up's
-# respawn loop whose logs show the proxy rejecting its credentials (a 407)
-# since its last start. A node pilot-up did not start only gets a note.
+# Proxy credentials rotate in Meta Muse (every few minutes), and a running
+# process keeps the ones it started with: its open tunnels survive while every
+# new connection gets a 407 ("node online, all apps broken"). A fresh shell
+# always sees the current ones, so the running pieces re-read them from one
+# (PILOT_PROXY_CMD, default: bash -c 'printf %s "${https_proxy:-$HTTPS_PROXY}"'):
+#   cmd     pilot-daemon -h lists -proxy-cmd (native path): the daemon runs
+#           that command every 60s and after a 407. No extra process.
+#   relay   any other daemon (sni path, or native without -proxy-cmd):
+#           scripts/egress_relay.py on 127.0.0.1:3128 stamps fresh credentials
+#           on every connection, and the SNI router and the daemon use it as
+#           their proxy (no credentials in their environment; set at the last
+#           exec, since a shell in between may re-export the real proxy). Needs
+#           python3. A rerun restarts a relay that died, or whose re-read
+#           credentials the proxy rejected, without touching the daemon.
+#   static  neither is possible (or PILOT_PROXY / config.json names an explicit
+#           proxy URL): the launch-time credentials.
+# In cmd and static mode the respawn loop also re-reads them before each
+# daemon (re)start.
+# A salted hash of the proxy settings each piece depends on (not the
+# credentials, in cmd and relay mode) is kept next to its pid file, so a rerun
+# with other settings restarts it instead of reusing it. An online static-mode
+# node run by pilot-up's respawn loop whose log shows the proxy rejecting its
+# credentials (a 407) since its last start is restarted when this shell's
+# credentials differ. A node pilot-up did not start only gets a note.
 # --stop also stops a pilot-daemon that pilot-up did not start but that answers
 # on the socket (found through the socket's owner), and an sni_router.py
-# listening on the router port. It exits 1 when one could not be stopped.
+# listening on the router port. It exits 1 when one could not be stopped. An
+# egress_relay.py pilot-up did not start is used, never stopped.
 #
 # Environment (all optional):
 #   PILOT_UP_MODE               auto (default) | native | direct | sni
@@ -56,6 +76,9 @@
 #   PILOT_REGISTRY_FINGERPRINT  registry leaf SHA-256 for pinned (default: bundled)
 #   PILOT_BIN_DIR               pilotctl + pilot-daemon location (default ~/.pilot/bin)
 #   PILOT_SNI_LISTEN            SNI router address (default 127.0.0.1:443)
+#   PILOT_UP_CREDS              auto (default) | cmd | relay | static (see above)
+#   PILOT_PROXY_CMD             command printing the current proxy URL
+#   PILOT_RELAY_LISTEN          egress relay address (default 127.0.0.1:3128)
 #
 # Exit codes: 0 online (--stop: everything stopped, or nothing was running),
 # 1 not online (log tail and next step printed; --stop: something still runs),
@@ -76,6 +99,21 @@ ROUTER_LOG="$PILOT_DIR/sni_router.log"
 SUP_PROXY_FILE="$PILOT_DIR/pilot-up.proxy"
 ROUTER_PROXY_FILE="$PILOT_DIR/sni_router.proxy"
 ROUTER_LISTEN="${PILOT_SNI_LISTEN:-127.0.0.1:443}"
+RELAY_PID_FILE="$PILOT_DIR/egress_relay.pid"
+RELAY_LOG="$PILOT_DIR/egress_relay.log"
+RELAY_PROXY_FILE="$PILOT_DIR/egress_relay.proxy"
+RELAY_LISTEN="${PILOT_RELAY_LISTEN:-127.0.0.1:3128}"
+RELAY_URL="http://$RELAY_LISTEN"
+# What pilot-daemon's -proxy-cmd, the egress relay and the respawn loop run to
+# read the current proxy URL: a fresh shell sees credentials a running process
+# does not. The official installer saves the same command as "proxy_cmd".
+# shellcheck disable=SC2016 # expanded by that fresh shell, not here
+SANDBOX_PROXY_CMD='bash -c '\''printf %s "${https_proxy:-$HTTPS_PROXY}"'\'''
+CREDS_WANT="${PILOT_UP_CREDS:-auto}"
+CRED_MODE="none"
+CRED_WHY=""
+RELAY_ENV=()
+REFRESH=""
 MUSE_MARKER="$PILOT_DIR/targets/muse"
 REGISTRY="registry.pilotprotocol.network:443"
 # Leaf certificate of registry.pilotprotocol.network, observed 2026-09-23 and
@@ -207,11 +245,173 @@ behind_proxy() {
   return 1
 }
 
+# --- rotating proxy credentials ------------------------------------------------
+
+# proxy_hostport URL — host:port of URL, without scheme, credentials or path.
+proxy_hostport() {
+  local u="${1#*://}"
+  u="${u##*@}"
+  printf '%s' "${u%%/*}"
+}
+
+# points_at_relay — this shell's proxy is the egress relay's own address (the
+# manual relay recipe exports it), so it cannot tell the relay the real one.
+points_at_relay() {
+  local port="${RELAY_LISTEN##*:}"
+  case "$(proxy_hostport "$(proxy_url)")" in
+    "$RELAY_LISTEN" | "127.0.0.1:$port" | "localhost:$port" | "[::1]:$port") return 0 ;;
+  esac
+  return 1
+}
+
+supports_proxy_cmd() {
+  grep -Eq '^[[:space:]]*-proxy-cmd([[:space:]]|$)' <<< "$DAEMON_HELP"
+}
+
+# config_proxy_cmd — "proxy_cmd" in ~/.pilot/config.json (the official
+# installer saves one in sandboxes), JSON-decoded when python3 is there.
+config_proxy_cmd() {
+  [ -f "$PILOT_DIR/config.json" ] || return 0
+  if command -v python3 >/dev/null 2>&1; then
+    python3 -c 'import json, sys
+v = json.load(open(sys.argv[1])).get("proxy_cmd")
+sys.stdout.write(v.strip() if isinstance(v, str) else "")' "$PILOT_DIR/config.json" 2>/dev/null || true
+  else
+    config_value proxy_cmd
+  fi
+}
+
+# effective_proxy_cmd — the command that prints the current proxy URL, in
+# pilot-daemon's precedence: PILOT_PROXY_CMD, config.json "proxy_cmd", else
+# the sandbox default (which pilot-up passes as -proxy-cmd).
+effective_proxy_cmd() {
+  local c="${PILOT_PROXY_CMD:-}"
+  [ -n "${c//[[:space:]]/}" ] || c="$(config_proxy_cmd)"
+  [ -n "${c//[[:space:]]/}" ] || c="$SANDBOX_PROXY_CMD"
+  printf '%s' "$c"
+}
+
+# explicit_proxy_url — the daemon's proxy setting (PILOT_PROXY, else
+# config.json "proxy") is a URL, which it uses as is.
+explicit_proxy_url() {
+  local v="${PILOT_PROXY:-}"
+  [ -n "$v" ] || v="$(config_value proxy)"
+  case "$(printf '%s' "$v" | tr '[:upper:]' '[:lower:]')" in http://* | https://*) return 0 ;; esac
+  return 1
+}
+
+# relay_usable — egress_relay.py can run here: python3, the script, and a
+# plain http:// proxy (the relay does not speak TLS to the proxy).
+relay_usable() {
+  { command -v python3 >/dev/null 2>&1 && [ -f "$SCRIPT_DIR/egress_relay.py" ]; } || return 1
+  case "$(proxy_url | tr '[:upper:]' '[:lower:]')" in https://*) return 1 ;; esac
+  return 0
+}
+
+# pick_creds — how the node's long-lived processes get current proxy
+# credentials (cmd, relay or static; none without a proxy). Needs CHOSEN and
+# DAEMON_HELP. Sets CRED_MODE and CRED_WHY.
+pick_creds() {
+  CRED_MODE=none
+  CRED_WHY=""
+  case "$CHOSEN" in native | sni) ;; *) return 0 ;; esac
+  [ -n "$(proxy_url)" ] || return 0
+  if points_at_relay; then
+    CRED_MODE=relay
+    CRED_WHY="this shell's HTTPS_PROXY is the relay"
+    return 0
+  fi
+  case "$CREDS_WANT" in
+    cmd)
+      if [ "$CHOSEN" != native ] || ! supports_proxy_cmd; then
+        fail 2 "PILOT_UP_CREDS=cmd needs the native path and a pilot-daemon whose -h lists -proxy-cmd"
+      fi
+      CRED_MODE=cmd
+      CRED_WHY="PILOT_UP_CREDS"
+      ;;
+    relay)
+      relay_usable || fail 2 "PILOT_UP_CREDS=relay needs python3, scripts/egress_relay.py and an http:// proxy"
+      CRED_MODE=relay
+      CRED_WHY="PILOT_UP_CREDS"
+      ;;
+    static)
+      CRED_MODE=static
+      CRED_WHY="PILOT_UP_CREDS"
+      ;;
+    *)
+      if [ "$CHOSEN" = native ] && explicit_proxy_url; then
+        CRED_MODE=static
+        CRED_WHY="PILOT_PROXY or config.json names the proxy URL"
+      elif [ "$CHOSEN" = native ] && supports_proxy_cmd; then
+        CRED_MODE=cmd
+        CRED_WHY="pilot-daemon has -proxy-cmd"
+      elif relay_usable; then
+        CRED_MODE=relay
+        CRED_WHY="pilot-daemon cannot re-read them itself"
+      else
+        CRED_MODE=static
+        CRED_WHY="no -proxy-cmd, and no python3 for the relay"
+      fi
+      ;;
+  esac
+}
+
+# creds_desc MODE — how a node started in MODE gets its proxy credentials.
+creds_desc() {
+  case "$1" in
+    cmd) printf 're-read by pilot-daemon (-proxy-cmd) every 60s and after a 407' ;;
+    relay) printf 'stamped fresh on every connection by the egress relay %s' "$RELAY_URL" ;;
+    static) printf 'the ones it started with (after a rotation, rerun this from a fresh shell)' ;;
+  esac
+}
+
+# relay_env — sets RELAY_ENV, an `env ...` command prefix that makes the
+# egress relay the proxy of the command it runs, with no credentials in its
+# environment (children it spawns inherit that too). It is applied at the
+# last exec, not to a shell above it: in Muse a fresh shell re-reads the real
+# proxy, and would put it back over the relay's address. run-daemon.sh
+# re-applies PILOT_DAEMON_PROXY for the same reason.
+relay_env() {
+  local np="${NO_PROXY:-${no_proxy:-}}" h
+  for h in localhost 127.0.0.1; do
+    case ",$np," in *",$h,"*) ;; *) np="${np:+$np,}$h" ;; esac
+  done
+  RELAY_ENV=(env -u ALL_PROXY -u all_proxy
+    "HTTPS_PROXY=$RELAY_URL" "https_proxy=$RELAY_URL" "HTTP_PROXY=$RELAY_URL" "http_proxy=$RELAY_URL"
+    "NO_PROXY=$np" "no_proxy=$np" "PILOT_DAEMON_PROXY=$RELAY_URL")
+}
+
+# refresh_proxy_env CMD — used by the respawn loop before each start: export
+# the proxy URL CMD prints (run by sh, so a fresh shell reads it) as
+# HTTPS_PROXY / https_proxy, and as HTTP_PROXY / http_proxy where those held
+# the same URL. Never prints the value.
+# shellcheck disable=SC2329 # invoked through declare -f in launch()
+refresh_proxy_env() {
+  local fresh old v
+  if command -v timeout > /dev/null 2>&1; then
+    fresh="$(timeout 10 sh -c "$1" < /dev/null 2> /dev/null || true)"
+  else
+    fresh="$(sh -c "$1" < /dev/null 2> /dev/null || true)"
+  fi
+  fresh="${fresh%%$'\n'*}"
+  fresh="${fresh//[[:space:]]/}"
+  case "$fresh" in *://?*) ;; *) return 0 ;; esac
+  old="${HTTPS_PROXY:-${https_proxy:-}}"
+  [ "$fresh" != "$old" ] || return 0
+  for v in HTTP_PROXY http_proxy; do
+    if [ -n "${!v:-}" ] && [ "${!v}" = "$old" ]; then export "$v=$fresh"; fi
+  done
+  export HTTPS_PROXY="$fresh" https_proxy="$fresh"
+  echo "pilot-up: $(date -u +%Y-%m-%dT%H:%M:%SZ) proxy credentials re-read from a fresh shell for this start"
+}
+
 # --- proxy settings fingerprint ------------------------------------------------
-# A long-lived process keeps the proxy credentials it was started with, and
-# Meta Muse rotates them every few minutes. launch() and start_sni() record a
-# salted hash of the proxy settings next to the pid file they start, so a rerun
-# from a shell whose settings differ restarts the process instead of reusing it.
+# A long-lived process keeps the proxy settings it was started with. launch(),
+# ensure_router() and ensure_relay() record a salted hash of the settings the
+# process depends on next to its pid file, so a rerun from a shell whose
+# settings differ restarts it instead of reusing it. In cmd and relay mode the
+# credentials are not part of it: those processes re-read them, so a rotation
+# restarts nothing.
 
 hash_stdin() {
   if command -v sha256sum >/dev/null 2>&1; then
@@ -225,26 +425,54 @@ hash_stdin() {
   fi 2>/dev/null | awk '{ print $1; exit }'
 }
 
-proxy_settings() {
-  printf '%s|%s|%s' "$(proxy_url)" "${PILOT_PROXY:-}" "${NO_PROXY:-${no_proxy:-}}"
+# settings_for MODE PATH — the proxy settings a piece started in credential
+# MODE on launch PATH depends on, as one line (hashed, never stored):
+#   static, none  the proxy URL itself (credentials included)
+#   cmd           the proxy without its credentials, and the command that
+#                 re-reads them
+#   relay         the relay's address (the daemon and router never see the
+#                 real proxy)
+#   relayd        the relay process: its address and credential command
+settings_for() {
+  local np="${NO_PROXY:-${no_proxy:-}}"
+  case "$1" in
+    cmd) printf 'cmd|%s|%s|%s|%s|%s' "$2" "$(redact_url "$(proxy_url)")" "${PILOT_PROXY:-}" "$np" "$(effective_proxy_cmd)" ;;
+    relay) printf 'relay|%s|%s|%s|%s' "$2" "$RELAY_LISTEN" "${PILOT_PROXY:-}" "$np" ;;
+    relayd) printf 'relayd|%s|%s' "$RELAY_LISTEN" "${PILOT_PROXY_CMD:-}" ;;
+    *) printf '%s|%s|%s|%s|%s' "$1" "$2" "$(proxy_url)" "${PILOT_PROXY:-}" "$np" ;;
+  esac
 }
 
-# write_fp FILE — record the current proxy settings (salt + hash) in FILE.
+# write_fp FILE MODE [PATH] — record, in FILE, a salted hash of the settings
+# (settings_for MODE PATH) followed by MODE and PATH.
 write_fp() {
   local salt
   salt="$(od -An -N8 -tx1 /dev/urandom 2>/dev/null | tr -d ' \n' || true)"
   salt="${salt:-$$.$RANDOM.$RANDOM}"
   private_file "$1"
-  printf '%s %s\n' "$salt" "$(printf '%s|%s' "$salt" "$(proxy_settings)" | hash_stdin)" > "$1" 2>/dev/null || true
+  printf '%s %s %s %s\n' "$salt" "$(printf '%s|%s' "$salt" "$(settings_for "$2" "${3:-}")" | hash_stdin)" \
+    "$2" "${3:--}" > "$1" 2>/dev/null || true
 }
 
-# fp_matches FILE — FILE records the current proxy settings.
+# recorded FILE FIELD — the MODE (3) or PATH (4) a fingerprint file recorded.
+recorded() {
+  local salt="" sum="" mode="" path=""
+  if [ -f "$1" ]; then read -r salt sum mode path < "$1" 2>/dev/null || true; fi
+  case "$2" in 3) printf '%s' "$mode" ;; 4) [ "$path" = - ] || printf '%s' "$path" ;; esac
+  return 0
+}
+
+# fp_matches FILE [MODE [PATH]] — FILE records this shell's settings (for the
+# mode and path it was written with), and that MODE and PATH when given.
 fp_matches() {
-  local salt="" sum=""
+  local salt="" sum="" mode="" path=""
   [ -f "$1" ] || return 1
-  read -r salt sum < "$1" 2>/dev/null || true
-  [ -n "$salt" ] && [ -n "$sum" ] \
-    && [ "$(printf '%s|%s' "$salt" "$(proxy_settings)" | hash_stdin)" = "$sum" ]
+  read -r salt sum mode path < "$1" 2>/dev/null || true
+  [ -n "$salt" ] && [ -n "$sum" ] && [ -n "$mode" ] || return 1
+  [ "$path" = - ] && path=""
+  [ -z "${2:-}" ] || [ "$2" = "$mode" ] || return 1
+  [ -z "${3:-}" ] || [ "$3" = "$path" ] || return 1
+  [ "$(printf '%s|%s' "$salt" "$(settings_for "$mode" "$path")" | hash_stdin)" = "$sum" ]
 }
 
 # --- pid files ---------------------------------------------------------------
@@ -348,6 +576,10 @@ is_our_run_daemon() {
 # shellcheck disable=SC2329 # called through live_pid/stop_pid
 is_router() { grep -qE '(^|/)sni_router\.py$' <<< "$(proc_args "$1")"; }
 
+# is_relay PID — PID is egress_relay.py.
+# shellcheck disable=SC2329 # called through live_pid/stop_pid
+is_relay() { grep -qE '(^|/)egress_relay\.py$' <<< "$(proc_args "$1")"; }
+
 # live_pid FILE CHECK — the pid in FILE when that process is alive and CHECK
 # recognises it; otherwise nothing.
 live_pid() {
@@ -422,26 +654,36 @@ socket_owner_pid() {
   printf '%s' "${pids%%$'\n'*}"
 }
 
-# router_listener_pids — sni_router.py processes (is_router) that hold a TCP
-# listener on the router's port, whether or not a pid file names them.
-router_listener_pids() {
-  local port links pid
-  port="${ROUTER_LISTEN##*:}"
+# listener_pids PORT CHECK — processes CHECK recognises that hold a TCP
+# listener on PORT, whether or not a pid file names them.
+listener_pids() {
+  local port="$1" links pid
   case "$port" in '' | *[!0-9]*) return 0 ;; esac
   if [ -r /proc/net/tcp ]; then
     links="$(awk -v h=":$(printf '%04X' "$port")" '
       $4 == "0A" && substr($2, length($2) - 4) == h { print "socket:[" $10 "]" }
     ' /proc/net/tcp /proc/net/tcp6 2>/dev/null || true)"
     [ -n "$links" ] || return 0
-    for pid in $(pids_matching is_router); do
+    for pid in $(pids_matching "$2"); do
       if holds_any "$pid" "$links"; then printf '%s\n' "$pid"; fi
     done
   elif command -v lsof >/dev/null 2>&1; then
     for pid in $(lsof -nP -t -iTCP:"$port" -sTCP:LISTEN 2>/dev/null || true); do
-      if valid_pid "$pid" && is_router "$pid"; then printf '%s\n' "$pid"; fi
+      if valid_pid "$pid" && "$2" "$pid"; then printf '%s\n' "$pid"; fi
     done
   fi
   return 0
+}
+
+# router_listener_pids — sni_router.py processes holding the router's port.
+router_listener_pids() { listener_pids "${ROUTER_LISTEN##*:}" is_router; }
+
+# port_open HOST:PORT — something accepts TCP connections there.
+port_open() {
+  local host="${1%:*}"
+  host="${host#[}"
+  # shellcheck disable=SC2016 # $0 and $1 belong to the inner shell
+  with_timeout 3 bash -c 'exec 3<> "/dev/tcp/$0/$1"' "${host%]}" "${1##*:}" 2>/dev/null
 }
 
 # wait_gone PID SECS — wait for PID to exit; false if it is still alive.
@@ -631,20 +873,24 @@ ensure_ca_bundle() {
 
 # --- launch ------------------------------------------------------------------
 
-# supervise SUP_PID_FILE DAEMON_PID_FILE SOCKET CMD... — the respawn loop.
-# Runs detached under `bash -c "$(declare -f supervise)" pilot-up-supervisor`
-# (is_supervisor keys on that name). Restarts CMD when it crashes, stops on a
-# clean exit or SIGTERM, and gives up after 5 fast failures in a row.
+# supervise SUP_PID_FILE DAEMON_PID_FILE SOCKET REFRESH CMD... — the respawn
+# loop. Runs detached under `bash -c "$(declare -f ...)" pilot-up-supervisor`
+# (is_supervisor keys on that name). Before each start it re-reads the proxy
+# credentials with the command REFRESH (none when empty: relay mode, or no
+# proxy), so a daemon restarted after a rotation never gets stale ones.
+# Restarts CMD when it crashes, stops on a clean exit or SIGTERM, and gives up
+# after 5 fast failures in a row.
 # shellcheck disable=SC2329 # invoked through declare -f in launch()
 supervise() {
-  local sup_pid_file="$1" daemon_pid_file="$2" socket="$3" rc started ran backoff=2 fails=0
-  shift 3
+  local sup_pid_file="$1" daemon_pid_file="$2" socket="$3" refresh="$4" rc started ran backoff=2 fails=0
+  shift 4
   child=0
   stopping=0
   echo "$$" > "$sup_pid_file"
   trap 'stopping=1; [ "$child" -gt 0 ] && kill -TERM "$child" 2>/dev/null' TERM INT
   while [ "$stopping" = 0 ]; do
     rm -f "$socket"
+    if [ -n "$refresh" ]; then refresh_proxy_env "$refresh"; fi
     started="$(date +%s)"
     echo "pilot-up: $(date -u +%Y-%m-%dT%H:%M:%SZ) starting $*" | sed -E 's#(://)[^[:space:]]*@#\1***@#g'
     "$@" &
@@ -681,16 +927,17 @@ supervise() {
   rm -f "$daemon_pid_file" "$sup_pid_file"
 }
 
-# launch CMD... — start CMD under the respawn loop, detached from this shell.
+# launch CMD... — start CMD under the respawn loop, detached from this shell,
+# with REFRESH (see supervise).
 launch() {
   local i=0
   if [ "$(file_size "$LOG")" -gt 5242880 ]; then mv -f "$LOG" "$LOG.1"; fi
   private_file "$LOG"
   LOG_OFFSET="$(file_size "$LOG")"
   rm -f "$SUP_PID_FILE"
-  write_fp "$SUP_PROXY_FILE"
-  "${DETACH[@]}" bash -c "$(declare -f supervise); supervise \"\$@\"" pilot-up-supervisor \
-    "$SUP_PID_FILE" "$DAEMON_PID_FILE" "$SOCKET" "$@" >> "$LOG" 2>&1 < /dev/null &
+  write_fp "$SUP_PROXY_FILE" "$CRED_MODE" "$CHOSEN"
+  "${DETACH[@]}" bash -c "$(declare -f supervise refresh_proxy_env); supervise \"\$@\"" pilot-up-supervisor \
+    "$SUP_PID_FILE" "$DAEMON_PID_FILE" "$SOCKET" "$REFRESH" "$@" >> "$LOG" 2>&1 < /dev/null &
   while [ ! -s "$SUP_PID_FILE" ] && [ "$i" -lt 25 ]; do
     sleep 0.2
     i=$((i + 1))
@@ -718,6 +965,7 @@ compat_args() {
 }
 
 start_native() {
+  local pc="${PILOT_PROXY_CMD:-}"
   compat_args
   # -proxy=auto is the daemon default; pass it only when nothing else chose a
   # value, so PILOT_PROXY (read by the daemon from its environment) and a
@@ -725,6 +973,20 @@ start_native() {
   if [ -z "${PILOT_PROXY:-}" ] && [ -z "$(config_value proxy)" ]; then
     ARGS+=(-proxy=auto)
   fi
+  case "$CRED_MODE" in
+    cmd)
+      # The daemon reads PILOT_PROXY_CMD and config.json "proxy_cmd" itself;
+      # pass the sandbox default only when neither sets one.
+      if [ -z "${pc//[[:space:]]/}" ] && [ -z "$(config_proxy_cmd)" ]; then
+        ARGS+=(-proxy-cmd "$SANDBOX_PROXY_CMD")
+      fi
+      ;;
+    relay)
+      ensure_relay
+      relay_env
+      ARGS=("${RELAY_ENV[@]}" "${ARGS[@]}")
+      ;;
+  esac
   launch "${ARGS[@]}"
 }
 
@@ -756,10 +1018,129 @@ MSG
   exit 3
 }
 
-start_sni() {
+# ensure_relay [quiet] — egress_relay.py listens on RELAY_LISTEN: pilot-up's
+# own (restarted when it was started with other settings), or one started by
+# hand, which is used as is and never stopped. Starts pilot-up's otherwise.
+# quiet: say nothing when pilot-up's relay is already running.
+ensure_relay() {
+  local pid i=0 cred=()
+  pid="$(live_pid "$RELAY_PID_FILE" is_relay)"
+  if [ -n "$pid" ] && fp_matches "$RELAY_PROXY_FILE" relayd && ! relay_rejected; then
+    [ -n "${1:-}" ] || say "egress relay already running (pid $pid, $RELAY_LISTEN)"
+    return 0
+  fi
+  if [ -n "$pid" ] && relay_rejected; then
+    # Its fresh shells keep printing rejected credentials: start it again
+    # from this shell, whose environment has current ones.
+    say "restarting the egress relay (pid $pid): the proxy rejected the credentials it re-read ($RELAY_LOG)"
+    stop_relay
+  elif [ -n "$pid" ]; then
+    say "restarting the egress relay (pid $pid): it was started with other settings"
+    stop_relay
+  elif [ -n "${1:-}" ]; then
+    say "the egress relay this node uses is not running"
+  fi
+  rm -f "$RELAY_PID_FILE" "$RELAY_PROXY_FILE"
+  pid="$(listener_pids "${RELAY_LISTEN##*:}" is_relay)"
+  if [ -n "$pid" ]; then
+    say "using the egress relay already listening on $RELAY_LISTEN (pid ${pid%%$'\n'*}; not started by pilot-up, so --stop leaves it running)"
+    return 0
+  fi
+  if port_open "$RELAY_LISTEN"; then
+    if points_at_relay; then
+      say "using the proxy listening on $RELAY_LISTEN (this shell's HTTPS_PROXY; not started by pilot-up)"
+      return 0
+    fi
+    fail 1 "$RELAY_LISTEN is taken by a process that is not egress_relay.py: set PILOT_RELAY_LISTEN=127.0.0.1:<free port> and rerun"
+  fi
+  if points_at_relay; then
+    fail 1 "this shell's HTTPS_PROXY is the egress relay's address ($RELAY_LISTEN), and nothing listens there." \
+      "  The relay needs the sandbox's own proxy: rerun from a new shell whose HTTPS_PROXY is the real proxy (pilot-up starts the relay itself)."
+  fi
+  private_file "$RELAY_LOG"
+  write_fp "$RELAY_PROXY_FILE" relayd
+  if [ -n "${PILOT_PROXY_CMD:-}" ]; then cred=("RELAY_CRED_CMD=$PILOT_PROXY_CMD"); fi
+  # The relay keeps this shell's environment: its fresh shells read the real
+  # proxy from it.
+  # shellcheck disable=SC2016 # $$ and $@ belong to the inner shell
+  env RELAY_LISTEN="$RELAY_LISTEN" RELAY_LOG="$RELAY_LOG" ${cred[@]+"${cred[@]}"} \
+    "${DETACH[@]}" bash -c 'echo $$ > "$1"; shift; exec "$@"' egress-relay \
+    "$RELAY_PID_FILE" python3 "$SCRIPT_DIR/egress_relay.py" >> "$RELAY_LOG" 2>&1 < /dev/null &
+  pid=""
+  while [ "$i" -lt 25 ]; do
+    sleep 0.2
+    pid="$(live_pid "$RELAY_PID_FILE" is_relay)"
+    if [ -n "$pid" ] && port_open "$RELAY_LISTEN"; then break; fi
+    if [ -s "$RELAY_PID_FILE" ] && [ -z "$pid" ]; then break; fi
+    i=$((i + 1))
+  done
+  if [ -z "$pid" ] || ! port_open "$RELAY_LISTEN"; then
+    tail -n 5 "$RELAY_LOG" 2>/dev/null | redact >&2 || true
+    fail 1 "egress_relay.py did not start listening on $RELAY_LISTEN (log $RELAY_LOG)"
+  fi
+  say "egress relay pid $pid on $RELAY_LISTEN: it stamps current proxy credentials on every connection (log $RELAY_LOG)"
+}
+
+# relay_rejected — pilot-up's relay logged, since it started, that the proxy
+# rejected even the credentials it had just re-read.
+relay_rejected() {
+  since_marker "$RELAY_LOG" 'listening on ' | grep -q 'rejected after re-reading'
+}
+
+# stop_relay — stop pilot-up's egress relay (from its pid file only).
+stop_relay() {
+  local pid
+  pid="$(live_pid "$RELAY_PID_FILE" is_relay)"
+  if [ -n "$pid" ]; then
+    stop_pid "$pid" is_relay 5
+    say "stopped egress relay (pid $pid)"
+    STOPPED=$((STOPPED + 1))
+  fi
+  rm -f "$RELAY_PID_FILE" "$RELAY_PROXY_FILE"
+}
+
+# ensure_router — the SNI router runs with this shell's settings for
+# CRED_MODE; one started with others is restarted, as is one started by hand
+# that holds the router port. In relay mode its proxy is the egress relay.
+ensure_router() {
   local proxy pid
+  pid="$(live_pid "$ROUTER_PID_FILE" is_router)"
+  if [ -n "$pid" ] && fp_matches "$ROUTER_PROXY_FILE" "$CRED_MODE" sni; then
+    say "SNI router already running (pid $pid)"
+    return 0
+  fi
+  if [ -n "$pid" ]; then
+    say "restarting the SNI router (pid $pid): it was started with different proxy settings (for example credentials that have rotated since)"
+  fi
+  STOP_FAILED=0
+  stop_router
+  if [ "$STOP_FAILED" != 0 ]; then
+    fail 1 "cannot start the SNI router while the process above holds port ${ROUTER_LISTEN##*:}"
+  fi
   proxy="$(proxy_url)"
-  [ -n "$proxy" ] || fail 1 "the sni path needs HTTPS_PROXY in the environment"
+  RELAY_ENV=()
+  if [ "$CRED_MODE" = relay ]; then
+    proxy="$RELAY_URL"
+    relay_env
+  fi
+  private_file "$ROUTER_LOG"
+  write_fp "$ROUTER_PROXY_FILE" "$CRED_MODE" sni
+  # The proxy URL goes in the environment (it can carry credentials); in relay
+  # mode RELAY_ENV sets it again at the last exec.
+  # shellcheck disable=SC2016 # $$ and $@ belong to the inner shell
+  HTTPS_PROXY="$proxy" "${DETACH[@]}" bash -c 'echo $$ > "$1"; shift; exec "$@"' sni-router \
+    "$ROUTER_PID_FILE" ${RELAY_ENV[@]+"${RELAY_ENV[@]}"} python3 "$SCRIPT_DIR/sni_router.py" >> "$ROUTER_LOG" 2>&1 < /dev/null &
+  sleep 1
+  pid="$(live_pid "$ROUTER_PID_FILE" is_router)"
+  if [ -z "$pid" ]; then
+    tail -n 5 "$ROUTER_LOG" 2>/dev/null | redact >&2 || true
+    fail 1 "sni_router.py exited at once (log $ROUTER_LOG)"
+  fi
+  say "SNI router pid $pid, log $ROUTER_LOG"
+}
+
+start_sni() {
+  [ -n "$(proxy_url)" ] || fail 1 "the sni path needs HTTPS_PROXY in the environment"
   if [ ! -f "$SCRIPT_DIR/sni_router.py" ] || [ ! -f "$SCRIPT_DIR/run-daemon.sh" ]; then
     fail 2 "sni_router.py and run-daemon.sh must sit next to this script" \
       "run it from the installed skill: bash ~/workspace/skills/pilot-sandbox/scripts/pilot-up.sh"
@@ -774,37 +1155,19 @@ start_sni() {
     needs_root "root here, but 'unshare -m' is not permitted"
   fi
   command -v python3 >/dev/null 2>&1 || fail 1 "the sni path needs python3 for sni_router.py"
-
-  pid="$(live_pid "$ROUTER_PID_FILE" is_router)"
-  if [ -n "$pid" ] && fp_matches "$ROUTER_PROXY_FILE"; then
-    say "SNI router already running (pid $pid)"
-  else
-    # sni_router.py reads HTTPS_PROXY once: a router started with other
-    # settings (rotated credentials) is restarted, as is one started by hand
-    # that still holds the router port.
-    if [ -n "$pid" ]; then
-      say "restarting the SNI router (pid $pid): it was started with different proxy settings (for example credentials that have rotated since)"
-    fi
-    STOP_FAILED=0
-    stop_router
-    if [ "$STOP_FAILED" != 0 ]; then
-      fail 1 "cannot start the SNI router while the process above holds port ${ROUTER_LISTEN##*:}"
-    fi
-    private_file "$ROUTER_LOG"
-    write_fp "$ROUTER_PROXY_FILE"
-    # shellcheck disable=SC2016 # $$ and $@ belong to the inner shell
-    HTTPS_PROXY="$proxy" "${DETACH[@]}" bash -c 'echo $$ > "$1"; shift; exec "$@"' sni-router \
-      "$ROUTER_PID_FILE" python3 "$SCRIPT_DIR/sni_router.py" >> "$ROUTER_LOG" 2>&1 < /dev/null &
-    sleep 1
-    pid="$(live_pid "$ROUTER_PID_FILE" is_router)"
-    if [ -z "$pid" ]; then
-      tail -n 5 "$ROUTER_LOG" 2>/dev/null | redact >&2 || true
-      fail 1 "sni_router.py exited at once (log $ROUTER_LOG)"
-    fi
-    say "SNI router pid $pid, log $ROUTER_LOG"
+  # sni_router.py reads HTTPS_PROXY once, at start. In relay mode it (and the
+  # daemon) use the egress relay, which re-reads rotated credentials.
+  if [ "$CRED_MODE" = relay ]; then
+    ensure_relay
   fi
+  ensure_router
   export PILOT_BIN="$DAEMON" PILOT_REGISTRY_TRUST="$TRUST" PILOT_REGISTRY_FINGERPRINT="$FINGERPRINT"
-  launch unshare -m bash "$SCRIPT_DIR/run-daemon.sh"
+  if [ "$CRED_MODE" = relay ]; then
+    relay_env
+    launch "${RELAY_ENV[@]}" unshare -m bash "$SCRIPT_DIR/run-daemon.sh"
+  else
+    launch unshare -m bash "$SCRIPT_DIR/run-daemon.sh"
+  fi
 }
 
 start_chosen() {
@@ -817,7 +1180,17 @@ start_chosen() {
     fi
     ;;
   esac
+  if [ "$CRED_MODE" != none ]; then
+    how="$how, proxy credentials: $CRED_MODE ($CRED_WHY)"
+  fi
   say "pilot-daemon $VERSION_TAG: $CHOSEN path, $how"
+  REFRESH=""
+  case "$CRED_MODE" in
+    cmd | static) explicit_proxy_url || REFRESH="$(effective_proxy_cmd)" ;;
+  esac
+  if [ "$CRED_MODE" != relay ] && [ -n "$(live_pid "$RELAY_PID_FILE" is_relay)" ]; then
+    stop_relay # left over from a relay-mode start; this node does not use it
+  fi
   case "$CHOSEN" in
     native) start_native ;;
     direct) start_direct ;;
@@ -898,6 +1271,7 @@ stop_router() {
 stop_all() {
   stop_daemon
   stop_router
+  stop_relay
 }
 
 # stop_foreign_daemon — a pilot-daemon from pilot.pid that is not registered
@@ -922,6 +1296,16 @@ registry_tls_failed() {
   grep -Eiq 'registry.*(x509|unknown authority|failed to verify certificate|fingerprint mismatch)|(x509|unknown authority|failed to verify certificate|fingerprint mismatch).*registry'
 }
 
+# loop_gone — the respawn loop has exited: it removes pilot-up.pid on the way
+# out, and a pid that is no longer alive counts too. Only for waiting: it
+# signals nothing, so it does not need live_pid's command-line proof (which a
+# sandbox without procfs or ps cannot give).
+loop_gone() {
+  local pid
+  pid="$(read_pid "$SUP_PID_FILE")"
+  [ -z "$pid" ] || ! kill -0 "$pid" 2>/dev/null
+}
+
 # wait_registered — poll pilotctl and the log. Returns 0 once registered, 2 on
 # a registry TLS trust error, 1 when the loop died or time ran out.
 wait_registered() {
@@ -937,7 +1321,7 @@ wait_registered() {
       ;;
     esac
     if registry_tls_failed <<< "$text"; then return 2; fi
-    if [ -z "$(live_pid "$SUP_PID_FILE" is_supervisor)" ]; then
+    if loop_gone; then
       node_online && return 0
       return 1
     fi
@@ -1034,18 +1418,21 @@ proxy_recorded_current() {
   [ "$any" = 1 ]
 }
 
-# rotated_proxy_restart — the node answers, but its processes keep the proxy
-# credentials they started with. After Muse rotates them, open tunnels survive
-# while every new connection gets a 407 ("node online, all apps broken"). When
-# pilot-up's respawn loop runs the node, its logs show that since the last
-# start, and this shell's proxy settings differ from the recorded ones, stop
-# everything so that the start that follows uses this shell's settings. A
-# node pilot-up did not start is never stopped here (main prints a note).
-# Returns 0 when it stopped the node.
+# rotated_proxy_restart — the node answers, but it was started in static mode
+# (or by an older pilot-up), so its processes keep the proxy credentials they
+# started with. After Muse rotates them, open tunnels survive while every new
+# connection gets a 407 ("node online, all apps broken"). When pilot-up's
+# respawn loop runs the node, its logs show that since the last start, and
+# this shell's proxy settings differ from the recorded ones, stop everything
+# so that the start that follows uses this shell's settings (and cmd or relay
+# mode where it can). Nodes in cmd or relay mode re-read the credentials, so
+# a 407 there is not a reason to restart; a node pilot-up did not start is
+# never stopped here (main prints a note). Returns 0 when it stopped the node.
 rotated_proxy_restart() {
   local rejects
   [ -n "$(proxy_url)" ] || return 1
   [ -n "$(managed_daemon)" ] || return 1
+  case "$(recorded "$SUP_PROXY_FILE" 3)" in cmd | relay | none) return 1 ;; esac
   rejects="$(recent_auth_rejects)"
   [ -n "$rejects" ] || return 1
   if proxy_recorded_current; then
@@ -1063,17 +1450,36 @@ rotated_proxy_restart() {
 
 # next_step — the first diagnostic to try, from what the logs say.
 next_step() {
-  local text
+  local text relay="" by="pilot-daemon -proxy-cmd"
   text="$(new_log)$(tail -n 20 "$ROUTER_LOG" 2>/dev/null || true)"
+  if [ "$CRED_MODE" = relay ]; then
+    relay="$(tail -n 40 "$RELAY_LOG" 2>/dev/null || true)"
+    by="the egress relay"
+  fi
   if grep -Eq 'auto-selected.*transport=udp' <<< "$text"; then
     echo "-transport=auto settled on udp (its check through the proxy failed), and udp never uses the proxy: rerun with PILOT_UP_TRANSPORT=compat"
     return 0
   fi
+  if grep -q 'rejected after re-reading' <<< "$relay"; then
+    echo "the proxy rejected even the credentials the egress relay re-read from a fresh shell (407 in $RELAY_LOG): a new shell's HTTPS_PROXY must hold working ones (bash -c 'printf %s \"\$https_proxy\"'), or set PILOT_PROXY_CMD to a command that prints the current proxy URL"
+    return 0
+  fi
+  if grep -q 'cred-refresh failed' <<< "$relay"; then
+    echo "the egress relay could not read the proxy URL from a fresh shell (cred-refresh failed in $RELAY_LOG): bash -c 'printf %s \"\$https_proxy\"' must print it, or set PILOT_PROXY_CMD to a command that does"
+    return 0
+  fi
   if auth_rejected <<< "$text"; then
-    echo "the proxy rejected the credentials in HTTPS_PROXY (407): they are wrong, or expired (Meta Muse rotates them every few minutes). Rerun from a new shell, which has current ones; elsewhere, check the user:pass part of HTTPS_PROXY"
+    case "$CRED_MODE" in
+      cmd | relay)
+        echo "the proxy rejected the credentials (407) although $by re-reads them from a fresh shell: a new shell's HTTPS_PROXY must hold working ones (bash -c 'printf %s \"\$https_proxy\"'), or set PILOT_PROXY_CMD to a command that prints the current proxy URL" ;;
+      *)
+        echo "the proxy rejected the credentials in HTTPS_PROXY (407): they are wrong, or expired (Meta Muse rotates them every few minutes). Rerun from a new shell, which has current ones; elsewhere, check the user:pass part of HTTPS_PROXY" ;;
+    esac
     return 0
   fi
   case "$text" in
+    *"$RELAY_LISTEN"*refused*)
+      echo "nothing accepts connections on the egress relay's address $RELAY_LISTEN: rerun pilot-up.sh, which restarts the relay (log $RELAY_LOG)" ;;
     *"fingerprint mismatch"*)
       echo "the registry certificate no longer matches the pinned fingerprint (it was renewed): re-fetch it into PILOT_REGISTRY_FINGERPRINT (snippet in references/troubleshooting.md), or use system trust with a CA bundle in SSL_CERT_FILE" ;;
     *x509:* | *"unknown authority"* | *"failed to verify certificate"*)
@@ -1105,17 +1511,22 @@ report_failure() {
     echo "--- last lines of $ROUTER_LOG ---" >&2
     tail -n 5 "$ROUTER_LOG" 2>/dev/null | redact >&2 || true
   fi
+  if [ "$CRED_MODE" = relay ]; then
+    echo "--- last lines of $RELAY_LOG ---" >&2
+    tail -n 5 "$RELAY_LOG" 2>/dev/null | redact >&2 || true
+  fi
   echo "---" >&2
   fail 1 "next step: $(next_step)" \
     "then: bash $SCRIPT_DIR/pilot-up.sh --stop && bash $SCRIPT_DIR/pilot-up.sh" \
     "notes: $TROUBLESHOOTING"
 }
 
-# report_online MESSAGE — the node answers: print where, and which daemon
-# version is actually running (it can differ from the file on disk after an
-# upgrade that did not restart the node).
+# report_online MESSAGE [CRED_MODE] — the node answers: print where, which
+# daemon version is actually running (it can differ from the file on disk
+# after an upgrade that did not restart the node), and how it gets current
+# proxy credentials.
 report_online() {
-  local disk running
+  local disk running creds
   say "$1"
   printf '  %-8s %s\n' \
     address "${NODE_ADDR:-unknown}${NODE_ID:+ (node $NODE_ID)}" \
@@ -1124,11 +1535,29 @@ report_online() {
     check "$PILOTCTL --json info" \
     stop "bash $SCRIPT_DIR/pilot-up.sh --stop" \
     restart "rerun bash $SCRIPT_DIR/pilot-up.sh after every VM restart"
+  creds="$(creds_desc "${2:-}")"
+  if [ -n "$creds" ]; then printf '  %-8s %s\n' proxy "credentials $creds"; fi
   disk="$(version_token "$VERSION")"
   running="$(version_token "$NODE_VERSION")"
   if [ -n "$disk" ] && [ -n "$running" ] && [ "$disk" != "$running" ]; then
     say "note: the running daemon is v$running but $DAEMON is v$disk; restart it to switch:" \
       "  bash $SCRIPT_DIR/pilot-up.sh --stop && bash $SCRIPT_DIR/pilot-up.sh"
+  fi
+}
+
+# heal_managed — an online node pilot-up runs still has what it was started
+# with: the egress relay (relay mode) and the SNI router (sni path). One that
+# died is started again; the daemon keeps running (its open tunnels, and the
+# node's registration, survive).
+heal_managed() {
+  local mode path
+  mode="$(recorded "$SUP_PROXY_FILE" 3)"
+  path="$(recorded "$SUP_PROXY_FILE" 4)"
+  if [ "$mode" = relay ]; then ensure_relay quiet; fi
+  if [ "$path" = sni ] && [ -z "$(live_pid "$ROUTER_PID_FILE" is_router)" ]; then
+    say "the SNI router this node uses is not running: starting it"
+    CRED_MODE="$mode"
+    ensure_router
   fi
 }
 
@@ -1148,7 +1577,7 @@ main() {
     stop_all
     if [ "$STOP_FAILED" != 0 ]; then exit 1; fi
     if [ "$STOPPED" = 0 ]; then
-      say "nothing to stop: no respawn loop, pilot-daemon or SNI router of this node is running"
+      say "nothing to stop: no respawn loop, pilot-daemon, SNI router or egress relay of this node is running"
     fi
     exit 0
   fi
@@ -1168,17 +1597,37 @@ main() {
   VERSION_TAG="$(version_token "$VERSION")"
   VERSION_TAG="${VERSION_TAG:+v$VERSION_TAG}"
   VERSION_TAG="${VERSION_TAG:-${VERSION:-unknown version}}"
+  case "$CREDS_WANT" in auto | cmd | relay | static) ;; *) fail 2 "PILOT_UP_CREDS must be auto, cmd, relay or static (got '$CREDS_WANT')" ;; esac
+  DAEMON_HELP="$("$DAEMON" -h 2>&1 < /dev/null || true)"
   CHOSEN="$MODE"
+  if [ "$CHOSEN" = "auto" ]; then
+    if supports_proxy_flag; then
+      CHOSEN="native"
+    elif [ -z "$(proxy_url)" ]; then
+      CHOSEN="direct"
+    else
+      CHOSEN="sni"
+    fi
+  fi
+  pick_creds
 
   if node_online && ! rotated_proxy_restart; then
-    report_online "node already online"
+    local online_mode=""
+    if [ -n "$(managed_daemon)" ]; then
+      online_mode="$(recorded "$SUP_PROXY_FILE" 3)"
+      heal_managed
+    fi
+    report_online "node already online" "$online_mode"
     if [ -n "$(proxy_url)" ] && ! proxy_recorded_current; then
-      if [ -n "$(managed_daemon)" ]; then
-        say "note: this shell's HTTPS_PROXY differs from the one the node started with." \
-          "  If new Pilot connections fail with 407, restart it: bash $SCRIPT_DIR/pilot-up.sh --stop && bash $SCRIPT_DIR/pilot-up.sh"
+      if [ -z "$(managed_daemon)" ]; then
+        say "note: this node was not started by pilot-up, so pilot-up never restarts it on its own. Unless it re-reads proxy credentials itself (pilot-daemon -proxy-cmd), new Pilot connections fail with 407 once the proxy rotates them." \
+          "  Then restart it the way it was started, or replace it with one pilot-up runs: bash $SCRIPT_DIR/pilot-up.sh --stop && bash $SCRIPT_DIR/pilot-up.sh"
+      elif [ "$online_mode" = cmd ] || [ "$online_mode" = relay ]; then
+        say "note: this shell's proxy settings differ from the ones the node started with (not just the credentials, which it re-reads); restart it to switch:" \
+          "  bash $SCRIPT_DIR/pilot-up.sh --stop && bash $SCRIPT_DIR/pilot-up.sh"
       else
-        say "note: this node was not started by pilot-up, so it keeps the proxy settings it started with and pilot-up never restarts it on its own." \
-          "  If new Pilot connections fail with 407, restart it the way it was started, or replace it with one pilot-up runs: bash $SCRIPT_DIR/pilot-up.sh --stop && bash $SCRIPT_DIR/pilot-up.sh"
+        say "note: this shell's HTTPS_PROXY differs from the one the node started with, and the node does not re-read it." \
+          "  If new Pilot connections fail with 407, restart it: bash $SCRIPT_DIR/pilot-up.sh --stop && bash $SCRIPT_DIR/pilot-up.sh"
       fi
     fi
     exit 0
@@ -1195,26 +1644,21 @@ main() {
     say "warning: NO_PROXY covers pilotprotocol.network, so Pilot traffic will skip the proxy"
   fi
   ensure_ca_bundle
-  DAEMON_HELP="$("$DAEMON" -h 2>&1 < /dev/null || true)"
   drop_stale "$SUP_PID_FILE" is_supervisor "$SUP_PROXY_FILE"
   drop_stale "$DAEMON_PID_FILE" is_daemon
   drop_stale "$ROUTER_PID_FILE" is_router "$ROUTER_PROXY_FILE"
-  if [ "$CHOSEN" = "auto" ]; then
-    if supports_proxy_flag; then
-      CHOSEN="native"
-    elif [ -z "$proxy" ]; then
-      CHOSEN="direct"
-    else
-      CHOSEN="sni"
-    fi
-  fi
+  drop_stale "$RELAY_PID_FILE" is_relay "$RELAY_PROXY_FILE"
   case "$CHOSEN" in native | direct) pick_transport ;; esac
 
   sup="$(live_pid "$SUP_PID_FILE" is_supervisor)"
-  if [ -n "$sup" ] && proxy_recorded_current; then
+  if [ -n "$sup" ] && fp_matches "$SUP_PROXY_FILE" "$CRED_MODE" "$CHOSEN"; then
     say "respawn loop already running (pid $sup); waiting for it instead of starting another"
     ADOPTED="$sup"
     LOG_OFFSET="$(file_size "$LOG")"
+    # What it relies on may have died since (the loop only restarts the
+    # daemon): the relay, and on the sni path the router.
+    if [ "$CRED_MODE" = relay ]; then ensure_relay quiet; fi
+    if [ "$CHOSEN" = sni ]; then ensure_router; fi
   else
     if [ -n "$sup" ]; then
       # Its daemon (or the SNI router) keeps the proxy settings it started
@@ -1241,9 +1685,9 @@ main() {
   fi
   if [ "$rc" = 0 ]; then
     if [ -n "$ADOPTED" ]; then
-      report_online "node online (respawn loop pid $ADOPTED was already running)"
+      report_online "node online (respawn loop pid $ADOPTED was already running)" "$CRED_MODE"
     else
-      report_online "node online via the $CHOSEN path (registry trust $TRUST)"
+      report_online "node online via the $CHOSEN path (registry trust $TRUST)" "$CRED_MODE"
     fi
     exit 0
   fi

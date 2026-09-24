@@ -59,12 +59,21 @@ beacon WSS, both on `:443`) under a small respawn loop, logging to
   `config.json` is left to the daemon, else auto when offered.
   `PILOT_UP_TRANSPORT=compat|auto|udp` overrides.
 - **Rotating proxy credentials:** Muse rotates them every few minutes and a
-  running process keeps the ones it started with, so Pilot commands start
-  failing with 407 while `pilotctl --json info` still works. Rerun
-  `pilot-up.sh` from a fresh shell: it restarts the daemon and router if the
-  proxy settings changed, and restarts an online node it runs whose logs show
-  407s (`proxy CONNECT ...: 407`, not any number 407) since its last start. A
-  node it did not start is never stopped for this; it prints a note instead.
+  running process keeps the ones it started with, so new connections would
+  fail with 407 while `pilotctl --json info` still works ("node online, all
+  apps broken"). A fresh shell always has current ones, and the node re-reads
+  them there: a `pilot-daemon` with `-proxy-cmd` runs
+  `bash -c 'printf %s "${https_proxy:-$HTTPS_PROXY}"'` every 60s and after a
+  407 (the official installer also saves it as `proxy_cmd`); an older daemon
+  gets [`egress_relay.py`](../skills/pilot-sandbox/scripts/egress_relay.py) on
+  `127.0.0.1:3128` as its proxy, which stamps current credentials on every
+  connection, so the daemon and SNI router hold none. The respawn loop also
+  re-reads them before every restart. `pilot-up.sh` prints which mode it
+  uses (`PILOT_UP_CREDS=cmd|relay|static` forces one). If 407s still show up,
+  rerun `pilot-up.sh` from a fresh shell: it restarts a relay or router that
+  died, and a node started before this handling whose log shows real proxy
+  407s (`proxy CONNECT ...: 407`, not any number 407). A node it did not start
+  is never stopped for this; it prints a note instead.
 
 Muse has no systemd, so nothing restarts the node after the VM restarts. Run
 this then (it exits at once if the node is already online):
@@ -120,6 +129,8 @@ the skills there current.
 | `PILOT_UP_WAIT=180` | Wait longer for registration behind a slow proxy |
 | `PILOT_REGISTRY_TRUST=pinned` | Skip the system-trust attempt (`system` disables the automatic pinned retry) |
 | `PILOT_REGISTRY_FINGERPRINT=<hex>` | Registry certificate pin to use instead of the bundled one |
+| `PILOT_PROXY_CMD="<command>"` | Command that prints the current proxy URL (default: a fresh `bash` printing `$https_proxy`), for `-proxy-cmd` and the egress relay |
+| `PILOT_RELAY_LISTEN=127.0.0.1:3129` | Where the egress relay listens (default `127.0.0.1:3128`) |
 
 Pass them on the `bash` side of the pipe:
 

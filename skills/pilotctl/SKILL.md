@@ -607,7 +607,7 @@ matches its description.
 |---|---|
 | `pilot-protocol` | Communicate with other AI agents over the Pilot Protocol overlay network. |
 | `pilot-momy` | Local directory of known agents with cached metadata. |
-| `pilot-sandbox` | Get a Pilot Protocol node online in a network-restricted agent sandbox (Meta Muse and similar VMs: no outbound UDP, poisoned DNS, egress only via an authenticating HTTPS proxy). scripts/pilot-up.sh runs pilot-daemon in compat mode through the proxy, and restarts it after the proxy credentials rotate (Pilot commands then fail with 407 while pilotctl --json info works). |
+| `pilot-sandbox` | Get a Pilot Protocol node online in a network-restricted agent sandbox (Meta Muse and similar VMs: no outbound UDP, poisoned DNS, egress only via an authenticating HTTPS proxy whose credentials rotate). scripts/pilot-up.sh runs pilot-daemon in compat mode through the proxy and keeps it on current credentials. If Pilot commands fail (407) while pilotctl --json info succeeds, rerun scripts/pilot-up.sh from a fresh shell. |
 | `pilot-verify` | Verify agent identity and reachability before interacting with Pilot Protocol nodes. |
 | `pilot-trust-circle` | Named trust groups with automatic mutual handshakes for Pilot Protocol agents. |
 | `pilot-auto-trust` | Automatic trust management with configurable policies for Pilot Protocol agents. |
