@@ -1,0 +1,4 @@
+github.com/pilot-protocol/common v0.5.14 h1:CKLjgRimNlksUe0OePHkOE32aPlemjfdRMBq8X/CDiw=
+github.com/pilot-protocol/common v0.5.14/go.mod h1:OTXD84ScrBbKTAhawgFlLw9HtisgNvr83Zs1yDAuG9k=
+github.com/pilot-protocol/skillinject v0.2.4 h1:2pJgTHwzha1p9Sdbjo3Q9N/9GlvrPCD1MLpCf7t7uv4=
+github.com/pilot-protocol/skillinject v0.2.4/go.mod h1:gw4XxJS94YlHwbHt9t77cNMy+7Bc5JMgA89iIQdx3yg=

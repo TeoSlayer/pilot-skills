@@ -136,5 +136,14 @@
       "heartbeatPath": "~/.config/opencode/AGENTS.md",
       "heartbeatTemplate": "heartbeats/opencode.md"
     }
+  ],
+  "gatedTools": [
+    {
+      "name": "muse",
+      "rootDir": "~/workspace/skills",
+      "skillsDir": "~/workspace/skills",
+      "requireMarker": "~/.pilot/targets/muse",
+      "skillFormat": "muse"
+    }
   ]
 }

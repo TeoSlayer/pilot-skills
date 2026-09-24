@@ -44,3 +44,34 @@ jobs:
           done
           echo "push failed after 3 attempts" >&2
           exit 1
+
+  # Released pilot-daemons fetch inject-manifest.json from main at runtime.
+  # Run the skill injector versions they ship against this checkout's
+  # manifest: it must still be accepted, keep injecting the regular tools,
+  # and ignore keys only newer injectors read (gatedTools).
+  released-skillinject:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        skillinject:
+          - v0.2.2
+          - v0.2.3
+          - v0.2.4-0.20260717204101-902f745138da # pilot v1.13.2 .. v1.13.10-rc.1
+          - v0.2.4
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: tests/released-skillinject/go.mod
+          cache: false
+
+      - name: Released skillinject accepts inject-manifest.json
+        working-directory: tests/released-skillinject
+        env:
+          GOWORK: "off"
+        run: |
+          go get github.com/pilot-protocol/skillinject@${{ matrix.skillinject }}
+          go list -m github.com/pilot-protocol/skillinject
+          go test -count=1 -v ./...
