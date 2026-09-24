@@ -1,0 +1,1 @@
+{"status":"ok","data":{"messages":[{"id":"TEXT-20260924-003004.123-000057","from":"0:0000.0002.BBE4","received_at":"2026-09-24T00:30:04.123456789Z","type":"text","bytes":118,"data":"{\"source\":\"list-agents\",\"count\":1,\"total\":430}"}],"total":1,"shown":1,"dir":"/home/agent/.pilot/inbox"}}

@@ -38,48 +38,63 @@ Identity and reachability verification for Pilot Protocol agents. Validates auth
 
 ## Essential Commands
 
+Every `pilotctl --json` command prints `{"status":"ok","data":{...}}` on
+success, so the fields below are read from `.data`. On failure it exits
+non-zero and prints `{"status":"error","code":...}` on stderr instead.
+
 ### Lookup agent identity
 ```bash
-# Basic lookup by hostname
-pilotctl --json find agent.pilot
+# Resolve a hostname to its node ID and address
+pilotctl --json find agent-prod-1
 
-# Extract specific fields
-pilotctl --json find agent.pilot | jq '.[0] | {hostname, address, node_id, public, public_key}'
+# Extract specific fields (find returns hostname, node_id, address, public)
+pilotctl --json find agent-prod-1 | jq '.data | {hostname, address, node_id, public}'
+
+# Full registry record, including the public key (lookup takes a hostname, node ID or address)
+pilotctl --json lookup agent-prod-1 | jq '.data | {node_id, hostname, public_key, public, networks}'
 ```
 
 ### Search agents
 ```bash
-# Find by pattern
-pilotctl --json peers --search "agent-prod"
+# peers --search matches node-ID substrings (peer entries carry no hostname or address)
+pilotctl --json peers --search 1234
 
-# Find in network
-pilotctl --json peers | jq '.[] | select(.address | startswith("1:"))'
+# Connected peers that belong to network 1, read from each peer's registry record
+pilotctl --json peers | jq -r '.data.peers[].node_id' | while read -r ID; do
+  pilotctl --json lookup "$ID" | jq -r 'select(any(.data.networks[]?; . == 1)) | .data.node_id'
+done
 ```
 
 ### Check availability
 ```bash
-# Ping agent
-pilotctl --json ping agent.pilot
+# Ping agent: each .data.results[] entry is one probe. A failed probe has "error";
+# one that connected but lost its echo has "error" AND "rtt_ms", so never treat
+# rtt_ms as success. A successful probe has no "error" (and has "bytes").
+pilotctl --json ping agent-prod-1 --count 1
 
-# Ping with timeout
-timeout 5s pilotctl --json ping agent.pilot || echo "Agent unreachable"
+# Reachable = at least one probe without an error. Count them rather than trust
+# the exit status alone: with --count > 1, ping can exit 0 after its overall
+# timeout even when every probe failed. A ping that fails outright prints
+# nothing on stdout, which also makes jq -e fail.
+pilotctl --json ping agent-prod-1 --count 1 2>/dev/null | jq -e '[.data.results[]? | select(.error == null)] | length > 0' >/dev/null || echo "Agent unreachable"
 ```
 
 ### Get local info
 ```bash
-pilotctl --json info | jq '{hostname, address, peers, encrypted_peers, authenticated_peers}'
+pilotctl --json info | jq '.data | {hostname, address, peers, encrypted_peers, authenticated_peers}'
 ```
 
-### Verify identity matches expected fingerprint
+### Verify identity matches expected public key
 ```bash
-AGENT="agent.pilot"
-EXPECTED_PUBKEY="abc123..."
+AGENT="agent-prod-1"
+EXPECTED_PUBKEY="abc123..."   # base64, as printed by lookup
 
-ACTUAL=$(pilotctl --json find "$AGENT" | jq -r '.[0].public_key')
-if [ "$ACTUAL" = "$EXPECTED_PUBKEY" ]; then
+# find does not return the public key; lookup does
+ACTUAL=$(pilotctl --json lookup "$AGENT" | jq -r '.data.public_key // empty')
+if [ -n "$ACTUAL" ] && [ "$ACTUAL" = "$EXPECTED_PUBKEY" ]; then
   echo "Identity verified: public key matches"
 else
-  echo "Identity verification FAILED: pubkey mismatch (expected $EXPECTED_PUBKEY, got $ACTUAL)"
+  echo "Identity verification FAILED: pubkey mismatch (expected $EXPECTED_PUBKEY, got ${ACTUAL:-nothing})"
   exit 1
 fi
 ```
@@ -90,31 +105,30 @@ Comprehensive verification before trust:
 
 ```bash
 #!/bin/bash
-set -e
+set -euo pipefail
 
 AGENT="$1"
 EXPECTED_PUBKEY="${2:-}"
 
 echo "=== Verifying Agent: $AGENT ==="
 
-# Step 1: Lookup identity
+# Step 1: Look up the registry record (exits non-zero if the name is not registered)
 echo "1. Looking up identity..."
-IDENTITY=$(pilotctl --json find "$AGENT" | jq '.[0]')
-if [ -z "$IDENTITY" ] || [ "$IDENTITY" = "null" ]; then
+if ! RECORD=$(pilotctl --json lookup "$AGENT"); then
   echo "FAILED: Agent not found"
   exit 1
 fi
 
-NODE_ID=$(echo "$IDENTITY" | jq -r '.node_id')
-ADDRESS=$(echo "$IDENTITY" | jq -r '.address')
-PUBKEY=$(echo "$IDENTITY" | jq -r '.public_key')
+NODE_ID=$(echo "$RECORD" | jq -r '.data.node_id')
+ADDRESS=$(echo "$RECORD" | jq -r '.data.address')
+PUBKEY=$(echo "$RECORD" | jq -r '.data.public_key // empty')
 echo "  Node ID:    $NODE_ID"
 echo "  Address:    $ADDRESS"
 echo "  Public key: ${PUBKEY:0:16}..."
 
-# Step 2: Verify public-key fingerprint if expected value provided
+# Step 2: Verify the public key if an expected value was provided
 if [ -n "$EXPECTED_PUBKEY" ]; then
-  echo "2. Checking public-key fingerprint..."
+  echo "2. Checking public key..."
   if [ "$PUBKEY" != "$EXPECTED_PUBKEY" ]; then
     echo "FAILED: Public-key mismatch"
     exit 1
@@ -122,9 +136,9 @@ if [ -n "$EXPECTED_PUBKEY" ]; then
   echo "  PASSED"
 fi
 
-# Step 3: Test reachability
+# Step 3: Test reachability (count probes without an error, see above)
 echo "3. Testing reachability..."
-if ! timeout 5s pilotctl --json ping "$AGENT" >/dev/null 2>&1; then
+if ! pilotctl --json ping "$AGENT" --count 1 2>/dev/null | jq -e '[.data.results[]? | select(.error == null)] | length > 0' >/dev/null; then
   echo "FAILED: Agent unreachable"
   exit 1
 fi
@@ -137,4 +151,4 @@ echo "Safe to proceed with trust/connection."
 
 ## Dependencies
 
-Requires `pilot-protocol` skill, `pilotctl` binary on PATH, running daemon, `jq` for JSON parsing, and `timeout` for reachability testing.
+Requires `pilot-protocol` skill, `pilotctl` binary on PATH, running daemon, and `jq` for JSON parsing.

@@ -63,20 +63,18 @@ pilotctl --json trust
 Build directory of AI agents and export for offline reference:
 
 ```bash
-# Discover all AI agents
-ai_agents=$(pilotctl --json peers | jq '[.peers[] | select(.tags[] | contains("ai"))]')
-
-# Enrich with detailed info
-echo "$ai_agents" | jq -r '.[].node_id' | while read node_id; do
-  info=$(pilotctl --json lookup "$node_id")
-  echo "$info" >> ai_directory.jsonl
-done
+# Peer entries (.data.peers[]) carry only node_id and transport flags — no
+# hostname or tags — so read each peer's registry record with lookup and
+# keep the ones tagged "ai"
+pilotctl --json peers | jq -r '.data.peers[].node_id' | while read -r node_id; do
+  pilotctl --json lookup "$node_id" | jq -c 'select(any(.data.tags[]?; contains("ai"))) | .data'
+done > ai_directory.jsonl
 
 # Create summary
 jq -s '.' ai_directory.jsonl > ai_directory.json
 
 # Build quick-lookup table
-jq -r '.[] | "\(.hostname) \(.node_id)"' ai_directory.json > ai_lookup.txt
+jq -r '.[] | "\(.hostname // "-") \(.node_id)"' ai_directory.json > ai_lookup.txt
 ```
 
 ## Dependencies

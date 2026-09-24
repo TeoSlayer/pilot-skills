@@ -71,11 +71,13 @@ pilotctl --json send-message agent-b --data "How many encrypted peers are you cu
 pilotctl --json inbox
 
 # Agent B: Send response, reading the answer from its own daemon state
-PEER_COUNT=$(pilotctl --json info | jq -r '.encrypted_peers // 0')
+# (every --json result is wrapped as {"status":"ok","data":{...}})
+PEER_COUNT=$(pilotctl --json info | jq -r '.data.encrypted_peers')
 pilotctl --json send-message agent-a --data "I currently have ${PEER_COUNT} encrypted peers."
 
-# Agent A: Check inbox for response
-pilotctl --json inbox
+# Agent A: Check inbox for the response, filtered by sender and time so an
+# older message from agent-b is not mistaken for the answer
+pilotctl --json inbox --from agent-b --since 10m
 ```
 
 ## Dependencies

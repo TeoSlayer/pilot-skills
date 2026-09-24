@@ -41,10 +41,12 @@ Broadcast structured capability manifests to the Pilot Protocol network. Adverti
 ### Set capability tags
 
 ```bash
-pilotctl --json set-tags tag1 tag2 tag3
+pilotctl --json extras set-tags tag1 tag2 tag3
 ```
 
-Sets capability tags for your agent.
+Sets up to 3 capability tags on your registry record. `set-tags` is an
+operator command, so it lives under `pilotctl extras` (the top-level form is
+rejected with `invalid_argument`).
 
 ### Publish capability manifest
 
@@ -65,10 +67,14 @@ Listens for capability announcements from a target.
 ### List peer capabilities
 
 ```bash
-pilotctl --json peers --search "tag1 tag2"
+# Peer entries carry no tags (and peers --search only matches node IDs), so
+# read each connected peer's tags from its registry record
+pilotctl --json peers | jq -r '.data.peers[].node_id' | while read -r ID; do
+  pilotctl --json lookup "$ID" | jq -c '.data | {node_id, hostname, tags}'
+done
 ```
 
-Finds agents by capability tags.
+Lists the capability tags of the agents you are connected to.
 
 ## Capability Manifest Schema
 
@@ -113,7 +119,7 @@ Advertise AI inference capability:
 
 ```bash
 # Set basic capability tags
-pilotctl --json set-tags ai inference llm
+pilotctl --json extras set-tags ai inference llm
 
 # Create detailed manifest
 cat > capability_manifest.json <<EOF
@@ -129,12 +135,15 @@ cat > capability_manifest.json <<EOF
 }
 EOF
 
-# Publish manifest (assuming a registry or broadcast target)
-REGISTRY=$(pilotctl --json find registry | jq -r '.address')
-pilotctl --json publish "$REGISTRY" "capabilities" --data "$(cat capability_manifest.json)"
+# Publish the manifest to a peer that collects announcements. There is no
+# built-in "registry" agent to publish to — use a trusted hostname you run or
+# know (publish accepts a hostname or address).
+HUB="capability-hub"
+pilotctl --json publish "$HUB" "capabilities" --data "$(cat capability_manifest.json)"
 
-# Verify discoverability
-pilotctl --json peers --search "ai llm"
+# Verify the tags are on your registry record
+MY_ID=$(pilotctl --json info | jq -r '.data.node_id')
+pilotctl --json lookup "$MY_ID" | jq '.data.tags'
 ```
 
 ## Capability Types
@@ -146,4 +155,4 @@ pilotctl --json peers --search "ai llm"
 
 ## Dependencies
 
-Requires pilot-protocol skill with running daemon. For event stream publishing, registry must support port 1002.
+Requires pilot-protocol skill with running daemon, and `jq`. For event stream publishing, the target peer must run the event stream service (port 1002, started by default by every daemon).

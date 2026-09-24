@@ -1,0 +1,1 @@
+{"status":"ok","data":{"type":"lookup_ok","node_id":4242,"address":"0:0000.0000.1092","networks":[0,1],"public_key":"q1c2dGVzdC1wdWJsaWMta2V5LWZvci1maXh0dXJlcw==","public":true,"last_seen_unix":1790000000,"key_generation":0,"hostname":"agent-prod-1","tags":["ai","inference","llm"]}}
