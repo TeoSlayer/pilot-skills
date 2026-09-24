@@ -113,6 +113,40 @@ muse_frontmatter() {
   } > "$file.muse-tmp" && mv -f "$file.muse-tmp" "$file"
 }
 
+# proxy_advice REPORT UP — what to do about rotating proxy credentials, from
+# the "proxy" line of pilot-up's report (REPORT): how the node gets current
+# ones. Nothing when there is no such line (no proxy, or a node pilot-up did
+# not start, about which it printed its own note).
+proxy_advice() {
+  local line
+  line="$(grep -E '^  proxy +credentials ' "$1" 2> /dev/null | tail -n 1 || true)"
+  case "$line" in
+    *"re-read by pilot-daemon"*)
+      cat << MSG
+Proxy credentials: pilot-daemon re-reads them itself when they rotate (see "proxy" above).
+If Pilot commands still fail with 407 while pilotctl --json info works, rerun
+bash $2 from a fresh shell.
+MSG
+      ;;
+    *"egress relay"*)
+      cat << MSG
+Proxy credentials: the egress relay stamps current ones on every connection (see "proxy" above).
+If Pilot commands still fail with 407 while pilotctl --json info works, rerun
+bash $2 from a fresh shell: it restarts the relay.
+MSG
+      ;;
+    *"the ones it started with"*)
+      cat << MSG
+Proxy credentials: the node keeps the ones it started with (see "proxy" above).
+If the proxy rotates them (Meta Muse does, every few minutes), Pilot commands
+fail with 407 while pilotctl --json info works: rerun bash $2
+from a fresh shell, which restarts the node with current ones.
+MSG
+      ;;
+  esac
+  return 0
+}
+
 # bins_checksum DIR — one line identifying the pilotctl + pilot-daemon builds.
 bins_checksum() {
   cat "$1/pilot-daemon" "$1/pilotctl" 2> /dev/null | cksum || true
@@ -264,7 +298,12 @@ MSG
   fi
   echo
   echo "Bringing the node online: bash $up"
-  bash "$up" < /dev/null || rc=$?
+  # Its report is also kept, for the proxy line below. Nothing pilot-up leaves
+  # running holds this pipe: the daemon, relay and router log to files.
+  set +e
+  bash "$up" < /dev/null | tee "$tmp/pilot-up.out"
+  rc="${PIPESTATUS[0]}"
+  set -e
 
   echo
   case "$rc" in
@@ -279,11 +318,9 @@ MSG
         cat << MSG
 Done. Skills in $dest, Pilot in $bin_dir, node online.
 After a VM restart run: bash $up
-The node re-reads the rotating proxy credentials itself (see "proxy" above).
-If Pilot commands still fail with 407 while pilotctl --json info works,
-the proxy credentials rotated: run the same command from a fresh shell.
-Try it: $bin_dir/pilotctl --json send-message pilot-mom --data 'current BTC price in USD' --wait
 MSG
+        proxy_advice "$tmp/pilot-up.out" "$up"
+        echo "Try it: $bin_dir/pilotctl --json send-message pilot-mom --data 'current BTC price in USD' --wait"
       fi
       ;;
     3)

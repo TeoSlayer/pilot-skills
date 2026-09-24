@@ -67,10 +67,14 @@ beacon WSS, both on `:443`) under a small respawn loop, logging to
   407 (the official installer also saves it as `proxy_cmd`); an older daemon
   gets [`egress_relay.py`](../skills/pilot-sandbox/scripts/egress_relay.py) on
   `127.0.0.1:3128` as its proxy, which stamps current credentials on every
-  connection, so the daemon and SNI router hold none. The respawn loop also
-  re-reads them before every restart. `pilot-up.sh` prints which mode it
-  uses (`PILOT_UP_CREDS=cmd|relay|static` forces one). If 407s still show up,
-  rerun `pilot-up.sh` from a fresh shell: it restarts a relay or router that
+  connection, so the daemon and SNI router hold none. That relay serves only
+  clients with its token (`~/.pilot/egress_relay.token`, passed to the daemon
+  and router through their environment), so other local users cannot borrow
+  the proxy credentials. The respawn loop also re-reads them before every
+  restart. `pilot-up.sh` prints which mode it uses
+  (`PILOT_UP_CREDS=cmd|relay|static` forces one), and so does the installer's
+  closing message. If 407s still show up, rerun `pilot-up.sh` from a fresh
+  shell: it restarts a relay (on the address the node uses) or router that
   died, and a node started before this handling whose log shows real proxy
   407s (`proxy CONNECT ...: 407`, not any number 407). A node it did not start
   is never stopped for this; it prints a note instead.
@@ -130,7 +134,7 @@ the skills there current.
 | `PILOT_REGISTRY_TRUST=pinned` | Skip the system-trust attempt (`system` disables the automatic pinned retry) |
 | `PILOT_REGISTRY_FINGERPRINT=<hex>` | Registry certificate pin to use instead of the bundled one |
 | `PILOT_PROXY_CMD="<command>"` | Command that prints the current proxy URL (default: a fresh `bash` printing `$https_proxy`), for `-proxy-cmd` and the egress relay |
-| `PILOT_RELAY_LISTEN=127.0.0.1:3129` | Where the egress relay listens (default `127.0.0.1:3128`) |
+| `PILOT_RELAY_LISTEN=127.0.0.1:3129` | Where the egress relay listens (default `127.0.0.1:3128`; reruns keep a running node's relay where it is) |
 
 Pass them on the `bash` side of the pipe:
 

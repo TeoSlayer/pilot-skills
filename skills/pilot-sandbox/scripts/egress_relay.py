@@ -10,22 +10,32 @@ Never terminates TLS. Never logs credential values.
 
 pilot-up.sh starts it (pid in ~/.pilot/egress_relay.pid) when the installed
 pilot-daemon cannot re-read rotated credentials itself (no -proxy-cmd), and
-points the SNI router and the daemon at it. By hand:
+points the SNI router and the daemon at it, with RELAY_TOKEN_FILE set: the
+relay then serves only clients whose Proxy-Authorization carries that token
+as its password (http://pilot-relay:<token>@127.0.0.1:3128), and answers any
+other client 407 without contacting the proxy. By hand:
 
   nohup python3 egress_relay.py > /dev/null 2>&1 &
 
+Without RELAY_TOKEN_FILE every local process that can reach the listener gets
+the proxy credentials stamped on its requests: fine on a single-user VM such
+as Meta Muse's, not on a host shared with other users.
+
 Environment (all optional):
-  RELAY_CRED_CMD  shell command printing the current proxy URL, run with
-                  bash -c (default: printf %s "${https_proxy:-$HTTPS_PROXY}")
-  RELAY_LISTEN    host:port to listen on (default 127.0.0.1:3128)
-  RELAY_LOG       log file (default /tmp/egress_relay.log), created 0600
+  RELAY_CRED_CMD    shell command printing the current proxy URL, run with
+                    bash -c (default: printf %s "${https_proxy:-$HTTPS_PROXY}")
+  RELAY_LISTEN      host:port to listen on (default 127.0.0.1:3128)
+  RELAY_LOG         log file (default /tmp/egress_relay.log), created 0600
+  RELAY_TOKEN_FILE  file holding the token clients must present (read once,
+                    at start; the relay refuses to start when it is unreadable
+                    or empty)
 """
-import base64, os, socket, subprocess, threading, time, urllib.parse
+import base64, hmac, os, socket, subprocess, sys, threading, time, urllib.parse
 
 
 def parse_listen(value):
     host, _, port = value.rpartition(":")
-    return (host or "127.0.0.1", int(port))
+    return (host.strip("[]") or "127.0.0.1", int(port))
 
 
 LISTEN = parse_listen(os.environ.get("RELAY_LISTEN") or "127.0.0.1:3128")
@@ -37,6 +47,29 @@ LOG = open(os.open(os.environ.get("RELAY_LOG") or "/tmp/egress_relay.log",
                    os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600),
            "a", buffering=1)
 LOOPBACK = {"127.0.0.1", "localhost", "::1", LISTEN[0]}
+
+
+def load_token():
+    """The token clients must present, from RELAY_TOKEN_FILE (None: any
+    client). Exits when the file is set but unusable: serving everyone
+    instead would lend the credentials to every local user."""
+    path = os.environ.get("RELAY_TOKEN_FILE")
+    if not path:
+        return None
+    try:
+        with open(path) as f:
+            token = f.read().strip()
+    except OSError as e:
+        token, why = "", type(e).__name__
+    else:
+        why = "empty"
+    if not token:
+        LOG.write(f"cannot read RELAY_TOKEN_FILE ({why}); not starting\n")
+        sys.exit(f"egress_relay: cannot read RELAY_TOKEN_FILE ({why})")
+    return token
+
+
+TOKEN = load_token()
 
 _lock = threading.Lock()
 _cache = {"auth": None, "upstream": None, "at": 0.0}
@@ -89,6 +122,27 @@ def read_head(sock, limit=65536):
     return head.decode("latin-1"), rest
 
 
+def client_authorized(lines):
+    """The request's Proxy-Authorization carries TOKEN as its Basic password
+    (any user name). Always true when the relay has no token."""
+    if TOKEN is None:
+        return True
+    for ln in lines[1:]:
+        name, _, value = ln.partition(":")
+        if name.strip().lower() != "proxy-authorization":
+            continue
+        scheme, _, cred = value.strip().partition(" ")
+        if scheme.lower() != "basic":
+            continue
+        try:
+            _, _, password = base64.b64decode(cred.strip(), validate=True).decode().partition(":")
+        except ValueError:  # bad base64 (binascii.Error) or not UTF-8
+            continue
+        if hmac.compare_digest(password.encode(), TOKEN.encode()):
+            return True
+    return False
+
+
 def pipe(src, dst):
     """Copy src -> dst until EOF, then half-close dst so the other
     direction can finish (TLS close_notify and late replies survive)."""
@@ -113,9 +167,19 @@ def handle(client):
         head, rest = read_head(client)
         if head is None:
             return
-        lines = [ln for ln in head.split("\r\n")
+        received = head.split("\r\n")
+        lines = [ln for ln in received
                  if not ln.lower().startswith("proxy-authorization:")]
-        log(" ".join(lines[0].split(" ", 2)[:2]))  # method + target only
+        request = " ".join(lines[0].split(" ", 2)[:2])  # method + target only
+        if not client_authorized(received):
+            # Not the node pilot-up started this relay for: never lend it the
+            # proxy credentials.
+            log(f"denied {request}: no valid relay token")
+            client.sendall(b"HTTP/1.1 407 Proxy Authentication Required\r\n"
+                           b"Proxy-Authenticate: Basic realm=\"pilot egress relay\"\r\n"
+                           b"Content-Length: 0\r\n\r\n")
+            return
+        log(request)
         for attempt in (1, 2):
             upstream, auth = current_proxy(force=(attempt == 2))
             if not upstream:
@@ -164,7 +228,8 @@ def main():
     srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     srv.bind(LISTEN)
     srv.listen(128)
-    log(f"listening on {LISTEN[0]}:{LISTEN[1]}")
+    log(f"listening on {LISTEN[0]}:{LISTEN[1]} "
+        + ("(clients must present the relay token)" if TOKEN else "(any local client)"))
     while True:
         try:
             c, _ = srv.accept()

@@ -102,9 +102,9 @@ re-read them there (it prints the mode; `PILOT_UP_CREDS` forces one):
 - `cmd`: `pilot-daemon -h` lists `-proxy-cmd`. The daemon re-runs
   `bash -c 'printf %s "${https_proxy:-$HTTPS_PROXY}"'` (or `PILOT_PROXY_CMD`,
   or `proxy_cmd` in `config.json`) every 60s and after a 407.
-- `relay`: older daemons. `scripts/egress_relay.py` on `127.0.0.1:3128`
-  (`PILOT_RELAY_LISTEN`) stamps fresh credentials on every connection; the
-  daemon and SNI router use it as their proxy and hold no credentials.
+- `relay`: older daemons. `scripts/egress_relay.py` (`127.0.0.1:3128`, or
+  `PILOT_RELAY_LISTEN`) stamps fresh credentials on every connection for the
+  daemon and SNI router, which hold none; it serves no one without its token.
 - The respawn loop re-reads them before every daemon (re)start.
 If 407s persist, rerun `scripts/pilot-up.sh` from a fresh shell: it restarts a
 relay or router that died, and a node started without this handling.
@@ -135,18 +135,18 @@ runs as root; the pieces, under `scripts/`, use `egress_relay.py` as proxy:
    without modifying it, opens a proxy `CONNECT` tunnel to the matching host,
    replays the original bytes and pipes. TLS stays end to end.
 2. `run-daemon.sh` bind-mounts `hosts.template` (the two Pilot hostnames at
-   `127.0.0.1`) over `/etc/hosts` inside a private mount namespace
-   (`unshare -m`) and execs `pilot-daemon` in compat mode. Only the daemon
-   sees the override.
+   `127.0.0.1`) over `/etc/hosts` in a private mount namespace (`unshare -m`)
+   and execs `pilot-daemon` in compat mode. Only the daemon sees it.
 
 To debug by hand (root, skill directory; use `pilot-up.sh` for real):
 ```bash
-python3 scripts/egress_relay.py                                      # shell 1
-HTTPS_PROXY=http://127.0.0.1:3128 python3 scripts/sni_router.py      # shell 2
-HTTPS_PROXY=http://127.0.0.1:3128 unshare -m ./scripts/run-daemon.sh # shell 3
+python3 scripts/egress_relay.py                                             # shell 1
+HTTPS_PROXY=http://127.0.0.1:3128 python3 scripts/sni_router.py             # shell 2
+PILOT_DAEMON_PROXY=http://127.0.0.1:3128 unshare -m ./scripts/run-daemon.sh # shell 3
 ```
-Returns: `routed SNI=...` lines from the router, then `daemon registered`
-from the daemon. Router lines without registration mean TLS trust failed.
+Returns: `routed SNI=...` from the router, then `daemon registered` (router
+lines only: TLS trust failed). Use `PILOT_DAEMON_PROXY`: a bash re-exporting
+the rotating proxy at startup replaces `HTTPS_PROXY`. Hand relays take no token.
 
 ## Verify end to end
 ```bash

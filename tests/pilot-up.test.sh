@@ -2,8 +2,11 @@
 # Tests for skills/pilot-sandbox/scripts/pilot-up.sh against stub binaries
 # (tests/stubs): pid-file safety, the pinned-trust fallback, transport choice,
 # version reporting, stopping nodes pilot-up did not start, and rotating proxy
-# credentials (cmd mode: -proxy-cmd; relay mode: the real egress_relay.py;
-# static mode: restarts). No network, no root needed, nothing outside a temp
+# credentials (cmd mode: -proxy-cmd; relay mode: the real egress_relay.py, its
+# token and the address a running node was given; static mode: restarts), a
+# proxy with credentials on the relay's address, and the SKILL.md hand recipe
+# under a BASH_ENV that re-exports the proxy. No network, no root needed,
+# nothing outside a temp
 # HOME: every run gets PILOT_SOCKET inside it, so a real daemon on
 # /tmp/pilot.sock is never looked at, and PILOT_RELAY_LISTEN on a random port,
 # so a relay on 127.0.0.1:3128 is never touched.
@@ -130,6 +133,49 @@ by_hand() {
   done
 }
 count_lines() { if [ -f "$1" ]; then wc -l < "$1" | tr -d ' '; else echo 0; fi; }
+
+# relay_status HOST:PORT [USER:PASS] — the status line a CONNECT through the
+# egress relay there gets (with that Basic Proxy-Authorization), or "closed".
+relay_status() {
+  python3 - "$@" << 'PYTHON'
+import base64, socket, sys
+host, _, port = sys.argv[1].rpartition(":")
+auth = ""
+if len(sys.argv) > 2:
+    auth = "Proxy-Authorization: Basic " + base64.b64encode(sys.argv[2].encode()).decode() + "\r\n"
+s = socket.create_connection((host, int(port)), timeout=10)
+s.sendall(("CONNECT example.com:443 HTTP/1.1\r\nHost: example.com:443\r\n" + auth + "\r\n").encode())
+data = b""
+try:
+    while b"\r\n" not in data:
+        chunk = s.recv(4096)
+        if not chunk:
+            break
+        data += chunk
+except OSError:
+    pass
+print(data.split(b"\r\n", 1)[0].decode("latin-1") or "closed")
+PYTHON
+}
+
+# port_open_at HOST:PORT — something accepts TCP connections there.
+# shellcheck disable=SC2016 # $0 belongs to the inner shell
+port_open_at() { bash -c 'exec 3<> "/dev/tcp/${0%:*}/${0##*:}"' "$1" 2> /dev/null; }
+
+# free_port — a TCP port on 127.0.0.1 that nothing listens on right now.
+free_port() { python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])'; }
+
+# squat PORT — start something that is not egress_relay.py listening on PORT,
+# and print its pid.
+squat() {
+  python3 -c 'import socket, sys, time
+s = socket.socket(); s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+s.bind(("127.0.0.1", int(sys.argv[1]))); s.listen(5); time.sleep(300)' "$1" > /dev/null 2>&1 < /dev/null &
+  local pid="$!"
+  disown "$pid"
+  for _ in $(seq 1 50); do bash -c 'exec 3<> "/dev/tcp/127.0.0.1/$0"' "$1" 2> /dev/null && break; sleep 0.1; done
+  echo "$pid"
+}
 last_line() { tail -n 1 "$1" 2> /dev/null; }
 
 echo "=== pilot-up.sh tests ==="
@@ -700,18 +746,36 @@ if command -v python3 > /dev/null 2>&1 && { [ -r /proc/net/tcp ] || command -v l
   new_home
   up "${RELAY_ENV[@]}" HTTPS_PROXY=http://muse:credA@127.0.0.1:9 ALL_PROXY=http://muse:credA@127.0.0.1:9
   relay_pid="$(cat "$H/.pilot/egress_relay.pid" 2> /dev/null)"
+  tok="$(cat "$H/.pilot/egress_relay.token" 2> /dev/null)"
+  RELAY_AUTH="http://pilot-relay:$tok@$RELAY"
   expect "relay: rc 0" [ "$RC" = 0 ]
   expect "relay: says so" has "proxy credentials: relay (pilot-daemon cannot re-read them itself)"
   expect "relay: started on PILOT_RELAY_LISTEN" has "egress relay pid $relay_pid on $RELAY"
   expect "relay: running" alive "$relay_pid"
-  expect "relay: the daemon's proxy is the relay" [ "$(last_line "$H/.pilot/stub-env.log")" = "http://$RELAY" ]
+  expect "relay: token is 64 hex characters" grep -Eqx '[0-9a-f]{64}' "$H/.pilot/egress_relay.token"
+  expect "relay: token file is owner-only" [ "$(stat -c %a "$H/.pilot/egress_relay.token" 2> /dev/null || stat -f %Lp "$H/.pilot/egress_relay.token")" = 600 ]
+  expect "relay: the daemon's proxy is the relay, with its token" [ "$(last_line "$H/.pilot/stub-env.log")" = "$RELAY_AUTH" ]
   expect "relay: https_proxy and HTTP_PROXY too, ALL_PROXY dropped, loopback in NO_PROXY" \
-    [ "$(last_line "$H/.pilot/stub-env2.log")" = "https_proxy=http://$RELAY HTTP_PROXY=http://$RELAY ALL_PROXY= NO_PROXY=internal.example,localhost,127.0.0.1" ]
+    [ "$(last_line "$H/.pilot/stub-env2.log")" = "https_proxy=$RELAY_AUTH HTTP_PROXY=$RELAY_AUTH ALL_PROXY= NO_PROXY=internal.example,localhost,127.0.0.1" ]
   expect "relay: no credentials in the daemon's environment" not grep -q credA "$H/.pilot/stub-env.log" "$H/.pilot/stub-env2.log"
   expect "relay: no -proxy-cmd" not grep -q -- '-proxy-cmd' "$H/.pilot/stub-args.log"
   expect "relay: log is owner-only" [ "$(stat -c %a "$H/.pilot/egress_relay.log" 2> /dev/null || stat -f %Lp "$H/.pilot/egress_relay.log")" = 600 ]
   expect "relay: reported" has "stamped fresh on every connection by the egress relay http://$RELAY"
   expect "relay: credentials never printed" lacks "credA"
+  expect "relay: token never printed" lacks "$tok"
+  expect "relay: token not in daemon.log" not grep -qF "$tok" "$H/.pilot/daemon.log"
+  # Every local user can read argv (ps): the token travels in the environment.
+  OUT="$(pgrep -f -- "$tok")"
+  expect "relay: token in no process's argv" [ -z "$OUT" ]
+  # A local client without the token gets a 407 from the relay itself, which
+  # never lends it the proxy credentials; the token gets through to the proxy.
+  OUT="$(relay_status "$RELAY")"
+  expect "relay: a client without the token is refused (407)" has "HTTP/1.1 407"
+  expect "relay: the refusal is logged" grep -q "denied CONNECT example.com:443: no valid relay token" "$H/.pilot/egress_relay.log"
+  OUT="$(relay_status "$RELAY" "pilot-relay:not-the-token")"
+  expect "relay: a wrong token is refused (407)" has "HTTP/1.1 407"
+  OUT="$(relay_status "$RELAY" "pilot-relay:$tok")"
+  expect "relay: the token is accepted (forwarded to the proxy, which is down here)" lacks "407"
   starts="$(count_lines "$H/.pilot/stub-args.log")"
   echo "$REAL407" >> "$H/.pilot/daemon.log"
   up "${RELAY_ENV[@]}" HTTPS_PROXY=http://muse:credB@127.0.0.1:9
@@ -800,13 +864,145 @@ if command -v python3 > /dev/null 2>&1; then
   OUT="$OUT
 $(cat "$T/unit-home/.pilot/sni_router.log" 2> /dev/null)"
   expect "sni relay mode: router started" has "SNI router pid"
-  expect "sni relay mode: router's proxy is the relay" has "via proxy http://$RELAY"
+  expect "sni relay mode: router's proxy is the relay (with its token)" has "via proxy http://***@$RELAY"
   expect "sni relay mode: not the real proxy" lacks "127.0.0.1:9"
+  tok="$(cat "$T/unit-home/.pilot/egress_relay.token" 2> /dev/null)"
+  expect "sni relay mode: token created" [ -n "$tok" ]
+  expect "sni relay mode: token never logged" lacks "$tok"
+  OUT="$(pgrep -f -- "$tok")"
+  expect "sni relay mode: token in no process's argv" [ -z "$OUT" ]
   OUT="$(PILOT_SNI_LISTEN="127.0.0.1:$port" sourced stop_router 2>&1)"
   expect "sni relay mode: router stopped" has "stopped SNI router"
 else
   echo "  (skipping sni relay-mode router check: needs python3)"
 fi
+
+# 24. A real proxy with credentials of its own on the relay's address (squid
+#     listens on 127.0.0.1:3128 by default) is not the egress relay: its
+#     credentials reach it, whatever PILOT_UP_CREDS says, and when a relay
+#     is needed pilot-up says to move the relay elsewhere.
+if command -v python3 > /dev/null 2>&1; then
+  OUT="relay address checks"
+  at() { HTTPS_PROXY="$1" PILOT_RELAY_LISTEN="${2:-$RELAY}" sourced points_at_relay; }
+  expect "relay address, no credentials: the relay (manual recipe)" at "http://$RELAY"
+  expect "relay address as localhost: the relay" at "http://localhost:$RELAY_PORT"
+  expect "relay address with the relay's own user: the relay" at "http://pilot-relay:0123@$RELAY"
+  expect "relay address with a proxy's credentials: not the relay" not at "http://muse:s3cret@$RELAY"
+  expect "relay address with an @ in the password: not the relay" not at "http://muse:pa@ss@$RELAY"
+  expect "another port: not the relay" not at "http://127.0.0.1:$((RELAY_PORT + 1))"
+  expect "loopback URL, relay on another host: not the relay" not at "http://127.0.0.1:$RELAY_PORT" "10.0.0.5:$RELAY_PORT"
+  squatter="$(squat "$RELAY_PORT")"
+  BYSTANDERS+=("$squatter")
+  new_home
+  up STUB_HELP_PROXY=1 STUB_HELP_PROXY_CMD=1 "HTTPS_PROXY=http://muse:s3cret@$RELAY"
+  expect "proxy on the relay address, -proxy-cmd: rc 0" [ "$RC" = 0 ]
+  expect "proxy on the relay address, -proxy-cmd: cmd mode" has "proxy credentials: cmd (pilot-daemon has -proxy-cmd)"
+  expect "proxy on the relay address, -proxy-cmd: not taken for the relay" lacks "is the relay"
+  expect "proxy on the relay address, -proxy-cmd: daemon keeps the credentials" [ "$(last_line "$H/.pilot/stub-env.log")" = "http://muse:s3cret@$RELAY" ]
+  expect "proxy on the relay address: credentials never printed" lacks "s3cret"
+  up -- --stop
+  for want in static cmd; do
+    new_home
+    up STUB_HELP_PROXY=1 STUB_HELP_PROXY_CMD=1 PILOT_UP_CREDS="$want" "HTTPS_PROXY=http://muse:s3cret@$RELAY"
+    expect "proxy on the relay address, PILOT_UP_CREDS=$want: honoured" has "proxy credentials: $want (PILOT_UP_CREDS)"
+    expect "proxy on the relay address, PILOT_UP_CREDS=$want: daemon keeps the credentials" [ "$(last_line "$H/.pilot/stub-env.log")" = "http://muse:s3cret@$RELAY" ]
+    up -- --stop
+  done
+  new_home
+  up STUB_HELP_PROXY=1 "HTTPS_PROXY=http://muse:s3cret@$RELAY"
+  expect "proxy on the relay address, relay needed: rc 1" [ "$RC" = 1 ]
+  expect "proxy on the relay address, relay needed: says why" has "this shell's proxy (HTTPS_PROXY) is on $RELAY, where the egress relay would listen"
+  expect "proxy on the relay address, relay needed: says what to do" has "set PILOT_RELAY_LISTEN=127.0.0.1:<free port>"
+  expect "proxy on the relay address, relay needed: no daemon started" [ ! -e "$H/.pilot/stub-args.log" ]
+  expect "proxy on the relay address, relay needed: the proxy is left alone" alive "$squatter"
+  other="127.0.0.1:$(free_port)"
+  up STUB_HELP_PROXY=1 "HTTPS_PROXY=http://muse:s3cret@$RELAY" "PILOT_RELAY_LISTEN=$other"
+  tok="$(cat "$H/.pilot/egress_relay.token" 2> /dev/null)"
+  expect "proxy on the relay address, relay moved: rc 0" [ "$RC" = 0 ]
+  expect "proxy on the relay address, relay moved: relay mode" has "egress relay pid"
+  expect "proxy on the relay address, relay moved: daemon uses the relay" [ "$(last_line "$H/.pilot/stub-env.log")" = "http://pilot-relay:$tok@$other" ]
+  up -- --stop
+  kill "$squatter" 2> /dev/null
+  for _ in $(seq 1 25); do alive "$squatter" || break; sleep 0.2; done
+else
+  echo "  (skipping proxy-on-the-relay-address checks: needs python3)"
+fi
+
+# 25. A relay-mode node started with PILOT_RELAY_LISTEN (the default port was
+#     taken) keeps its relay on that address when pilot-up is rerun from a
+#     fresh shell without the variable, or with another one: its daemon was
+#     given that address. A relay that died is started there again.
+if command -v python3 > /dev/null 2>&1 && { [ -r /proc/net/tcp ] || command -v lsof > /dev/null 2>&1; }; then
+  squatter="$(squat "$RELAY_PORT")"
+  BYSTANDERS+=("$squatter")
+  node_relay="127.0.0.1:$(free_port)"
+  new_home
+  up STUB_HELP_PROXY=1 HTTPS_PROXY=http://muse:credA@127.0.0.1:9
+  expect "default relay port taken: rc 1" [ "$RC" = 1 ]
+  expect "default relay port taken: says so" has "set PILOT_RELAY_LISTEN=127.0.0.1:<free port>"
+  up STUB_HELP_PROXY=1 HTTPS_PROXY=http://muse:credA@127.0.0.1:9 "PILOT_RELAY_LISTEN=$node_relay"
+  relay_pid="$(cat "$H/.pilot/egress_relay.pid" 2> /dev/null)"
+  tok="$(cat "$H/.pilot/egress_relay.token" 2> /dev/null)"
+  expect "PILOT_RELAY_LISTEN: online" [ "$RC" = 0 ]
+  expect "PILOT_RELAY_LISTEN: relay there" has "egress relay pid $relay_pid on $node_relay"
+  starts="$(count_lines "$H/.pilot/stub-args.log")"
+  up STUB_HELP_PROXY=1 HTTPS_PROXY=http://muse:credB@127.0.0.1:9 PILOT_RELAY_LISTEN=
+  expect "fresh shell without the variable: rc 0" [ "$RC" = 0 ]
+  expect "fresh shell without the variable: node already online" has "node already online"
+  expect "fresh shell without the variable: relay kept" alive "$relay_pid"
+  expect "fresh shell without the variable: relay not restarted" lacks "restarting the egress relay"
+  expect "fresh shell without the variable: reports the node's relay" has "egress relay http://$node_relay"
+  expect "fresh shell without the variable: no note" lacks "note:"
+  expect "fresh shell without the variable: daemon not restarted" [ "$(count_lines "$H/.pilot/stub-args.log")" = "$starts" ]
+  up STUB_HELP_PROXY=1 HTTPS_PROXY=http://muse:credB@127.0.0.1:9
+  expect "another PILOT_RELAY_LISTEN: rc 0" [ "$RC" = 0 ]
+  expect "another PILOT_RELAY_LISTEN: relay kept" alive "$relay_pid"
+  expect "another PILOT_RELAY_LISTEN: relay not restarted" lacks "restarting the egress relay"
+  expect "another PILOT_RELAY_LISTEN: reports the node's relay" has "egress relay http://$node_relay"
+  expect "another PILOT_RELAY_LISTEN: notes the difference" has "note: this shell's proxy settings differ"
+  expect "another PILOT_RELAY_LISTEN: daemon not restarted" [ "$(count_lines "$H/.pilot/stub-args.log")" = "$starts" ]
+  kill "$relay_pid" 2> /dev/null
+  for _ in $(seq 1 25); do alive "$relay_pid" || break; sleep 0.2; done
+  up STUB_HELP_PROXY=1 HTTPS_PROXY=http://muse:credC@127.0.0.1:9 PILOT_RELAY_LISTEN=
+  new_relay="$(cat "$H/.pilot/egress_relay.pid" 2> /dev/null)"
+  expect "relay died, fresh shell: rc 0" [ "$RC" = 0 ]
+  expect "relay died, fresh shell: started again where the node expects it" has "the egress relay this node uses is not running: starting it on $node_relay"
+  expect "relay died, fresh shell: running" alive "$new_relay"
+  expect "relay died, fresh shell: the node's address answers" port_open_at "$node_relay"
+  OUT="$(relay_status "$node_relay" "pilot-relay:$tok")"
+  expect "relay died, fresh shell: the daemon's token still works" lacks "407"
+  expect "relay died, fresh shell: daemon not restarted" [ "$(count_lines "$H/.pilot/stub-args.log")" = "$starts" ]
+  up PILOT_RELAY_LISTEN= -- --stop
+  expect "relay kept on its address: --stop stops it" not alive "$new_relay"
+  kill "$squatter" 2> /dev/null
+  for _ in $(seq 1 25); do alive "$squatter" || break; sleep 0.2; done
+else
+  echo "  (skipping relay address memory checks: needs python3 and /proc or lsof)"
+fi
+
+# 26. The SKILL.md "debug by hand" recipe gives the daemon the relay's
+#     address even where every bash re-exports the rotating proxy at startup
+#     (BASH_ENV here): run its run-daemon.sh line with stub unshare and mount,
+#     and a pilot-daemon stand-in that prints the proxy it got.
+line="$(grep -E '^[A-Z_]+=http://127\.0\.0\.1:3128 +unshare -m \./scripts/run-daemon\.sh' "$ROOT/skills/pilot-sandbox/SKILL.md")"
+line="${line%%#*}"
+OUT="$line"
+expect "hand recipe: found in SKILL.md" [ -n "$line" ]
+mkdir -p "$T/recipe/bin" "$T/recipe/skill"
+cp -R "$ROOT/skills/pilot-sandbox/scripts" "$T/recipe/skill/"
+# shellcheck disable=SC2016 # expanded by the stubs
+{
+  printf '#!/bin/sh\nexit 0\n' > "$T/recipe/bin/mount"
+  printf '#!/bin/sh\n[ "$1" = -m ] && shift\nexec "$@"\n' > "$T/recipe/bin/unshare"
+  printf '#!/bin/sh\necho "daemon proxy: $HTTPS_PROXY"\n' > "$T/recipe/daemon"
+}
+chmod 755 "$T/recipe/bin/mount" "$T/recipe/bin/unshare" "$T/recipe/daemon"
+printf 'export HTTPS_PROXY=http://muse:ROTATING@proxy.muse:3128 https_proxy=http://muse:ROTATING@proxy.muse:3128\n' > "$T/recipe/bash_env"
+OUT="$(cd "$T/recipe/skill" && env -i PATH="$T/recipe/bin:$PATH" HOME="$T/recipe" BASH_ENV="$T/recipe/bash_env" \
+  PILOT_BIN="$T/recipe/daemon" PILOT_SOCKET="$T/recipe/pilot.sock" HTTPS_PROXY=http://muse:ROTATING@proxy.muse:3128 \
+  bash -c "$line" 2>&1)"
+expect "hand recipe: the daemon's proxy is the relay" has "daemon proxy: http://127.0.0.1:3128"
+expect "hand recipe: not the rotating proxy" lacks "proxy.muse"
 
 echo "pilot-up.sh: $PASSES passed, $FAILS failed"
 [ "$FAILS" = 0 ]

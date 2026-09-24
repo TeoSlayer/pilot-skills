@@ -72,9 +72,10 @@ install HTTPS_PROXY=http://alice:s3cret@127.0.0.1:9 STUB_INSTALL_VERSION=v1.0.0
 expect "fresh: rc 0" [ "$RC" = 0 ]
 expect "fresh: node online" has "node online via the native path"
 expect "fresh: done message" has "Done. Skills in $H/workspace/skills"
-expect "fresh: done message says what to do after a credential rotation" has "the proxy credentials rotated: run the same command from a fresh shell"
 expect "fresh: the node re-reads rotating credentials (-proxy-cmd)" has "credentials re-read by pilot-daemon (-proxy-cmd)"
-expect "fresh: done message says so" has "The node re-reads the rotating proxy credentials itself"
+expect "fresh: done message says so" has "Proxy credentials: pilot-daemon re-reads them itself when they rotate"
+expect "fresh: done message says what to do if 407s persist" has "bash $UP from a fresh shell."
+expect "fresh: done message has the try-it line" has "Try it: $H/.pilot/bin/pilotctl --json send-message pilot-mom"
 expect "fresh: credentials never printed" lacks "s3cret"
 for s in pilotctl pilot-protocol pilot-sandbox; do
   f="$H/workspace/skills/$s/SKILL.md"
@@ -173,6 +174,39 @@ expect "unstoppable upgrade: final message says old daemon" has "runs the old pi
 expect "unstoppable upgrade: bystander untouched" kill -0 "$bystander"
 kill "$bystander" 2> /dev/null
 rm -f "$H/.pilot/stub-state"
+
+# 10. The closing message matches how the node gets its proxy credentials
+#     (the "proxy" line pilot-up printed), and says nothing about rotating
+#     proxy credentials on a host without a proxy.
+stop_node
+install
+expect "no proxy: rc 0" [ "$RC" = 0 ]
+expect "no proxy: node online" has "node online via the native path"
+expect "no proxy: pilot-up printed no proxy line" lacks "credentials re-read"
+expect "no proxy: done message" has "Done. Skills in $H/workspace/skills"
+expect "no proxy: no rotating-credentials text" lacks "rotat"
+expect "no proxy: no 407 advice" lacks "407"
+expect "no proxy: no pointer to a proxy line" lacks 'see "proxy" above'
+expect "no proxy: try-it line" has "Try it: $H/.pilot/bin/pilotctl"
+stop_node
+install HTTPS_PROXY=http://alice:s3cret@127.0.0.1:9 PILOT_UP_CREDS=static
+expect "static: rc 0" [ "$RC" = 0 ]
+expect "static: pilot-up says so" has "credentials the ones it started with"
+expect "static: done message says the node keeps them" has "Proxy credentials: the node keeps the ones it started with"
+expect "static: done message says how to recover" has "which restarts the node with current ones"
+expect "static: no claim that the node re-reads them" lacks "re-reads them itself"
+stop_node
+if command -v python3 > /dev/null 2>&1 && { [ -r /proc/net/tcp ] || command -v lsof > /dev/null 2>&1; }; then
+  install HTTPS_PROXY=http://alice:s3cret@127.0.0.1:9 STUB_HELP_PROXY_CMD=0
+  expect "relay: rc 0" [ "$RC" = 0 ]
+  expect "relay: pilot-up says so" has "credentials stamped fresh on every connection by the egress relay"
+  expect "relay: done message says so" has "Proxy credentials: the egress relay stamps current ones on every connection"
+  expect "relay: no claim that pilot-daemon re-reads them" lacks "re-reads them itself"
+  expect "relay: credentials never printed" lacks "s3cret"
+  stop_node
+else
+  echo "  (skipping the relay-mode closing message: needs python3 and /proc or lsof)"
+fi
 
 echo "muse/install.sh: $PASSES passed, $FAILS failed"
 [ "$FAILS" = 0 ]
