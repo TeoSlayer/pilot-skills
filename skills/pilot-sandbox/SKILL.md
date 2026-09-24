@@ -31,8 +31,8 @@ license: AGPL-3.0
 compatibility: >
   Requires bash, pilotctl and pilot-daemon in ~/.pilot/bin (muse/install.sh
   installs both), and an HTTPS_PROXY that allows CONNECT to port 443. Fast
-  path: a pilot-daemon with the -proxy flag (the release after v1.13.9;
-  version TBD), no root. Fallback for older daemons: python3, unshare
+  path: a pilot-daemon whose -h lists -proxy (pilotprotocol#470; v1.13.10
+  and earlier lack it), no root. Fallback for older daemons: python3, unshare
   (util-linux), and root or CAP_SYS_ADMIN. Rotating credentials: python3 for
   scripts/egress_relay.py unless pilot-daemon has -proxy-cmd.
 metadata:
@@ -100,7 +100,7 @@ so new connections get `407 Proxy Authentication Required` (or `malformed HTTP
 status code`). A fresh shell has current ones, and `pilot-up.sh` makes the node
 re-read them there (it prints the mode; `PILOT_UP_CREDS` forces one):
 - `cmd`: `pilot-daemon -h` lists `-proxy-cmd`. The daemon re-runs
-  `bash -c 'printf %s "${https_proxy:-$HTTPS_PROXY}"'` (or `PILOT_PROXY_CMD`,
+  a fresh bash printing `$https_proxy` (`$HTTPS_PROXY` if only it has credentials; or `PILOT_PROXY_CMD`,
   or `proxy_cmd` in `config.json`) every 60s and after a 407.
 - `relay`: older daemons. `scripts/egress_relay.py` (`127.0.0.1:3128`, or
   `PILOT_RELAY_LISTEN`) stamps fresh credentials on every connection for the

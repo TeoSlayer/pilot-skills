@@ -39,7 +39,7 @@ clawhub install pilot-sandbox
 
 - [Pilot Protocol](https://pilotprotocol.network) installed (`pilotctl` and `pilot-daemon` in `~/.pilot/bin`) and `bash`
 - `HTTPS_PROXY` set, allowing `CONNECT` to port 443
-- Fast path: a `pilot-daemon` with the `-proxy` flag (the release after v1.13.9; version TBD). No root.
+- Fast path: a `pilot-daemon` whose `-h` lists `-proxy` (pilotprotocol#470; v1.13.10 and earlier do not have it). No root.
 - Fallback for older daemons: `python3` and `unshare` (util-linux); root or `CAP_SYS_ADMIN`
 - Rotating proxy credentials: a `pilot-daemon` with `-proxy-cmd`, or `python3` for the egress relay
 

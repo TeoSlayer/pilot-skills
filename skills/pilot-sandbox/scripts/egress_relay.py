@@ -23,7 +23,8 @@ as Meta Muse's, not on a host shared with other users.
 
 Environment (all optional):
   RELAY_CRED_CMD    shell command printing the current proxy URL, run with
-                    bash -c (default: printf %s "${https_proxy:-$HTTPS_PROXY}")
+                    bash -c (default: whichever of $https_proxy and
+                    $HTTPS_PROXY carries credentials, $https_proxy first)
   RELAY_LISTEN      host:port to listen on (default 127.0.0.1:3128)
   RELAY_LOG         log file (default /tmp/egress_relay.log), created 0600
   RELAY_TOKEN_FILE  file holding the token clients must present (read once,
@@ -40,8 +41,11 @@ def parse_listen(value):
 
 LISTEN = parse_listen(os.environ.get("RELAY_LISTEN") or "127.0.0.1:3128")
 # How to read the *current* proxy URL. A fresh shell picks up rotated creds.
+# The default is the sandbox command pilot-up, pilotctl and the official
+# installer use: never trades a URL with credentials for one without.
 CRED_CMD = os.environ.get("RELAY_CRED_CMD",
-                          'printf %s "${https_proxy:-$HTTPS_PROXY}"')
+                          'case $https_proxy in *@*) printf %s "$https_proxy";; '
+                          '*) printf %s "${HTTPS_PROXY:-$https_proxy}";; esac')
 CACHE_SECONDS = 60
 LOG = open(os.open(os.environ.get("RELAY_LOG") or "/tmp/egress_relay.log",
                    os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600),

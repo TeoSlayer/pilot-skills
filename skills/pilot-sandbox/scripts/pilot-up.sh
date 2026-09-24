@@ -39,7 +39,8 @@
 # process keeps the ones it started with: its open tunnels survive while every
 # new connection gets a 407 ("node online, all apps broken"). A fresh shell
 # always sees the current ones, so the running pieces re-read them from one
-# (PILOT_PROXY_CMD, default: bash -c 'printf %s "${https_proxy:-$HTTPS_PROXY}"'):
+# (PILOT_PROXY_CMD, default: a fresh bash printing $https_proxy, or
+# $HTTPS_PROXY when only that one carries credentials; see SANDBOX_PROXY_CMD):
 #   cmd     pilot-daemon -h lists -proxy-cmd (native path): the daemon runs
 #           that command every 60s and after a 407. No extra process.
 #   relay   any other daemon (sni path, or native without -proxy-cmd):
@@ -117,9 +118,12 @@ RELAY_PROXY=""
 LAUNCH_RELAY_PROXY=""
 # What pilot-daemon's -proxy-cmd, the egress relay and the respawn loop run to
 # read the current proxy URL: a fresh shell sees credentials a running process
-# does not. The official installer saves the same command as "proxy_cmd".
+# does not. It prints whichever of $https_proxy and $HTTPS_PROXY carries
+# credentials ($https_proxy when both do), else ${HTTPS_PROXY:-$https_proxy},
+# so a URL with credentials is never traded for one without. pilotctl and the
+# official installer (which saves it as "proxy_cmd") use exactly this command.
 # shellcheck disable=SC2016 # expanded by that fresh shell, not here
-SANDBOX_PROXY_CMD='bash -c '\''printf %s "${https_proxy:-$HTTPS_PROXY}"'\'''
+SANDBOX_PROXY_CMD='bash -c '\''case $https_proxy in *@*) printf %s "$https_proxy";; *) printf %s "${HTTPS_PROXY:-$https_proxy}";; esac'\'''
 CREDS_WANT="${PILOT_UP_CREDS:-auto}"
 CRED_MODE="none"
 CRED_WHY=""
@@ -1065,9 +1069,12 @@ start_native() {
   case "$CRED_MODE" in
     cmd)
       # The daemon reads PILOT_PROXY_CMD and config.json "proxy_cmd" itself;
-      # pass the sandbox default only when neither sets one.
+      # hand it the sandbox default only when neither sets one. In its
+      # environment, not as -proxy-cmd: the daemon's skill injection
+      # (skillinject) re-reads rotated credentials only with a command it
+      # can see ($PILOT_PROXY_CMD or config.json), not the daemon's flags.
       if [ -z "${pc//[[:space:]]/}" ] && [ -z "$(config_proxy_cmd)" ]; then
-        ARGS+=(-proxy-cmd "$SANDBOX_PROXY_CMD")
+        export PILOT_PROXY_CMD="$SANDBOX_PROXY_CMD"
       fi
       ;;
     relay)
@@ -1083,13 +1090,41 @@ start_direct() {
   launch "${ARGS[@]}"
 }
 
+# latest_stable — the latest stable Pilot release tag from the release
+# manifest (fetched through the proxy, 10s at most); empty when it cannot be
+# read.
+latest_stable() {
+  command -v curl > /dev/null 2>&1 || return 0
+  curl -fsS --max-time 10 https://pilotprotocol.network/.well-known/latest.json 2> /dev/null \
+    | tr -d '\r\n' | sed -n -E 's/.*"latest_stable"[[:space:]]*:[[:space:]]*"(v[0-9][^"]*)".*/\1/p' || true
+}
+
 # needs_root REASON — the fallback is out of reach: say exactly what to do.
+# The upgrade is offered only as far as it can help: the -proxy flag arrives
+# with pilotprotocol#470, and v1.13.10 and earlier lack it, so when this
+# daemon already is the latest release, upgrading changes nothing (and
+# offering it sent agents round in a loop).
 needs_root() {
-  local alt="Rerun this script as root, keeping the proxy variables:
+  local latest upgrade alt="Rerun this script as root, keeping the proxy variables:
        sudo -E bash $SCRIPT_DIR/pilot-up.sh"
   if [ "$(id -u)" = 0 ]; then
     alt="Rerun this script where root has CAP_SYS_ADMIN (a VM, or a
      container started with --cap-add SYS_ADMIN)."
+  fi
+  latest="$(latest_stable)"
+  if [ -n "$latest" ] && [ "$latest" = "$VERSION_TAG" ]; then
+    upgrade="Wait for a Pilot release whose \`pilot-daemon -h\` lists -proxy: $VERSION_TAG
+     is the latest release and has none (it arrives with pilotprotocol#470),
+     so upgrading does not help yet. Once one is out, the Muse installer
+     upgrades as root too (it passes PILOT_ALLOW_ROOT=1 to the official
+     installer) and restarts the node:
+       curl -fsSL https://raw.githubusercontent.com/TeoSlayer/pilot-skills/main/muse/install.sh | PILOT_UPGRADE=1 bash"
+  else
+    upgrade="Upgrade to a Pilot release whose \`pilot-daemon -h\` lists -proxy
+     (pilotprotocol#470; v1.13.10 and earlier do not have it${latest:+; the latest is $latest}).
+     The Muse installer works as root (it passes PILOT_ALLOW_ROOT=1 to the
+     official installer) and restarts the node:
+       curl -fsSL https://raw.githubusercontent.com/TeoSlayer/pilot-skills/main/muse/install.sh | PILOT_UPGRADE=1 bash"
   fi
   cat >&2 <<MSG
 pilot-up: cannot bring the node up from this shell.
@@ -1097,10 +1132,7 @@ pilot-up: cannot bring the node up from this shell.
   the proxy in HTTPS_PROXY by itself, and the SNI-router fallback for older
   daemons needs root with CAP_SYS_ADMIN ($1).
 Do one of:
-  1. Upgrade to a Pilot release whose pilot-daemon has -proxy (the release
-     after v1.13.9). The Muse installer works as root (it passes
-     PILOT_ALLOW_ROOT=1 to the official installer) and restarts the node:
-       curl -fsSL https://raw.githubusercontent.com/TeoSlayer/pilot-skills/main/muse/install.sh | PILOT_UPGRADE=1 bash
+  1. $upgrade
   2. $alt
 MSG
   exit 3

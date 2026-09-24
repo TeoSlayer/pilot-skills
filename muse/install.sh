@@ -147,6 +147,45 @@ MSG
   return 0
 }
 
+# fetch URL OUT — download URL to OUT. On failure behind a proxy, ask the
+# proxy once more (without -f, which hides it) how it answered the CONNECT,
+# and name a rejection of the credentials: `curl -f` reports a 407 only as
+# "(22) HTTP response code said error" (or "(56) CONNECT tunnel failed").
+# Meta Muse rotates the credentials in HTTPS_PROXY every few minutes, and a
+# shell keeps the ones it started with.
+fetch() {
+  local url="$1" out="$2" code
+  curl -fsSL "$url" -o "$out" && return 0
+  [ -n "${proxy:-}" ] || { echo "install: could not download $url" >&2; return 1; }
+  code="$(curl -sS -o /dev/null --max-time 20 -w '%{http_connect}' "$url" 2> /dev/null || true)"
+  case "$code" in
+    407)
+      echo "install: the proxy rejected its credentials (407 Proxy Authentication Required) while downloading $url." >&2
+      echo "install: sandboxes such as Meta Muse rotate the credentials in HTTPS_PROXY every few minutes, and a shell keeps" >&2
+      echo "install: the ones it started with: rerun the same command from a fresh shell (check: bash -c 'printf %s \"\$https_proxy\"' | sed -E 's#//[^@]*@#//***@#')." >&2 ;;
+    403)
+      echo "install: the proxy refused CONNECT to ${url#https://} (403): it must allow CONNECT to github.com, codeload.github.com, raw.githubusercontent.com and pilotprotocol.network on port 443." >&2 ;;
+    *)
+      echo "install: could not download $url through the proxy $(printf '%s' "$proxy" | sed -E 's#//[^@]*@#//***@#') (CONNECT answer: ${code:-none})." >&2
+      echo "install: if it rejected the credentials (they rotate in Meta Muse), rerun the same command from a fresh shell." >&2 ;;
+  esac
+  return 1
+}
+
+# relay_listen_of_node — the egress relay address the running node was
+# started with, which pilot-up.sh records in ~/.pilot/pilot-up.proxy (relay
+# modes only). `pilot-up.sh --stop` removes that record, so an upgrade keeps
+# the address by passing it on as PILOT_RELAY_LISTEN; otherwise a node on a
+# custom relay port would come back on the default one, which is taken.
+relay_listen_of_node() {
+  local _ mode="" relay=""
+  [ -f "$1/pilot-up.proxy" ] || return 0
+  # Fields: salt, settings hash, mode, launch path, relay address.
+  read -r _ _ mode _ relay < "$1/pilot-up.proxy" 2> /dev/null || return 0
+  case "$mode" in relay | relayd) ;; *) return 0 ;; esac
+  if [[ $relay =~ ^(\[[0-9A-Fa-f:.]+\]|[A-Za-z0-9._-]+):[0-9]{1,5}$ ]]; then printf '%s' "$relay"; fi
+}
+
 # bins_checksum DIR — one line identifying the pilotctl + pilot-daemon builds.
 bins_checksum() {
   cat "$1/pilot-daemon" "$1/pilotctl" 2> /dev/null | cksum || true
@@ -156,7 +195,7 @@ bins_checksum() {
 # before executing any of it.
 main() {
   local dest ref tarball tmp src skill up rc=0 skills_only no_start pilot_dir bin_dir
-  local frontmatter had_bins=0 before="" upgraded=0 proxy stop_out stop_failed=0
+  local frontmatter had_bins=0 before="" upgraded=0 proxy stop_out stop_failed=0 relay_listen skills_abs
   dest="${MUSE_SKILLS_DIR:-$HOME/workspace/skills}"
   ref="${PILOT_SKILLS_REF:-main}"
   skills_only="${PILOT_SKILLS_ONLY:-0}"
@@ -181,7 +220,8 @@ main() {
 
   # --- 1. skills ---
   echo "Fetching TeoSlayer/pilot-skills@$ref ..."
-  curl -fsSL "$tarball" | tar -xz -C "$tmp"
+  fetch "$tarball" "$tmp/skills.tar.gz" || exit 1
+  tar -xzf "$tmp/skills.tar.gz" -C "$tmp"
   src="$(find "$tmp" -maxdepth 2 -type d -name skills | head -n 1)"
   [ -d "$src" ] || { echo "install: archive did not contain a skills/ directory" >&2; exit 1; }
 
@@ -210,11 +250,18 @@ main() {
     fi
   done
 
-  # Pilot's skill injection keys off this marker to keep ~/workspace/skills
-  # up to date on Muse hosts.
+  # Pilot's skill injection (the daemon's skillinject, manifest row "muse"
+  # under gatedTools) keeps the pilotctl skill in this folder up to date on
+  # Muse hosts, but only while this marker names the folder and the
+  # frontmatter the skills were given: an empty marker attests nothing.
+  skills_abs="$(cd "$dest" && pwd -P)"
   mkdir -p "$pilot_dir/targets"
-  touch "$pilot_dir/targets/muse"
-  echo "marked this host as a Muse target ($pilot_dir/targets/muse)"
+  {
+    echo "# Written by pilot-skills muse/install.sh: where the Pilot skills are and their frontmatter."
+    echo "skills_dir=$skills_abs"
+    if [ "$frontmatter" = "0" ]; then echo "skill_format=canonical"; else echo "skill_format=muse"; fi
+  } > "$pilot_dir/targets/muse"
+  echo "marked this host as a Muse target ($pilot_dir/targets/muse: $skills_abs)"
 
   if [ "$skills_only" = "1" ]; then
     cat << MSG
@@ -236,7 +283,7 @@ MSG
     echo "Pilot already installed in $bin_dir ($("$bin_dir/pilot-daemon" -version 2> /dev/null || echo "unknown version")); PILOT_UPGRADE=1 reinstalls"
   else
     echo "Installing pilotctl + pilot-daemon into $bin_dir (official installer) ..."
-    curl -fsSL "${PILOT_INSTALL_URL:-https://pilotprotocol.network/install.sh}" -o "$tmp/pilot-install.sh"
+    fetch "${PILOT_INSTALL_URL:-https://pilotprotocol.network/install.sh}" "$tmp/pilot-install.sh" || exit 1
     local env_args=()
     if [ "$(id -u)" = "0" ]; then
       # Muse runs the agent as root; the official installer refuses root
@@ -286,6 +333,10 @@ MSG
     # --stop exits 1 when a daemon still answers afterwards.
     echo
     echo "The binaries changed: stopping the running node so the new pilot-daemon comes up"
+    relay_listen="$(relay_listen_of_node "$pilot_dir")"
+    if [ -z "${PILOT_RELAY_LISTEN:-}" ] && [ -n "$relay_listen" ]; then
+      export PILOT_RELAY_LISTEN="$relay_listen"
+    fi
     stop_out="$(bash "$up" --stop < /dev/null 2>&1)" || stop_failed=1
     if [ -n "$stop_out" ]; then printf '%s\n' "$stop_out"; fi
     if [ "$stop_failed" = 1 ]; then

@@ -84,7 +84,10 @@ for s in pilotctl pilot-protocol pilot-sandbox; do
 done
 expect "fresh: source skill files untouched" diff -rq "$ROOT/skills" "$T/tarball/pilot-skills-main/skills"
 expect "fresh: Muse target marker" [ -f "$H/.pilot/targets/muse" ]
-expect "fresh: marker is empty" [ ! -s "$H/.pilot/targets/muse" ]
+# The marker names the folder and the frontmatter: skillinject's gated "muse"
+# row ignores an empty one.
+expect "fresh: marker names the skills folder" grep -qx "skills_dir=$(cd "$H/workspace/skills" && pwd -P)" "$H/.pilot/targets/muse"
+expect "fresh: marker names the Muse format" grep -qx "skill_format=muse" "$H/.pilot/targets/muse"
 if [ "$(id -u)" = 0 ]; then
   expect "root: PILOT_ALLOW_ROOT=1 passed" grep -q 'ALLOW_ROOT=1 ' "$H/.pilot/stub-installer.log"
 else
@@ -119,6 +122,7 @@ expect "opt-out: rc 0" [ "$RC" = 0 ]
 for s in pilotctl pilot-protocol pilot-sandbox; do
   expect "opt-out: $s untouched" cmp -s "$ROOT/skills/$s/SKILL.md" "$H/workspace/skills/$s/SKILL.md"
 done
+expect "opt-out: marker says canonical" grep -qx "skill_format=canonical" "$H/.pilot/targets/muse"
 
 # 6. No proxy in the environment: PILOT_TRANSPORT is not forced.
 rm -rf "$H/.pilot/bin" "$H/.pilot/stub-installer.log"
@@ -206,6 +210,34 @@ if command -v python3 > /dev/null 2>&1 && { [ -r /proc/net/tcp ] || command -v l
   stop_node
 else
   echo "  (skipping the relay-mode closing message: needs python3 and /proc or lsof)"
+fi
+
+# 11. The proxy rejects the credentials (they rotated): the install names the
+#     407 and says to rerun from a fresh shell, with no gzip/tar noise, and
+#     never prints the credentials.
+install HTTPS_PROXY=http://alice:s3cret@127.0.0.1:9 STUB_PROXY_407=1
+expect "407: fails" [ "$RC" != 0 ]
+expect "407: named" has "the proxy rejected its credentials (407 Proxy Authentication Required)"
+expect "407: fresh shell advice" has "rerun the same command from a fresh shell"
+expect "407: no gzip/tar noise" lacks "gzip"
+expect "407: credentials never printed" lacks "s3cret"
+
+# 12. PILOT_UPGRADE=1 on a relay-mode node whose relay listens on a custom
+#     address, rerun without PILOT_RELAY_LISTEN: the restart keeps the
+#     relay where it was (the default port may be taken).
+stop_node
+if command -v python3 > /dev/null 2>&1 && { [ -r /proc/net/tcp ] || command -v lsof > /dev/null 2>&1; }; then
+  install HTTPS_PROXY=http://alice:s3cret@127.0.0.1:9 STUB_HELP_PROXY_CMD=0
+  expect "relay upgrade: node up first" [ "$RC" = 0 ]
+  install HTTPS_PROXY=http://alice:s3cret@127.0.0.1:9 STUB_HELP_PROXY_CMD=0 PILOT_UPGRADE=1 STUB_INSTALL_VERSION=v6.0.0 PILOT_RELAY_LISTEN=
+  expect "relay upgrade: rc 0" [ "$RC" = 0 ]
+  expect "relay upgrade: restarted" has "Restarting the node on the new pilot-daemon"
+  expect "relay upgrade: relay kept on its address" has "on $RELAY"
+  expect "relay upgrade: not moved to the default port" lacks "127.0.0.1:3128"
+  expect "relay upgrade: new version running" has "running v6.0.0"
+  stop_node
+else
+  echo "  (skipping the relay-address upgrade: needs python3 and /proc or lsof)"
 fi
 
 echo "muse/install.sh: $PASSES passed, $FAILS failed"

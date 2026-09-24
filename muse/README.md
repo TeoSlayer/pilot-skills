@@ -40,8 +40,9 @@ What gets installed:
 beacon WSS, both on `:443`) under a small respawn loop, logging to
 `~/.pilot/daemon.log`:
 
-- **Fast path:** a `pilot-daemon` with the `-proxy` flag (the release after
-  v1.13.9; version TBD) sends every connection through `HTTPS_PROXY` itself,
+- **Fast path:** a `pilot-daemon` whose `-h` lists `-proxy`
+  (pilotprotocol#470; v1.13.10 and earlier do not have it) sends every
+  connection through `HTTPS_PROXY` itself,
   asking the proxy to `CONNECT` by hostname. No root.
 - **Fallback:** an older daemon needs the SNI-router recipe from
   [`pilot-sandbox`](../skills/pilot-sandbox/SKILL.md), which needs root with
@@ -63,8 +64,10 @@ beacon WSS, both on `:443`) under a small respawn loop, logging to
   fail with 407 while `pilotctl --json info` still works ("node online, all
   apps broken"). A fresh shell always has current ones, and the node re-reads
   them there: a `pilot-daemon` with `-proxy-cmd` runs
-  `bash -c 'printf %s "${https_proxy:-$HTTPS_PROXY}"'` every 60s and after a
-  407 (the official installer also saves it as `proxy_cmd`); an older daemon
+  a fresh `bash` printing `$https_proxy` (`$HTTPS_PROXY` when only that one
+  carries credentials) every 60s and after a 407 (pilot-up hands the daemon
+  that command as `PILOT_PROXY_CMD`; the official installer saves the same
+  one as `proxy_cmd`); an older daemon
   gets [`egress_relay.py`](../skills/pilot-sandbox/scripts/egress_relay.py) on
   `127.0.0.1:3128` as its proxy, which stamps current credentials on every
   connection, so the daemon and SNI router hold none. That relay serves only
@@ -113,10 +116,19 @@ require `name` to match the folder name.
 
 ## Muse target marker
 
-The installer creates the empty file `~/.pilot/targets/muse` (in every mode,
-including `PILOT_SKILLS_ONLY=1`). It records that this host is a Muse target:
-Pilot's skill injection will key off it to find `~/workspace/skills` and keep
-the skills there current.
+The installer writes `~/.pilot/targets/muse` (in every mode, including
+`PILOT_SKILLS_ONLY=1`). It records that this host is a Muse target, where the
+skills went and in which frontmatter:
+
+```
+skills_dir=/root/workspace/skills
+skill_format=muse
+```
+
+(`skill_format=canonical` with `PILOT_MUSE_FRONTMATTER=0`). Pilot's skill
+injection (pilot-daemon's skillinject, the `muse` row under `gatedTools` in
+`inject-manifest.json`) keeps the `pilotctl` skill there current only while
+the marker names that folder and format; an empty marker attests nothing.
 
 ## Options
 
@@ -124,7 +136,7 @@ the skills there current.
 |---|---|
 | `PILOT_SKILLS_ONLY=1` | Install the skills only, as the installer did originally |
 | `PILOT_NO_START=1` | Install skills and binaries, but do not start the node |
-| `PILOT_UPGRADE=1` | Rerun the official Pilot installer even if the binaries exist, and restart the node when they changed (use it once the `-proxy` release is out). If the running node cannot be stopped, it says so instead of claiming the new version runs |
+| `PILOT_UPGRADE=1` | Rerun the official Pilot installer even if the binaries exist, and restart the node when they changed (use it once a release whose `pilot-daemon -h` lists `-proxy` is out; v1.13.10 does not). The node keeps its egress relay address (`PILOT_RELAY_LISTEN`) across the restart. If the running node cannot be stopped, it says so instead of claiming the new version runs |
 | `PILOT_MUSE_FRONTMATTER=0` | Keep each skill's original frontmatter instead of the Muse shape |
 | `MUSE_SKILLS_DIR=/some/path` | Install the skills somewhere other than `~/workspace/skills` |
 | `PILOT_SKILLS="pilotctl pilot-chat"` | Pick a different set of skills (`pilot-sandbox` is always added unless skills-only) |

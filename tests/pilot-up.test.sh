@@ -324,6 +324,18 @@ else
   expect "needs root: exit 3" [ "$RC" = 3 ]
   expect "needs root: upgrade advice via the Muse installer" has "muse/install.sh | PILOT_UPGRADE=1 bash"
   expect "needs root: mentions PILOT_ALLOW_ROOT" has "PILOT_ALLOW_ROOT=1"
+  expect "needs root: names what the upgrade must bring" has "lists -proxy"
+  expect "needs root: no stale release name" lacks "after v1.13.9"
+  # When the installed daemon already is the latest release, upgrading
+  # cannot help: say so instead of sending the agent round in a loop.
+  mkdir -p "$T/latestbin"
+  printf '#!/bin/sh\nprintf %%s %s\n' "'{\"latest_stable\": \"v1.0.0\", \"channels\": {}}'" > "$T/latestbin/curl"
+  chmod 755 "$T/latestbin/curl"
+  up PATH="$T/latestbin:$PATH" HTTPS_PROXY=http://u:p@127.0.0.1:9
+  expect "needs root, latest installed: exit 3" [ "$RC" = 3 ]
+  expect "needs root, latest installed: says upgrading does not help" has "v1.0.0
+     is the latest release and has none"
+  expect "needs root, latest installed: no plain upgrade instruction" lacks "Upgrade to a Pilot release"
 fi
 
 # 12. Failure output is redacted, even for a password containing '@'.
@@ -681,7 +693,11 @@ new_home
 up STUB_HELP_PROXY=1 STUB_HELP_PROXY_CMD=1 HTTPS_PROXY=http://muse:credA@127.0.0.1:9
 expect "cmd: rc 0" [ "$RC" = 0 ]
 expect "cmd: says so" has "proxy credentials: cmd (pilot-daemon has -proxy-cmd)"
-expect "cmd: -proxy-cmd with the sandbox default" grep -qF -- "-proxy-cmd bash -c 'printf %s \"\${https_proxy:-\$HTTPS_PROXY}\"'" "$H/.pilot/stub-args.log"
+# The sandbox default goes in the daemon's environment, where its skill
+# injection sees it too, never as a -proxy-cmd flag; and it is the command
+# pilotctl and the official installer use.
+expect "cmd: no -proxy-cmd on argv" not grep -q -- '-proxy-cmd' "$H/.pilot/stub-args.log"
+expect "cmd: sandbox default in PILOT_PROXY_CMD" [ "$(last_line "$H/.pilot/stub-proxycmd.log")" = "bash -c 'case \$https_proxy in *@*) printf %s \"\$https_proxy\";; *) printf %s \"\${HTTPS_PROXY:-\$https_proxy}\";; esac'" ]
 expect "cmd: no relay" [ ! -e "$H/.pilot/egress_relay.pid" ]
 expect "cmd: reported" has "credentials re-read by pilot-daemon (-proxy-cmd)"
 expect "cmd: credentials never printed" lacks "credA"
