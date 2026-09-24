@@ -11,6 +11,17 @@
 // json.Unmarshal into a struct without the key, so they must accept the
 // manifest, keep injecting the regular tools, and never touch
 // ~/workspace/skills, even on a host that is marked as a Muse target.
+//
+// The marker is the one the Muse installer leaves after installing the
+// Muse-format skills into ~/workspace/skills. Builds that read gatedTools
+// act on the muse row only when the marker names that directory and
+// format, one key=value per line (pilot-protocol/skillinject gated.go):
+//
+//	skills_dir=/root/workspace/skills
+//	skill_format=muse
+//
+// An empty marker, or one for another folder or for skill_format=canonical
+// (PILOT_MUSE_FRONTMATTER=0), turns the row off.
 package releasedskillinject
 
 import (
@@ -41,8 +52,8 @@ func serveRepo(t *testing.T) skillinject.Config {
 
 // museHome is a home directory that looks like a Meta Muse VM after the
 // Muse installer ran: ~/workspace/skills exists and ~/.pilot/targets/muse
-// marks the host. ~/.claude is there too, to show the regular tools are
-// still injected.
+// marks it as holding the Muse-format skills. ~/.claude is there too, to
+// show the regular tools are still injected.
 func museHome(t *testing.T) string {
 	t.Helper()
 	home := t.TempDir()
@@ -51,7 +62,10 @@ func museHome(t *testing.T) string {
 			t.Fatal(err)
 		}
 	}
-	if err := os.WriteFile(filepath.Join(home, ".pilot", "targets", "muse"), nil, 0o644); err != nil {
+	marker := "# written by pilot-skills muse/install.sh\n" +
+		"skills_dir=" + filepath.Join(home, "workspace", "skills") + "\n" +
+		"skill_format=muse\n"
+	if err := os.WriteFile(filepath.Join(home, ".pilot", "targets", "muse"), []byte(marker), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	return home
