@@ -32,7 +32,7 @@ concurrency:
 
 env:
   # The skillinject version whose cmd/sign-skills signs the content.
-  SIGN_SKILLS_VERSION: v0.2.6-beta.2.0.20261108205954-2a44696e9ce4
+  SIGN_SKILLS_VERSION: v0.2.6
 
 jobs:
   check:
