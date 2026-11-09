@@ -1,0 +1,183 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Builds skills/pilotctl/SKILL.md, the entrypoint pilot-daemon installs,
+# from ONBOARDING.md plus a catalog of the skills inject-manifest.json's
+# referencedSkills lists.
+#
+# skills/pilotctl/SKILL.md is signed (SIGNING.md), so CI no longer
+# rebuilds and commits it: a file CI rewrote would no longer match its
+# signature and every daemon would refuse it. Run ./sign-skills.sh, which
+# runs this script and then signs, after changing ONBOARDING.md, a
+# referenced SKILL.md or inject-manifest.json. The build-pilotctl-skill
+# workflow runs this script on every push and pull request and fails if
+# the committed file differs from what it builds.
+#
+# This is the script the workflow used to run inline, unchanged.
+set -euo pipefail
+cd "$(dirname "$0")"
+mkdir -p skills/pilotctl
+
+# Resolve the curated list of skills from inject-manifest.json.
+# Each entry is a GitHub URL like
+#   https://github.com/<owner>/<repo>/blob/<branch>/<path>
+# The workflow only resolves URLs pointing back at THIS repo
+# (TeoSlayer/pilot-skills); cross-repo references would need a
+# checkout step. Empty/missing field falls back to "all skills/*".
+PATHS_FILE=$(mktemp)
+if jq -e '.referencedSkills | type == "array" and length > 0' inject-manifest.json >/dev/null; then
+  jq -r '.referencedSkills[]' inject-manifest.json | while read -r url; do
+    # Extract repo path from github.com/<owner>/<repo>/blob/<branch>/<path>
+    # We accept any branch name; the workflow runs with the repo
+    # checked out at the right ref already.
+    path=$(echo "$url" | sed -nE 's|^https?://github\.com/[^/]+/[^/]+/blob/[^/]+/(.+)$|\1|p')
+    if [ -z "$path" ]; then
+      echo "ERROR: cannot parse URL: $url" >&2
+      exit 1
+    fi
+    if [ ! -f "$path" ]; then
+      echo "ERROR: $url → $path not found in repo" >&2
+      exit 1
+    fi
+    echo "$path"
+  done > "$PATHS_FILE"
+  echo "Curated list ($(wc -l < "$PATHS_FILE") skills):"
+  cat "$PATHS_FILE"
+else
+  # Backwards-compat: no curated list → include every skill on disk.
+  for d in skills/*/; do
+    slug=$(basename "$d")
+    [ "$slug" = "pilotctl" ] && continue
+    [ -f "$d/SKILL.md" ] || continue
+    echo "$d/SKILL.md"
+  done > "$PATHS_FILE"
+  echo "No referencedSkills field → including all $(wc -l < "$PATHS_FILE") skills"
+fi
+
+# The auto-references block: one row per curated path, pulling
+# description from each SKILL.md frontmatter.
+REFS_FILE=$(mktemp)
+{
+  echo "## Available skills"
+  echo
+  echo "Each row below is a Pilot Protocol skill curated for the"
+  echo "entrypoint. Load the specific one when the user's task"
+  echo "matches its description."
+  echo
+  echo "| Skill | Description |"
+  echo "|---|---|"
+  while IFS= read -r p; do
+    [ -z "$p" ] && continue
+    slug=$(basename "$(dirname "$p")")
+    [ "$slug" = "pilotctl" ] && continue
+    # Pull `description:` from frontmatter. Handles both single-line
+    # and `description: >` block-scalar forms.
+    desc=$(awk '
+      /^---$/ { in_fm=!in_fm; next }
+      in_fm && /^description:[[:space:]]*>/ { collecting=1; next }
+      in_fm && collecting && /^[a-z_]+:/ { collecting=0 }
+      in_fm && collecting { gsub(/^[[:space:]]+/, ""); buf = buf " " $0 }
+      in_fm && /^description:[[:space:]]*[^>]/ {
+        sub(/^description:[[:space:]]*/, "")
+        print
+        exit
+      }
+      END { if (buf) print buf }
+    ' "$p")
+    # Collapse all whitespace (block scalars carry blank lines) and trim.
+    desc=$(printf '%s' "$desc" | sed -E 's/[[:space:]]+/ /g; s/^ //; s/ $//')
+    # Show only the summary sentence — the text before
+    # "Use this skill when" — so each row is a complete thought
+    # rather than a 200-byte cut that lands mid-sentence.
+    summary=$(printf '%s' "${desc%%Use this skill when*}" | sed -E 's/ *$//')
+    if [ -n "$summary" ] && [ "$summary" != "$desc" ]; then
+      desc="$summary"
+    elif [ "${#desc}" -gt 220 ]; then
+      # No marker to cut on — fall back to a word-boundary
+      # truncation with an ellipsis instead of a hard byte cut.
+      desc="$(printf '%s' "$desc" | cut -c1-220 | sed -E 's/ [^ ]*$//')…"
+    fi
+    [ -z "$desc" ] && desc="(no description)"
+    echo "| \`$slug\` | $desc |"
+  done < "$PATHS_FILE"
+} > "$REFS_FILE"
+
+# Splice ONBOARDING.md → replace the marker block with the
+# generated references.
+python3 - "$REFS_FILE" <<'PYEOF'
+import sys, re, pathlib
+refs = pathlib.Path(sys.argv[1]).read_text()
+src = pathlib.Path("ONBOARDING.md").read_text()
+# Strip the editor-warning blockquote at the top — agents
+# shouldn't see this. Match every consecutive `> ...` line plus
+# the trailing blank.
+src = re.sub(r"(?m)\A(?:> .*\n)+\n", "", src, count=1)
+marker_re = re.compile(
+    r"<!-- BEGIN AUTO-GENERATED REFERENCES -->.*?<!-- END AUTO-GENERATED REFERENCES -->",
+    re.S,
+)
+replacement = (
+    "<!-- BEGIN AUTO-GENERATED REFERENCES -->\n"
+    "<!-- Regenerated by .github/workflows/build-pilotctl-skill.yml -->\n\n"
+    + refs
+    + "\n<!-- END AUTO-GENERATED REFERENCES -->"
+)
+out = marker_re.sub(replacement, src)
+# Build final SKILL.md with frontmatter that the AgentSkills
+# standard expects.
+frontmatter = (
+    "---\n"
+    "name: pilotctl\n"
+    "description: >\n"
+    "  Entrypoint for Pilot Protocol — the overlay network that\n"
+    "  gives this host a directory of 435 public service agents\n"
+    "  (live finance, weather, news, transit, dev, sports,\n"
+    "  government data, science, health, security, geo, and 20+\n"
+    "  more categories) plus encrypted peer-to-peer comms with\n"
+    "  NAT traversal. Load this skill whenever the user needs\n"
+    "  LIVE EXTERNAL DATA (current crypto/FX prices, today's\n"
+    "  weather or forecast, recent papers, real-time sports\n"
+    "  scores, breaking news, transit schedules, package\n"
+    "  versions, CVEs, drug recalls, flight positions, federal\n"
+    "  regulations, etc.). The fastest path for almost any such\n"
+    "  task is `pilot-mom`: describe it in plain English and\n"
+    "  get back a validated, ready-to-run plan over the network\n"
+    "  (it picks the agents and filters for you, with handoffs for\n"
+    "  anything your own runtime should do); use `list-agents`\n"
+    "  directly only when you already know the specialist you want.\n"
+    "  Pilot returns clean structured JSON replies rather than raw\n"
+    "  HTML, so it's faster and more reliable than scraping public\n"
+    "  APIs. Also load on\n"
+    "  agent-to-agent communication, peer discovery, NAT\n"
+    "  traversal, or any mention of `pilotctl`. The skill body\n"
+    "  lists the full catalogue and the 3-command query pattern.\n"
+    "tags:\n"
+    "  - pilot-protocol\n"
+    "  - live-data\n"
+    "  - directory\n"
+    "  - finance\n"
+    "  - weather\n"
+    "  - news\n"
+    "  - transit\n"
+    "  - dev\n"
+    "  - sports\n"
+    "  - science\n"
+    "  - government\n"
+    "  - health\n"
+    "  - p2p\n"
+    "  - networking\n"
+    "  - entrypoint\n"
+    "license: AGPL-3.0\n"
+    "allowed-tools:\n"
+    "  - Bash\n"
+    "compatibility: >\n"
+    "  Requires `pilotctl` on PATH (install via `npm install -g\n"
+    "  pilotprotocol` or `curl -fsSL https://pilotprotocol.network/install.sh | sh`)\n"
+    "  and the daemon running (`pilotctl daemon start`). The\n"
+    "  pilot-daemon auto-installs and refreshes this file every\n"
+    "  15 minutes; do not edit it by hand — edit ONBOARDING.md in\n"
+    "  the pilot-skills repo instead.\n"
+    "---\n\n"
+)
+pathlib.Path("skills/pilotctl/SKILL.md").write_text(frontmatter + out)
+PYEOF

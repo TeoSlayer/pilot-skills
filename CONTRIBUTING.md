@@ -98,6 +98,16 @@ This validates:
   reachability check, the `send-message --wait` reply read and the
   trust-circle recipes run verbatim against a stub `pilotctl`
 
+## Signed Content
+
+`inject-manifest.json` and the files it lists (`skills/pilotctl/SKILL.md`,
+`heartbeats/*.md`, the plugin and helper files under `workflow-injection/`)
+are signed, and pilot-daemon refuses an update that is not. You do not sign
+anything: CI rebuilds `skills/pilotctl/SKILL.md` and signs these files when
+a change reaches `main`. The `signatures` check reports files your pull
+request changed as not signed yet, and fails only for other files; see
+[SIGNING.md](SIGNING.md).
+
 ## Catalog Generation
 
 The skill catalog (`skills.json`) is auto-generated from SKILL.md frontmatter. After adding a skill, you can preview the catalog locally:

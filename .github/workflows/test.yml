@@ -41,8 +41,8 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add skills.json setups.json
           git commit -m "Update skills.json and setups.json catalogs"
-          # Rebase before push to handle the race with build-pilotctl-skill,
-          # which can land its own auto-commit between our checkout and push.
+          # Rebase before push in case another commit landed between our
+          # checkout and push.
           for attempt in 1 2 3; do
               git pull --rebase origin main || true
               if git push origin main; then
@@ -53,6 +53,48 @@ jobs:
           done
           echo "push failed after 3 attempts" >&2
           exit 1
+
+  # pilot-daemon refuses an update when any file it fetches is missing its
+  # .sig or does not match it (SIGNING.md). build-pilotctl-skill signs
+  # main on every push, so files this push or pull request changed may
+  # not be signed yet; the test reports those and fails on anything else.
+  signatures:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: tests/signatures/go.mod
+          cache: false
+
+      - name: Files this change touched
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = pull_request ]; then
+            # The PR merge commit's first parent is main.
+            base=HEAD^1
+          elif [ -n "${BEFORE:-}" ] && [ "${BEFORE}" != 0000000000000000000000000000000000000000 ]; then
+            base=$BEFORE
+          else
+            base=
+          fi
+          changed=
+          if [ -n "$base" ]; then
+            changed=$(git diff --name-only "$base" HEAD)
+          fi
+          printf '%s\n' "$changed"
+          printf 'CHANGED_FILES<<__END__\n%s\n__END__\n' "$changed" >> "$GITHUB_ENV"
+
+      - name: Every injected file is signed by the pilot-skills key
+        working-directory: tests/signatures
+        env:
+          GOWORK: "off"
+        run: go test -count=1 -v ./...
 
   # Released pilot-daemons fetch inject-manifest.json from main at runtime.
   # Run the skill injector versions they ship against this checkout's

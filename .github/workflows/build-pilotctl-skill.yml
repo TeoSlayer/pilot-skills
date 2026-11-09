@@ -1,218 +1,119 @@
 name: build-pilotctl-skill
 
-# Regenerates skills/pilotctl/SKILL.md from ONBOARDING.md plus an
-# auto-appended catalog of every other skill in skills/. Runs on any
-# push that touches ONBOARDING.md or a SKILL.md in skills/. Commits
-# the regenerated file back to main if it changed.
+# Rebuilds skills/pilotctl/SKILL.md from ONBOARDING.md plus the catalog of
+# the skills listed in inject-manifest.json's referencedSkills, then signs
+# inject-manifest.json and every file it makes pilot-daemon fetch
+# (SIGNING.md) with the pilot-skills key from the SKILLS_SIGNING_KEY
+# secret, and commits the rebuilt file and the .sig files to main.
+#
+# It runs on every push to main, not only on pushes that touch the
+# signed files, so a change to any file the manifest lists is signed by
+# the run of the push that made it. Signing is deterministic: when
+# nothing changed the run commits nothing.
+#
+# On pull requests it only rebuilds SKILL.md, without the key, to show
+# that the generator still runs; the PR is signed when it merges.
 
 on:
   push:
     branches: [main]
-    paths:
-      - "ONBOARDING.md"
-      - "skills/*/SKILL.md"
-      - "inject-manifest.json"
-      - ".github/workflows/build-pilotctl-skill.yml"
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
+# One run at a time. Each run signs main as it is when the run starts
+# its attempt, so a queued run replacing another loses nothing.
 concurrency:
-  group: build-pilotctl-skill
-  cancel-in-progress: true
+  group: build-pilotctl-skill-${{ github.event_name == 'pull_request' && github.ref || 'main' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  # The skillinject version whose cmd/sign-skills signs the content.
+  SIGN_SKILLS_VERSION: v0.2.6-beta.2.0.20261108205954-2a44696e9ce4
 
 jobs:
-  build:
+  check:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build skills/pilotctl/SKILL.md from ONBOARDING.md + curated refs
+      - name: Rebuild skills/pilotctl/SKILL.md
+        run: bash build-pilotctl-skill.sh
+
+      - name: Show what main will get
         run: |
-          set -euo pipefail
-          mkdir -p skills/pilotctl
-
-          # Resolve the curated list of skills from inject-manifest.json.
-          # Each entry is a GitHub URL like
-          #   https://github.com/<owner>/<repo>/blob/<branch>/<path>
-          # The workflow only resolves URLs pointing back at THIS repo
-          # (TeoSlayer/pilot-skills); cross-repo references would need a
-          # checkout step. Empty/missing field falls back to "all skills/*".
-          PATHS_FILE=$(mktemp)
-          if jq -e '.referencedSkills | type == "array" and length > 0' inject-manifest.json >/dev/null; then
-            jq -r '.referencedSkills[]' inject-manifest.json | while read -r url; do
-              # Extract repo path from github.com/<owner>/<repo>/blob/<branch>/<path>
-              # We accept any branch name; the workflow runs with the repo
-              # checked out at the right ref already.
-              path=$(echo "$url" | sed -nE 's|^https?://github\.com/[^/]+/[^/]+/blob/[^/]+/(.+)$|\1|p')
-              if [ -z "$path" ]; then
-                echo "ERROR: cannot parse URL: $url" >&2
-                exit 1
-              fi
-              if [ ! -f "$path" ]; then
-                echo "ERROR: $url → $path not found in repo" >&2
-                exit 1
-              fi
-              echo "$path"
-            done > "$PATHS_FILE"
-            echo "Curated list ($(wc -l < "$PATHS_FILE") skills):"
-            cat "$PATHS_FILE"
+          if git diff --quiet -- skills/pilotctl/SKILL.md; then
+            echo "skills/pilotctl/SKILL.md is unchanged."
           else
-            # Backwards-compat: no curated list → include every skill on disk.
-            for d in skills/*/; do
-              slug=$(basename "$d")
-              [ "$slug" = "pilotctl" ] && continue
-              [ -f "$d/SKILL.md" ] || continue
-              echo "$d/SKILL.md"
-            done > "$PATHS_FILE"
-            echo "No referencedSkills field → including all $(wc -l < "$PATHS_FILE") skills"
+            echo "On merge, CI commits this rebuilt skills/pilotctl/SKILL.md and signs it:"
+            git diff --stat -- skills/pilotctl/SKILL.md
           fi
 
-          # The auto-references block: one row per curated path, pulling
-          # description from each SKILL.md frontmatter.
-          REFS_FILE=$(mktemp)
-          {
-            echo "## Available skills"
-            echo
-            echo "Each row below is a Pilot Protocol skill curated for the"
-            echo "entrypoint. Load the specific one when the user's task"
-            echo "matches its description."
-            echo
-            echo "| Skill | Description |"
-            echo "|---|---|"
-            while IFS= read -r p; do
-              [ -z "$p" ] && continue
-              slug=$(basename "$(dirname "$p")")
-              [ "$slug" = "pilotctl" ] && continue
-              # Pull `description:` from frontmatter. Handles both single-line
-              # and `description: >` block-scalar forms.
-              desc=$(awk '
-                /^---$/ { in_fm=!in_fm; next }
-                in_fm && /^description:[[:space:]]*>/ { collecting=1; next }
-                in_fm && collecting && /^[a-z_]+:/ { collecting=0 }
-                in_fm && collecting { gsub(/^[[:space:]]+/, ""); buf = buf " " $0 }
-                in_fm && /^description:[[:space:]]*[^>]/ {
-                  sub(/^description:[[:space:]]*/, "")
-                  print
-                  exit
-                }
-                END { if (buf) print buf }
-              ' "$p")
-              # Collapse all whitespace (block scalars carry blank lines) and trim.
-              desc=$(printf '%s' "$desc" | sed -E 's/[[:space:]]+/ /g; s/^ //; s/ $//')
-              # Show only the summary sentence — the text before
-              # "Use this skill when" — so each row is a complete thought
-              # rather than a 200-byte cut that lands mid-sentence.
-              summary=$(printf '%s' "${desc%%Use this skill when*}" | sed -E 's/ *$//')
-              if [ -n "$summary" ] && [ "$summary" != "$desc" ]; then
-                desc="$summary"
-              elif [ "${#desc}" -gt 220 ]; then
-                # No marker to cut on — fall back to a word-boundary
-                # truncation with an ellipsis instead of a hard byte cut.
-                desc="$(printf '%s' "$desc" | cut -c1-220 | sed -E 's/ [^ ]*$//')…"
-              fi
-              [ -z "$desc" ] && desc="(no description)"
-              echo "| \`$slug\` | $desc |"
-            done < "$PATHS_FILE"
-          } > "$REFS_FILE"
+  build-and-sign:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-          # Splice ONBOARDING.md → replace the marker block with the
-          # generated references.
-          python3 - "$REFS_FILE" <<'PYEOF'
-          import sys, re, pathlib
-          refs = pathlib.Path(sys.argv[1]).read_text()
-          src = pathlib.Path("ONBOARDING.md").read_text()
-          # Strip the editor-warning blockquote at the top — agents
-          # shouldn't see this. Match every consecutive `> ...` line plus
-          # the trailing blank.
-          src = re.sub(r"(?m)\A(?:> .*\n)+\n", "", src, count=1)
-          marker_re = re.compile(
-              r"<!-- BEGIN AUTO-GENERATED REFERENCES -->.*?<!-- END AUTO-GENERATED REFERENCES -->",
-              re.S,
-          )
-          replacement = (
-              "<!-- BEGIN AUTO-GENERATED REFERENCES -->\n"
-              "<!-- Regenerated by .github/workflows/build-pilotctl-skill.yml -->\n\n"
-              + refs
-              + "\n<!-- END AUTO-GENERATED REFERENCES -->"
-          )
-          out = marker_re.sub(replacement, src)
-          # Build final SKILL.md with frontmatter that the AgentSkills
-          # standard expects.
-          frontmatter = (
-              "---\n"
-              "name: pilotctl\n"
-              "description: >\n"
-              "  Entrypoint for Pilot Protocol — the overlay network that\n"
-              "  gives this host a directory of 435 public service agents\n"
-              "  (live finance, weather, news, transit, dev, sports,\n"
-              "  government data, science, health, security, geo, and 20+\n"
-              "  more categories) plus encrypted peer-to-peer comms with\n"
-              "  NAT traversal. Load this skill whenever the user needs\n"
-              "  LIVE EXTERNAL DATA (current crypto/FX prices, today's\n"
-              "  weather or forecast, recent papers, real-time sports\n"
-              "  scores, breaking news, transit schedules, package\n"
-              "  versions, CVEs, drug recalls, flight positions, federal\n"
-              "  regulations, etc.). The fastest path for almost any such\n"
-              "  task is `pilot-mom`: describe it in plain English and\n"
-              "  get back a validated, ready-to-run plan over the network\n"
-              "  (it picks the agents and filters for you, with handoffs for\n"
-              "  anything your own runtime should do); use `list-agents`\n"
-              "  directly only when you already know the specialist you want.\n"
-              "  Pilot returns clean structured JSON replies rather than raw\n"
-              "  HTML, so it's faster and more reliable than scraping public\n"
-              "  APIs. Also load on\n"
-              "  agent-to-agent communication, peer discovery, NAT\n"
-              "  traversal, or any mention of `pilotctl`. The skill body\n"
-              "  lists the full catalogue and the 3-command query pattern.\n"
-              "tags:\n"
-              "  - pilot-protocol\n"
-              "  - live-data\n"
-              "  - directory\n"
-              "  - finance\n"
-              "  - weather\n"
-              "  - news\n"
-              "  - transit\n"
-              "  - dev\n"
-              "  - sports\n"
-              "  - science\n"
-              "  - government\n"
-              "  - health\n"
-              "  - p2p\n"
-              "  - networking\n"
-              "  - entrypoint\n"
-              "license: AGPL-3.0\n"
-              "allowed-tools:\n"
-              "  - Bash\n"
-              "compatibility: >\n"
-              "  Requires `pilotctl` on PATH (install via `npm install -g\n"
-              "  pilotprotocol` or `curl -fsSL https://pilotprotocol.network/install.sh | sh`)\n"
-              "  and the daemon running (`pilotctl daemon start`). The\n"
-              "  pilot-daemon auto-installs and refreshes this file every\n"
-              "  15 minutes; do not edit it by hand — edit ONBOARDING.md in\n"
-              "  the pilot-skills repo instead.\n"
-              "---\n\n"
-          )
-          pathlib.Path("skills/pilotctl/SKILL.md").write_text(frontmatter + out)
-          PYEOF
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: tests/signatures/go.mod
+          cache: false
 
-          echo "--- skills/pilotctl/SKILL.md (head) ---"
-          head -50 skills/pilotctl/SKILL.md
+      - name: Install sign-skills
+        env:
+          GOWORK: "off"
+          GOBIN: ${{ runner.temp }}/bin
+        run: |
+          go install "github.com/pilot-protocol/skillinject/cmd/sign-skills@${SIGN_SKILLS_VERSION}"
+          echo "$GOBIN" >> "$GITHUB_PATH"
 
-      - name: Commit regenerated skill
+      - name: Rebuild, sign and commit
+        env:
+          SKILLS_SIGNING_KEY: ${{ secrets.SKILLS_SIGNING_KEY }}
+          GOWORK: "off"
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add skills/pilotctl/SKILL.md
-          # Check the staged diff (covers both new files and modifications;
-          # `git diff --quiet skills/...` alone misses untracked files).
-          if git diff --cached --quiet skills/pilotctl/SKILL.md; then
-              echo "No changes to skills/pilotctl/SKILL.md."
+          for attempt in 1 2 3; do
+            # Sign main as it is now, so content pushed while this run
+            # waited is signed too.
+            git fetch -q origin main
+            git reset -q --hard origin/main
+
+            # The generator does not need the key; keep it out of its env.
+            env -u SKILLS_SIGNING_KEY bash build-pilotctl-skill.sh
+
+            # sign-skills reads the key from the environment and never
+            # prints it. It refuses a key other than the daemon's built-in
+            # one.
+            sign-skills sign -repo . -key-env SKILLS_SIGNING_KEY
+            env -u SKILLS_SIGNING_KEY sign-skills verify -repo .
+            # The same check with tests/signatures' own copy of the rules.
+            (cd tests/signatures && env -u SKILLS_SIGNING_KEY go test -count=1 ./...)
+
+            git add -A -- skills/pilotctl/SKILL.md ':(glob)**/*.sig'
+            if git diff --cached --quiet; then
+              echo "Everything was already signed; nothing to commit."
               exit 0
-          fi
-          git commit -m "Regenerate skills/pilotctl/SKILL.md from ONBOARDING.md + skill catalog"
-          git push
+            fi
+            git diff --cached --stat
+            git commit -q -m "Rebuild skills/pilotctl/SKILL.md and sign the injected files"
+            if git push -q origin HEAD:main; then
+              exit 0
+            fi
+            echo "push attempt $attempt rejected, signing again on the new main..."
+            sleep 2
+          done
+          echo "push failed after 3 attempts" >&2
+          exit 1

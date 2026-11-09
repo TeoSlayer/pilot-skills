@@ -27,6 +27,9 @@ Each skill wraps `pilotctl` to provide a focused capability: messaging, file syn
 >   (AGPL-3.0); the daemon that runs it is
 >   [`TeoSlayer/pilotprotocol`](https://github.com/TeoSlayer/pilotprotocol).
 >   Read every line before you trust it.
+> - **Signed.** The daemon installs only files signed with the key it has
+>   built in, and skips the whole update if one is not
+>   ([SIGNING.md](SIGNING.md)).
 > - **Non-destructive.** The injector only ever rewrites its own marked
 >   block — it never edits content you or your operator wrote.
 > - **Opt-out anytime.** `pilotctl skills disable all` removes everything it
